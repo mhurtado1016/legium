@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -56,12 +57,17 @@ export function DashboardPage() {
     <div className="min-h-screen bg-paper text-ink">
       <header className="flex items-center justify-between border-b border-line px-6 py-4">
         <h1 className="text-xl font-display">Legium</h1>
-        <button
-          onClick={() => signOut()}
-          className="text-sm text-slate hover:text-ink underline underline-offset-4"
-        >
-          Cerrar sesión
-        </button>
+        <nav className="flex items-center gap-4 text-sm">
+          <Link to="/casos" className="text-slate hover:text-ink underline underline-offset-4">
+            Casos
+          </Link>
+          <button
+            onClick={() => signOut()}
+            className="text-slate hover:text-ink underline underline-offset-4"
+          >
+            Cerrar sesión
+          </button>
+        </nav>
       </header>
 
       <main className="px-6 py-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">

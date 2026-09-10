@@ -74,11 +74,19 @@ Implementado:
 - Pantalla de Dashboard + buscador de sentencias unificados, con
   verificación humana de resúmenes IA.
 
+**Fase 2 — Módulo 2: Casos y expedientes**
+- Esquema `clientes`, `casos`, `caso_sentencias`, `caso_actividad` + RLS.
+- Listado de casos con filtro por estado y alta rápida de caso/cliente.
+- Ficha de caso (documento único con navegación por anclas): datos
+  generales, bitácora de actividad, sentencias vinculadas (lectura) y
+  placeholder de documentos.
+
 Pendiente (ver la especificación técnica completa, sección 14 — Lista de
 tareas de desarrollo): pantalla de registro de firma, resto de Fase 0
 (creación de usuarios desde el panel del administrador, panel de
 configuración del tenant), localización automática del texto completo en
-el sitio oficial, consultas guardadas en la UI, y los Módulos 2 a 7.
+el sitio oficial, consultas guardadas en la UI, vincular sentencias desde
+el buscador directamente a un caso, y los Módulos 3 a 7.
 
 ## Estructura
 
@@ -89,9 +97,12 @@ src/
     AuthContext.tsx   sesión, login, logout, recuperación de contraseña
     useUsuario.ts      datos de `usuarios` para el usuario autenticado
     sentencias.ts      búsqueda y verificación de sentencias (Módulo 1)
+    casos.ts           casos, clientes, actividad y vínculo con sentencias (Módulo 2)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
+    CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
+    CasoDetailPage.tsx ficha de caso (sección 13.5)
 supabase/
   migrations/          esquema SQL, en orden de aplicación
   functions/           Edge Functions (Deno)

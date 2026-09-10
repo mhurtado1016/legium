@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { CasosListPage } from './pages/CasosListPage'
+import { CasoDetailPage } from './pages/CasoDetailPage'
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
@@ -20,6 +22,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/casos"
+        element={
+          <ProtectedRoute>
+            <CasosListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/casos/:id"
+        element={
+          <ProtectedRoute>
+            <CasoDetailPage />
           </ProtectedRoute>
         }
       />
