@@ -2,8 +2,11 @@
 // Ver especificación técnica, sección 6.3, punto 5. Job diario (cron).
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -21,6 +24,6 @@ Deno.serve(async (_req) => {
   }
 
   return new Response(JSON.stringify({ ok: true, actualizados: data?.length ?? 0 }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
   })
 })

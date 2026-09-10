@@ -7,6 +7,7 @@
 // búsqueda en historial_busqueda.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const DATOS_GOV_URL = 'https://www.datos.gov.co/resource/v2k4-2t8s.json'
 const MIN_RESULTADOS_CACHE = 1 // debajo de esto, se intenta la API en vivo
@@ -21,6 +22,8 @@ interface Criterios {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   try {
     const authHeader = req.headers.get('Authorization') ?? ''
     const supabase = createClient(
@@ -111,12 +114,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ resultados, fuente }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

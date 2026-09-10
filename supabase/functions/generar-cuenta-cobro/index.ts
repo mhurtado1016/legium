@@ -4,12 +4,15 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1'
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface Body {
   caso_id: string
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const authHeader = req.headers.get('Authorization') ?? ''
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -182,12 +185,12 @@ Deno.serve(async (req) => {
     await admin.from('cuentas_cobro').update({ storage_path: storagePath }).eq('id', cuenta.id)
 
     return new Response(JSON.stringify({ ok: true, cuenta_cobro_id: cuenta.id, numero, total }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

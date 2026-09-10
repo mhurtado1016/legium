@@ -10,6 +10,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import PizZip from 'npm:pizzip@3'
 import Docxtemplater from 'npm:docxtemplater@3'
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface VariableDef {
   clave: string
@@ -33,6 +34,8 @@ function resolverRuta(obj: Record<string, unknown>, ruta: string): string {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const authHeader = req.headers.get('Authorization') ?? ''
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -134,12 +137,12 @@ Deno.serve(async (req) => {
     if (versionError) throw versionError
 
     return new Response(JSON.stringify({ ok: true, documento_id: documento.id }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

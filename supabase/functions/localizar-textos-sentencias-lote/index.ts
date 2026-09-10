@@ -9,6 +9,7 @@
 // función.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const TAMANO_LOTE = 25
 
@@ -31,7 +32,9 @@ function construirUrlCandidata(
   return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -81,6 +84,6 @@ Deno.serve(async (_req) => {
 
   return new Response(
     JSON.stringify({ ok: true, revisadas: pendientes?.length ?? 0, resueltas, noDisponibles }),
-    { headers: { 'Content-Type': 'application/json' } },
+    { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
   )
 })

@@ -7,12 +7,15 @@
 // sección 4.5).
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const DATOS_GOV_URL = 'https://www.datos.gov.co/resource/v2k4-2t8s.json'
 const PAGE_SIZE = 1000
 const MAX_PAGES_POR_EJECUCION = 5 // evita ejecuciones demasiado largas; se retoma en la siguiente corrida
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -61,12 +64,12 @@ Deno.serve(async (_req) => {
     }
 
     return new Response(JSON.stringify({ ok: true, totalProcesados }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err), totalProcesados }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

@@ -10,6 +10,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')
@@ -19,7 +20,9 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails('mailto:soporte@legium.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -105,6 +108,6 @@ Deno.serve(async (_req) => {
   }
 
   return new Response(JSON.stringify({ ok: true, enviadas }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
   })
 })

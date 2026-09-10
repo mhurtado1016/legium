@@ -20,6 +20,7 @@
 // encontrar sentencias que sí existen.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface Body {
   sentencia_id: string
@@ -48,6 +49,8 @@ function construirUrlCandidata(
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -65,7 +68,7 @@ Deno.serve(async (req) => {
 
     if (s.texto_completo_url) {
       return new Response(JSON.stringify({ ok: true, url: s.texto_completo_url, ya_resuelta: true }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -76,7 +79,7 @@ Deno.serve(async (req) => {
     if (!candidata) {
       await admin.from('sentencias_cache').update({ texto_completo_no_disponible: true }).eq('id', sentencia_id)
       return new Response(JSON.stringify({ ok: false, motivo: 'no_se_pudo_construir_la_url' }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
@@ -86,7 +89,7 @@ Deno.serve(async (req) => {
       await admin.from('sentencias_cache').update({ texto_completo_no_disponible: true }).eq('id', sentencia_id)
       return new Response(
         JSON.stringify({ ok: false, motivo: 'url_construida_no_responde', url_intentada: candidata }),
-        { headers: { 'Content-Type': 'application/json' } },
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
 
@@ -96,12 +99,12 @@ Deno.serve(async (req) => {
       .eq('id', sentencia_id)
 
     return new Response(JSON.stringify({ ok: true, url: candidata }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

@@ -48,6 +48,12 @@ Editor de Supabase, después de aplicar todas las migraciones.
 
 ## Edge Functions
 
+Todas las funciones invocadas desde el navegador (`supabase.functions.invoke`)
+incluyen los headers CORS necesarios (`supabase/functions/_shared/cors.ts`)
+y responden al preflight `OPTIONS`. Sin esto, el navegador bloquea la
+respuesta por venir de un origen distinto al de la app (Vercel vs.
+Supabase), y toda llamada falla con un error genérico de red.
+
 Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
 
 - `buscar-sentencias`: búsqueda en cache con fallback a la API en vivo de

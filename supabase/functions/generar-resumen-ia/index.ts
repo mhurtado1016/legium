@@ -13,6 +13,7 @@
 // recibe explícitamente en el body.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const GEMINI_MODEL = 'gemini-2.0-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
@@ -53,6 +54,8 @@ function construirUrlCandidata(
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -83,7 +86,7 @@ Deno.serve(async (req) => {
         .eq('id', sentencia_id)
       return new Response(
         JSON.stringify({ ok: false, motivo: 'texto_completo_no_disponible' }),
-        { headers: { 'Content-Type': 'application/json' } },
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
 
@@ -97,7 +100,7 @@ Deno.serve(async (req) => {
         .eq('id', sentencia_id)
       return new Response(
         JSON.stringify({ ok: false, motivo: 'no_se_pudo_descargar_el_texto' }),
-        { headers: { 'Content-Type': 'application/json' } },
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
     const textoCompleto = (await docResp.text()).replace(/<[^>]+>/g, ' ').slice(0, 100_000)
@@ -116,7 +119,7 @@ Texto de la providencia:
 
     const geminiResp = await fetch(`${GEMINI_URL}?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { responseMimeType: 'application/json' },
@@ -147,12 +150,12 @@ Texto de la providencia:
       .eq('id', sentencia_id)
 
     return new Response(JSON.stringify({ ok: true, analisis }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })
