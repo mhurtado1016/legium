@@ -66,6 +66,11 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
 - `actualizar-plazos-vencidos`: marca como `vencido` los plazos
   pendientes cuya fecha ya pasó. Configurar como cron diario.
 
+- `extraer-texto-documento`: extrae texto de una versión de documento
+  recién subida para habilitar la búsqueda de contenido (sección 7.3).
+  Implementado para texto plano/HTML; PDF y DOCX quedan pendientes de
+  una librería de extracción dedicada.
+
 ## Estado actual
 
 Implementado:
@@ -107,13 +112,28 @@ Implementado:
   falta invocarla desde un botón).
 - Edge Functions de disparo de notificaciones y actualización de vencidos.
 
+**Fase 4 — Módulo 4: Gestión documental**
+- Esquema `categorias_documento` (con seed de categorías predefinidas
+  globales), `documentos`, `documento_versiones` + RLS.
+- Bucket privado `documentos` en Supabase Storage, con políticas por
+  `firma_id` (primer segmento de la ruta).
+- Subida de documentos desde la ficha de caso, con control de versiones
+  (una nueva subida al mismo documento incrementa la versión).
+- Historial de versiones desplegable, con descarga vía URL firmada.
+- Búsqueda por nombre en la lista de documentos del caso (la búsqueda
+  por contenido depende de que la extracción de texto esté implementada
+  para el tipo de archivo).
+- Límites definidos: 20 MB por archivo, tipos permitidos PDF, DOCX, DOC,
+  JPG, PNG y texto plano (sección 7.5).
+
 Pendiente (ver la especificación técnica completa, sección 14 — Lista de
 tareas de desarrollo): pantalla de registro de firma, resto de Fase 0
 (creación de usuarios desde el panel del administrador, panel de
-configuración del tenant), localización automática del texto completo en
-el sitio oficial, consultas guardadas en la UI, vincular sentencias desde
-el buscador directamente a un caso, botón de suscripción push en la UI,
-y los Módulos 4 a 7.
+configuración del tenant), localización automática del texto completo
+de sentencias en el sitio oficial, consultas guardadas en la UI,
+vincular sentencias desde el buscador directamente a un caso, botón de
+suscripción push en la UI, extracción de texto para PDF/DOCX, y los
+Módulos 5 a 7.
 
 ## Estructura
 
@@ -126,15 +146,17 @@ src/
     sentencias.ts      búsqueda y verificación de sentencias (Módulo 1)
     casos.ts           casos, clientes, actividad y vínculo con sentencias (Módulo 2)
     plazos.ts          plazos, notificaciones y suscripción push (Módulo 3)
+    documentos.ts      documentos, versiones y subida a Storage (Módulo 4)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
-    CasoDetailPage.tsx ficha de caso, incluye alta de plazos (sección 13.5)
+    CasoDetailPage.tsx ficha de caso: actividad, plazos y documentos (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)
 public/
   sw.js                service worker para notificaciones push
 supabase/
   migrations/          esquema SQL, en orden de aplicación
   functions/           Edge Functions (Deno)
+  seed/                script de datos de prueba
 ```

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -13,6 +13,16 @@ import {
   type EstadoCaso,
 } from '../lib/casos'
 import { crearPlazo, listarPlazos, marcarCumplido, type Plazo } from '../lib/plazos'
+import {
+  listarCategorias,
+  listarDocumentos,
+  listarVersiones,
+  subirDocumento,
+  urlDescarga,
+  type CategoriaDocumento,
+  type Documento,
+  type DocumentoVersion,
+} from '../lib/documentos'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const SECCIONES = [
@@ -34,20 +44,26 @@ export function CasoDetailPage() {
   const [actividad, setActividad] = useState<CasoActividad[]>([])
   const [sentencias, setSentencias] = useState<CasoSentencia[]>([])
   const [plazos, setPlazos] = useState<Plazo[]>([])
+  const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [categorias, setCategorias] = useState<CategoriaDocumento[]>([])
   const [nuevaNota, setNuevaNota] = useState('')
 
   async function cargar() {
     if (!id) return
-    const [c, a, s, p] = await Promise.all([
+    const [c, a, s, p, d, cat] = await Promise.all([
       obtenerCaso(id),
       listarActividad(id),
       listarSentenciasVinculadas(id),
       listarPlazos({ caso_id: id }),
+      listarDocumentos(id),
+      listarCategorias(),
     ])
     setCaso(c)
     setActividad(a)
     setSentencias(s)
     setPlazos(p)
+    setDocumentos(d)
+    setCategorias(cat)
   }
 
   useEffect(() => {
@@ -207,7 +223,16 @@ export function CasoDetailPage() {
 
           <section id="documentos">
             <h2 className="font-display text-base mb-2">Documentos</h2>
-            <p className="text-sm text-slate">Módulo 4, pendiente de implementar (Fase 4).</p>
+            {usuario && (
+              <DocumentosSeccion
+                casoId={caso.id}
+                firmaId={usuario.firma_id}
+                usuarioId={usuario.id}
+                categorias={categorias}
+                documentos={documentos}
+                onCambio={cargar}
+              />
+            )}
           </section>
         </div>
       </div>
@@ -302,5 +327,188 @@ function NuevoPlazoForm({
         {guardando ? 'Guardando…' : 'Agregar plazo'}
       </button>
     </form>
+  )
+}
+
+function DocumentosSeccion({
+  casoId,
+  firmaId,
+  usuarioId,
+  categorias,
+  documentos,
+  onCambio,
+}: {
+  casoId: string
+  firmaId: string
+  usuarioId: string
+  categorias: CategoriaDocumento[]
+  documentos: Documento[]
+  onCambio: () => void
+}) {
+  const [categoriaId, setCategoriaId] = useState(categorias[0]?.id ?? '')
+  const [archivo, setArchivo] = useState<File | null>(null)
+  const [subiendo, setSubiendo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [historialAbierto, setHistorialAbierto] = useState<string | null>(null)
+  const [versiones, setVersiones] = useState<DocumentoVersion[]>([])
+
+  async function handleSubir(e: FormEvent) {
+    e.preventDefault()
+    if (!archivo || !categoriaId) return
+    setError(null)
+    setSubiendo(true)
+    try {
+      await subirDocumento({
+        file: archivo,
+        firmaId,
+        casoId,
+        usuarioId,
+        categoriaId,
+        nombre: archivo.name,
+      })
+      setArchivo(null)
+      onCambio()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo subir el documento.')
+    } finally {
+      setSubiendo(false)
+    }
+  }
+
+  async function handleVerHistorial(documentoId: string) {
+    if (historialAbierto === documentoId) {
+      setHistorialAbierto(null)
+      return
+    }
+    const v = await listarVersiones(documentoId)
+    setVersiones(v)
+    setHistorialAbierto(documentoId)
+  }
+
+  async function handleDescargar(storagePath: string) {
+    const url = await urlDescarga(storagePath)
+    window.open(url, '_blank')
+  }
+
+  const documentosFiltrados = busqueda
+    ? documentos.filter((d) => d.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+    : documentos
+
+  return (
+    <div>
+      <form onSubmit={handleSubir} className="flex flex-wrap items-end gap-3 text-sm mb-4">
+        <div>
+          <label className="block text-slate mb-1">Categoría</label>
+          <select
+            value={categoriaId}
+            onChange={(e) => setCategoriaId(e.target.value)}
+            className="border border-line bg-paper-raised px-2 py-1"
+          >
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-slate mb-1">Archivo</label>
+          <input
+            type="file"
+            onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+            className="text-sm"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={subiendo || !archivo}
+          className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+        >
+          {subiendo ? 'Subiendo…' : '+ Subir documento'}
+        </button>
+      </form>
+
+      {error && <p className="text-sm text-seal mb-3">{error}</p>}
+
+      <input
+        type="text"
+        placeholder="Buscar por nombre…"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        className="border border-line bg-paper-raised px-2 py-1 text-sm mb-3 w-full max-w-xs"
+      />
+
+      <table className="w-full text-sm border-t border-line">
+        <thead>
+          <tr className="text-left text-slate border-b border-line">
+            <th className="py-2">Nombre</th>
+            <th className="py-2">Categoría</th>
+            <th className="py-2">Versión</th>
+            <th className="py-2">Actualizado</th>
+            <th className="py-2" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {documentosFiltrados.map((d) => (
+            <Fragment key={d.id}>
+              <tr>
+                <td className="py-2">{d.nombre}</td>
+                <td className="py-2">{d.categorias_documento?.nombre ?? '—'}</td>
+                <td className="py-2">
+                  {d.ultima_version ? (
+                    <button
+                      onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
+                      className="hover:underline"
+                    >
+                      v{d.ultima_version.version_numero}
+                    </button>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td className="py-2 text-slate">
+                  {d.ultima_version
+                    ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO')
+                    : '—'}
+                </td>
+                <td className="py-2">
+                  <button
+                    onClick={() => handleVerHistorial(d.id)}
+                    className="text-slate hover:text-ink underline underline-offset-4"
+                  >
+                    historial
+                  </button>
+                </td>
+              </tr>
+              {historialAbierto === d.id && (
+                <tr>
+                  <td colSpan={5} className="py-2 pl-4">
+                    <ul className="text-slate space-y-1">
+                      {versiones.map((v) => (
+                        <li key={v.id}>
+                          v{v.version_numero} — {v.nombre_archivo} —{' '}
+                          {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                          <button onClick={() => handleDescargar(v.storage_path)} className="underline">
+                            descargar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
+          {documentosFiltrados.length === 0 && (
+            <tr>
+              <td colSpan={5} className="py-4 text-slate">
+                Sin documentos todavía.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   )
 }
