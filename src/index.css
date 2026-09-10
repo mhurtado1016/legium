@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/*
+  Tokens de diseño de Legium — ver especificación técnica, sección 13.1.
+  Un solo acento de color (--seal), reservado para lo que requiere
+  atención real (plazos por vencer, acciones primarias, estados
+  pendientes) y nunca como decoración.
+*/
+@theme {
+  --color-ink: #1c2430;
+  --color-paper: #f7f6f2;
+  --color-paper-raised: #ffffff;
+  --color-seal: #7a2a2e;
+  --color-slate: #5b6472;
+  --color-line: #dcd8cf;
+
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    font-feature-settings: "tnum" 1; /* cifras tabulares para tablas y fechas */
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+
+  /* Foco de teclado visible en --seal, nunca eliminado sin reemplazo (sección 13.8) */
+  :focus-visible {
+    outline: 2px solid var(--color-seal);
+    outline-offset: 2px;
+  }
+}
