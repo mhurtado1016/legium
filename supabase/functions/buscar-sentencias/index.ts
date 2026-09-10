@@ -47,7 +47,11 @@ Deno.serve(async (req) => {
     if (criterios.magistrado_a) query = query.ilike('magistrado_a', `%${criterios.magistrado_a}%`)
     if (criterios.sala) query = query.ilike('sala', `%${criterios.sala}%`)
     if (criterios.texto) {
-      query = query.textSearch('sentencia', criterios.texto, { config: 'spanish' })
+      const patron = `%${criterios.texto}%`
+      // Coincidencia parcial del número/citación, no búsqueda de texto
+      // libre lingüística — un usuario que escribe "760" espera
+      // encontrar "T-760/08", no cualquier sentencia relacionada por tema.
+      query = query.or(`sentencia.ilike.${patron},proceso.ilike.${patron}`)
     }
 
     const { data: cacheResults, error: cacheError } = await query
@@ -63,7 +67,17 @@ Deno.serve(async (req) => {
       if (criterios.sentencia_tipo) params.set('sentencia_tipo', criterios.sentencia_tipo)
       if (criterios.magistrado_a) params.set('magistrado_a', criterios.magistrado_a)
       if (criterios.sala) params.set('sala', criterios.sala)
-      if (criterios.texto) params.set('$q', criterios.texto)
+      if (criterios.texto) {
+        // Se restringe la búsqueda de texto en la API en vivo a los mismos
+        // campos que en el cache (sentencia, proceso), en vez de usar el
+        // $q genérico de Socrata, que busca en TODOS los campos y puede
+        // devolver resultados sin relación real con lo buscado.
+        const escapado = criterios.texto.replace(/'/g, "''")
+        params.set(
+          '$where',
+          `upper(sentencia) like upper('%${escapado}%') OR upper(proceso) like upper('%${escapado}%')`,
+        )
+      }
 
       const resp = await fetch(`${DATOS_GOV_URL}?${params.toString()}`)
       if (resp.ok) {
