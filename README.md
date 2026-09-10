@@ -51,6 +51,13 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   estructurado con Gemini (sección 4.3). Requiere el secreto
   `GEMINI_API_KEY` (`supabase secrets set GEMINI_API_KEY=...`).
 
+- `enviar-notificaciones-plazos`: despacha notificaciones de plazos por
+  email (Resend) y push (Web Push), y marca las de canal `app` como
+  procesadas (sección 6.3). Configurar como cron (ej. cada hora) y los
+  secretos `RESEND_API_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
+- `actualizar-plazos-vencidos`: marca como `vencido` los plazos
+  pendientes cuya fecha ya pasó. Configurar como cron diario.
+
 ## Estado actual
 
 Implementado:
@@ -81,12 +88,24 @@ Implementado:
   generales, bitácora de actividad, sentencias vinculadas (lectura) y
   placeholder de documentos.
 
+**Fase 3 — Módulo 3: Plazos y términos procesales**
+- Esquema `plazos`, `plazo_notificaciones`, `push_subscriptions` + RLS.
+- Alta de plazos desde la ficha de caso, con notificación por app/email/push.
+- Vista general de plazos (todos los casos), con vencidos siempre primero
+  y `--seal` reservado para vencidos o por vencer en menos de 3 días.
+- Service worker (`public/sw.js`) para mostrar notificaciones push del
+  navegador; falta el flujo de UI para pedir el permiso y suscribirse
+  (la función `suscribirsePush` ya existe en `src/lib/plazos.ts`, solo
+  falta invocarla desde un botón).
+- Edge Functions de disparo de notificaciones y actualización de vencidos.
+
 Pendiente (ver la especificación técnica completa, sección 14 — Lista de
 tareas de desarrollo): pantalla de registro de firma, resto de Fase 0
 (creación de usuarios desde el panel del administrador, panel de
 configuración del tenant), localización automática del texto completo en
 el sitio oficial, consultas guardadas en la UI, vincular sentencias desde
-el buscador directamente a un caso, y los Módulos 3 a 7.
+el buscador directamente a un caso, botón de suscripción push en la UI,
+y los Módulos 4 a 7.
 
 ## Estructura
 
@@ -98,11 +117,15 @@ src/
     useUsuario.ts      datos de `usuarios` para el usuario autenticado
     sentencias.ts      búsqueda y verificación de sentencias (Módulo 1)
     casos.ts           casos, clientes, actividad y vínculo con sentencias (Módulo 2)
+    plazos.ts          plazos, notificaciones y suscripción push (Módulo 3)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
-    CasoDetailPage.tsx ficha de caso (sección 13.5)
+    CasoDetailPage.tsx ficha de caso, incluye alta de plazos (sección 13.5)
+    PlazosPage.tsx     vista general de plazos (sección 13.6)
+public/
+  sw.js                service worker para notificaciones push
 supabase/
   migrations/          esquema SQL, en orden de aplicación
   functions/           Edge Functions (Deno)

@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
+import { PlazosPage } from './pages/PlazosPage'
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
@@ -38,6 +39,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CasoDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/plazos"
+        element={
+          <ProtectedRoute>
+            <PlazosPage />
           </ProtectedRoute>
         }
       />

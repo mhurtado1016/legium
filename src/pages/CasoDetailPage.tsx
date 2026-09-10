@@ -12,12 +12,14 @@ import {
   type CasoSentencia,
   type EstadoCaso,
 } from '../lib/casos'
+import { crearPlazo, listarPlazos, marcarCumplido, type Plazo } from '../lib/plazos'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const SECCIONES = [
   { id: 'datos', label: 'Datos' },
   { id: 'actividad', label: 'Actividad' },
   { id: 'sentencias', label: 'Sentencias' },
+  { id: 'plazos', label: 'Plazos' },
   { id: 'documentos', label: 'Documentos' },
 ]
 
@@ -31,18 +33,21 @@ export function CasoDetailPage() {
   const [caso, setCaso] = useState<Caso | null>(null)
   const [actividad, setActividad] = useState<CasoActividad[]>([])
   const [sentencias, setSentencias] = useState<CasoSentencia[]>([])
+  const [plazos, setPlazos] = useState<Plazo[]>([])
   const [nuevaNota, setNuevaNota] = useState('')
 
   async function cargar() {
     if (!id) return
-    const [c, a, s] = await Promise.all([
+    const [c, a, s, p] = await Promise.all([
       obtenerCaso(id),
       listarActividad(id),
       listarSentenciasVinculadas(id),
+      listarPlazos({ caso_id: id }),
     ])
     setCaso(c)
     setActividad(a)
     setSentencias(s)
+    setPlazos(p)
   }
 
   useEffect(() => {
@@ -164,6 +169,42 @@ export function CasoDetailPage() {
 
           <hr className="border-line" />
 
+          <section id="plazos">
+            <h2 className="font-display text-base mb-2">Plazos</h2>
+            {usuario && (
+              <NuevoPlazoForm
+                casoId={caso.id}
+                firmaId={usuario.firma_id}
+                usuarioId={usuario.id}
+                onCreado={cargar}
+              />
+            )}
+            <ul className="text-sm divide-y divide-line mt-3">
+              {plazos.map((p) => (
+                <li key={p.id} className="py-2 flex items-center justify-between">
+                  <span>
+                    {p.titulo} — vence {new Date(p.fecha_vencimiento).toLocaleDateString('es-CO')}{' '}
+                    <span className="text-slate">({p.estado})</span>
+                  </span>
+                  {p.estado !== 'cumplido' && (
+                    <button
+                      onClick={async () => {
+                        await marcarCumplido(p.id)
+                        cargar()
+                      }}
+                      className="text-slate hover:text-ink underline underline-offset-4"
+                    >
+                      marcar cumplido
+                    </button>
+                  )}
+                </li>
+              ))}
+              {plazos.length === 0 && <li className="py-2 text-slate">Sin plazos para este caso.</li>}
+            </ul>
+          </section>
+
+          <hr className="border-line" />
+
           <section id="documentos">
             <h2 className="font-display text-base mb-2">Documentos</h2>
             <p className="text-sm text-slate">Módulo 4, pendiente de implementar (Fase 4).</p>
@@ -171,5 +212,95 @@ export function CasoDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function NuevoPlazoForm({
+  casoId,
+  firmaId,
+  usuarioId,
+  onCreado,
+}: {
+  casoId: string
+  firmaId: string
+  usuarioId: string
+  onCreado: () => void
+}) {
+  const [titulo, setTitulo] = useState('')
+  const [fecha, setFecha] = useState('')
+  const [notificarApp, setNotificarApp] = useState(true)
+  const [notificarEmail, setNotificarEmail] = useState(false)
+  const [notificarPush, setNotificarPush] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!titulo || !fecha) return
+    setGuardando(true)
+    try {
+      const notificaciones: { canal: 'app' | 'email' | 'push'; dias_antes: number }[] = []
+      if (notificarApp) notificaciones.push({ canal: 'app', dias_antes: 1 })
+      if (notificarEmail) notificaciones.push({ canal: 'email', dias_antes: 1 })
+      if (notificarPush) notificaciones.push({ canal: 'push', dias_antes: 1 })
+
+      await crearPlazo(
+        {
+          firma_id: firmaId,
+          caso_id: casoId,
+          titulo,
+          descripcion: null,
+          fecha_vencimiento: new Date(fecha).toISOString(),
+          responsable_id: usuarioId,
+          creado_por: usuarioId,
+        },
+        notificaciones,
+      )
+      setTitulo('')
+      setFecha('')
+      onCreado()
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 text-sm">
+      <div>
+        <label className="block text-slate mb-1">Título</label>
+        <input
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          className="border border-line bg-paper-raised px-2 py-1"
+        />
+      </div>
+      <div>
+        <label className="block text-slate mb-1">Vence</label>
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="border border-line bg-paper-raised px-2 py-1"
+        />
+      </div>
+      <label className="flex items-center gap-1">
+        <input type="checkbox" checked={notificarApp} onChange={(e) => setNotificarApp(e.target.checked)} />
+        App
+      </label>
+      <label className="flex items-center gap-1">
+        <input type="checkbox" checked={notificarEmail} onChange={(e) => setNotificarEmail(e.target.checked)} />
+        Email
+      </label>
+      <label className="flex items-center gap-1">
+        <input type="checkbox" checked={notificarPush} onChange={(e) => setNotificarPush(e.target.checked)} />
+        Push
+      </label>
+      <button
+        type="submit"
+        disabled={guardando}
+        className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+      >
+        {guardando ? 'Guardando…' : 'Agregar plazo'}
+      </button>
+    </form>
   )
 }

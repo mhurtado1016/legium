@@ -11,3 +11,9 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {
+    // el registro puede fallar en entornos sin HTTPS (ej. desarrollo local sin certificado)
+  })
+}

@@ -46,9 +46,12 @@ export function CasosListPage() {
         <Link to="/" className="font-display text-xl">
           Legium
         </Link>
-        <nav className="text-sm text-slate">
+        <nav className="text-sm text-slate flex gap-4">
           <Link to="/casos" className="text-ink underline underline-offset-4">
             Casos
+          </Link>
+          <Link to="/plazos" className="hover:text-ink">
+            Plazos
           </Link>
         </nav>
       </header>
