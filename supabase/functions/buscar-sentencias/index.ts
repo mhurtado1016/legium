@@ -84,31 +84,38 @@ Deno.serve(async (req) => {
         const apiResultados = await resp.json()
         fuente = 'api_en_vivo'
 
-        // Actualizar el cache con lo encontrado (upsert por número de sentencia)
-        const admin = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-        )
-        for (const r of apiResultados) {
-          if (!r.sentencia) continue
-          await admin.from('sentencias_cache').upsert(
-            {
-              proceso: r.proceso,
-              expediente_tipo: r.expediente_tipo,
-              expediente_numero: r.expediente_numero,
-              magistrado_a: r.magistrado_a,
-              sala: r.sala,
-              sentencia_tipo: r.sentencia_tipo,
-              sentencia: r.sentencia,
-              fecha_sentencia: r.fecha_sentencia,
-              sv_spv: r.sv_spv,
-              av_apv: r.av_apv,
-              ultima_sincronizacion: new Date().toISOString(),
-            },
-            { onConflict: 'sentencia' },
+        const filas = apiResultados
+          .filter((r: Record<string, string>) => r.sentencia)
+          .map((r: Record<string, string>) => ({
+            proceso: r.proceso,
+            expediente_tipo: r.expediente_tipo,
+            expediente_numero: r.expediente_numero,
+            magistrado_a: r.magistrado_a,
+            sala: r.sala,
+            sentencia_tipo: r.sentencia_tipo,
+            sentencia: r.sentencia,
+            fecha_sentencia: r.fecha_sentencia,
+            sv_spv: r.sv_spv,
+            av_apv: r.av_apv,
+            ultima_sincronizacion: new Date().toISOString(),
+          }))
+
+        if (filas.length > 0) {
+          const admin = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
           )
+          // Se guarda en el cache y se devuelven las filas YA GUARDADAS
+          // (con su `id` generado por la base de datos) — los datos
+          // crudos de la API no traen `id`, y el frontend lo necesita
+          // para enlazar a la ficha de detalle de cada sentencia.
+          const { data: guardadas, error: upsertError } = await admin
+            .from('sentencias_cache')
+            .upsert(filas, { onConflict: 'sentencia' })
+            .select()
+          if (upsertError) throw upsertError
+          resultados = guardadas ?? []
         }
-        resultados = apiResultados
       }
     }
 
