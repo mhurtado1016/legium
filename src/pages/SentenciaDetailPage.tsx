@@ -5,6 +5,7 @@ import { useUsuario } from '../lib/useUsuario'
 import {
   generarAnalisisIA,
   localizarTexto,
+  obtenerHtmlTextoCompleto,
   obtenerSentencia,
   verificarResumen,
   type Sentencia,
@@ -19,19 +20,38 @@ export function SentenciaDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { usuario } = useUsuario()
   const [sentencia, setSentencia] = useState<Sentencia | null>(null)
+  const [htmlTexto, setHtmlTexto] = useState<string | null>(null)
+  const [cargandoTexto, setCargandoTexto] = useState(false)
+  const [errorTexto, setErrorTexto] = useState<string | null>(null)
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorCarga, setErrorCarga] = useState<string | null>(null)
 
   async function cargar() {
     if (!id) return
-    const s = await obtenerSentencia(id)
-    setSentencia(s)
+    setErrorCarga(null)
+    try {
+      const s = await obtenerSentencia(id)
+      setSentencia(s)
+    } catch {
+      setErrorCarga('No se pudo cargar esta sentencia. Puede que el enlace sea incorrecto.')
+    }
   }
 
   useEffect(() => {
     cargar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  useEffect(() => {
+    if (!sentencia?.texto_completo_url) return
+    setCargandoTexto(true)
+    setErrorTexto(null)
+    obtenerHtmlTextoCompleto(sentencia.texto_completo_url)
+      .then((r) => setHtmlTexto(r.html))
+      .catch(() => setErrorTexto('No se pudo cargar el texto completo desde el sitio oficial.'))
+      .finally(() => setCargandoTexto(false))
+  }, [sentencia?.texto_completo_url])
 
   async function handleGenerarAnalisis() {
     if (!id) return
@@ -71,7 +91,14 @@ export function SentenciaDetailPage() {
     setSentencia({ ...sentencia, resumen_ia_verificado: true })
   }
 
-  if (!sentencia) return null
+  if (!sentencia) {
+    return (
+      <div className="min-h-screen bg-paper text-ink">
+        <AppHeader />
+        {errorCarga && <p className="px-6 py-6 text-sm text-seal">{errorCarga}</p>}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -165,12 +192,17 @@ export function SentenciaDetailPage() {
           <h2 className="font-display text-base mb-2">Texto completo</h2>
           {sentencia.texto_completo_url ? (
             <>
-              <iframe
-                src={sentencia.texto_completo_url}
-                title={`Texto completo de ${sentencia.sentencia}`}
-                className="w-full border border-line"
-                style={{ height: '75vh' }}
-              />
+              {cargandoTexto && <p className="text-sm text-slate">Cargando…</p>}
+              {errorTexto && <p className="text-sm text-seal mb-2">{errorTexto}</p>}
+              {htmlTexto && (
+                <iframe
+                  srcDoc={htmlTexto}
+                  sandbox=""
+                  title={`Texto completo de ${sentencia.sentencia}`}
+                  className="w-full border border-line"
+                  style={{ height: '75vh' }}
+                />
+              )}
               <a
                 href={sentencia.texto_completo_url}
                 target="_blank"

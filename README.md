@@ -191,12 +191,14 @@ Implementado:
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
 
-**Sobre el visor embebido del texto completo** (`SentenciaDetailPage`):
-usa un `<iframe>` apuntando a la página oficial de la Corte. Algunos
-sitios de gobierno bloquean ser embebidos así (header `X-Frame-Options`
-o `Content-Security-Policy: frame-ancestors`) — si eso pasa, el iframe
-se ve en blanco. No lo pude verificar desde este entorno; el enlace
-"Abrir en una pestaña nueva" siempre está disponible como respaldo.
+**Sobre el visor del texto completo** (`SentenciaDetailPage`): en vez de
+un `<iframe src="...">` apuntando directo al sitio de la Corte (que
+varios sitios de gobierno bloquean con `X-Frame-Options`), una Edge
+Function (`obtener-texto-sentencia`) descarga el HTML del lado del
+servidor y el frontend lo muestra con `srcDoc` en un iframe
+`sandbox=""` — evita el bloqueo porque no es el navegador quien pide
+embeber la página ajena. Si aun así falla, siempre queda el enlace
+"Abrir en una pestaña nueva" como respaldo.
 
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista

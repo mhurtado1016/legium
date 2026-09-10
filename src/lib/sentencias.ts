@@ -64,6 +64,17 @@ export async function generarAnalisisIA(sentenciaId: string) {
   if (error) throw error
   return data as { ok: boolean; motivo?: string; analisis?: Record<string, string> }
 }
+// Descarga el HTML del texto completo del lado del servidor, para
+// mostrarlo con `srcDoc` (evita el bloqueo por X-Frame-Options de
+// sitios que no permiten ser embebidos directamente con <iframe src>).
+export async function obtenerHtmlTextoCompleto(url: string) {
+  const { data, error } = await supabase.functions.invoke('obtener-texto-sentencia', {
+    body: { url },
+  })
+  if (error) throw error
+  return data as { html: string }
+}
+
 export async function verificarResumen(sentenciaId: string, firmaId: string, usuarioId: string) {
   const { error: updateError } = await supabase
     .from('sentencias_cache')
