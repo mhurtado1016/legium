@@ -30,6 +30,28 @@ interface AnalisisIA {
   decision: string
 }
 
+// Ver localizar-texto-sentencia/index.ts para el detalle del patrón.
+// Duplicado aquí (en vez de invocar esa función por HTTP) para evitar un
+// salto de red adicional en el flujo de generación de resumen.
+function construirUrlCandidata(
+  sentenciaTipo: string,
+  sentencia: string,
+  fechaSentencia: string,
+): string | null {
+  const match = sentencia.match(/^([A-Z]+)-?(\d+)\/(\d{2})$/i)
+  if (!match) return null
+  const [, , numero, anioYY] = match
+
+  const anioCompleto = new Date(fechaSentencia).getFullYear()
+  if (!anioCompleto) return null
+
+  const tipo = sentenciaTipo.toUpperCase()
+  const slug =
+    tipo === 'SU' ? `SU${numero}-${anioYY}` : `${tipo.toLowerCase()}-${numero}-${anioYY}`
+
+  return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
+}
+
 Deno.serve(async (req) => {
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -46,7 +68,12 @@ Deno.serve(async (req) => {
       .single()
     if (fetchError || !sentencia) throw new Error('Sentencia no encontrada')
 
-    const url = texto_completo_url ?? sentencia.texto_completo_url
+    const url =
+      texto_completo_url ??
+      sentencia.texto_completo_url ??
+      (sentencia.sentencia_tipo && sentencia.fecha_sentencia
+        ? construirUrlCandidata(sentencia.sentencia_tipo, sentencia.sentencia, sentencia.fecha_sentencia)
+        : null)
 
     // Sección 4.3.1: si no hay texto completo, no se genera nada por inferencia.
     if (!url) {

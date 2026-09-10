@@ -52,6 +52,14 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
 
 - `buscar-sentencias`: búsqueda en cache con fallback a la API en vivo de
   datos.gov.co (sección 4.2/4.4). Requiere `SUPABASE_SERVICE_ROLE_KEY`.
+- `localizar-texto-sentencia`: construye y verifica la URL de una
+  providencia en el sitio oficial de la Corte a partir del patrón
+  `relatoria/{año}/{tipo}-{numero}-{añoYY}.htm` (sección 4.3.1). Se
+  invoca también internamente desde `generar-resumen-ia` cuando falta
+  `texto_completo_url`.
+- `localizar-textos-sentencias-lote`: la misma lógica en lote, para
+  correr como cron periódico sobre las sentencias del cache que aún no
+  tienen texto resuelto.
 - `ingesta-sentencias`: sincronización periódica del dataset hacia
   `sentencias_cache` (sección 4.2, punto 1). Configurar como cron job
   desde el dashboard de Supabase (Edge Functions → Schedules).
@@ -182,13 +190,19 @@ técnica. Pendiente (ver la especificación completa, sección 14 — Lista
 de tareas de desarrollo, y el resto de "pendientes de definir" en cada
 sección): pantalla de registro de firma, resto de Fase 0 (creación de
 usuarios desde el panel del administrador, panel de configuración del
-tenant), localización automática del texto completo de sentencias en el
-sitio oficial, consultas guardadas en la UI, vincular sentencias desde
-el buscador directamente a un caso, botón de suscripción push en la UI,
+tenant), consultas guardadas en la UI, vincular sentencias desde el
+buscador directamente a un caso, botón de suscripción push en la UI,
 extracción de texto para PDF/DOCX, catálogo inicial de plantillas
 globales, exportación de reportes, y los módulos futuros discutidos
 pero no detallados (colaboración de equipo, portal del cliente, alertas
 normativas, conflictos de interés).
+
+**Sobre la localización automática de texto de sentencias**: el patrón
+de URLs del sitio de la Corte (`relatoria/{año}/{tipo}-{numero}-{añoYY}.htm`,
+con la excepción de las sentencias SU) se dedujo observando URLs reales
+publicadas, no de documentación oficial del sitio. Si en el futuro deja
+de encontrar sentencias que sí existen, revisar primero
+`localizar-texto-sentencia/index.ts`.
 
 ## Estructura
 
