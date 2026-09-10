@@ -23,6 +23,7 @@ import {
   type Documento,
   type DocumentoVersion,
 } from '../lib/documentos'
+import { generarDocumentoDesdePlantilla, listarPlantillas, type Plantilla } from '../lib/plantillas'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const SECCIONES = [
@@ -46,17 +47,19 @@ export function CasoDetailPage() {
   const [plazos, setPlazos] = useState<Plazo[]>([])
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [categorias, setCategorias] = useState<CategoriaDocumento[]>([])
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([])
   const [nuevaNota, setNuevaNota] = useState('')
 
   async function cargar() {
     if (!id) return
-    const [c, a, s, p, d, cat] = await Promise.all([
+    const [c, a, s, p, d, cat, plant] = await Promise.all([
       obtenerCaso(id),
       listarActividad(id),
       listarSentenciasVinculadas(id),
       listarPlazos({ caso_id: id }),
       listarDocumentos(id),
       listarCategorias(),
+      listarPlantillas(),
     ])
     setCaso(c)
     setActividad(a)
@@ -64,6 +67,7 @@ export function CasoDetailPage() {
     setPlazos(p)
     setDocumentos(d)
     setCategorias(cat)
+    setPlantillas(plant)
   }
 
   useEffect(() => {
@@ -230,6 +234,7 @@ export function CasoDetailPage() {
                 usuarioId={usuario.id}
                 categorias={categorias}
                 documentos={documentos}
+                plantillas={plantillas}
                 onCambio={cargar}
               />
             )}
@@ -336,6 +341,7 @@ function DocumentosSeccion({
   usuarioId,
   categorias,
   documentos,
+  plantillas,
   onCambio,
 }: {
   casoId: string
@@ -343,6 +349,7 @@ function DocumentosSeccion({
   usuarioId: string
   categorias: CategoriaDocumento[]
   documentos: Documento[]
+  plantillas: Plantilla[]
   onCambio: () => void
 }) {
   const [categoriaId, setCategoriaId] = useState(categorias[0]?.id ?? '')
@@ -352,6 +359,29 @@ function DocumentosSeccion({
   const [busqueda, setBusqueda] = useState('')
   const [historialAbierto, setHistorialAbierto] = useState<string | null>(null)
   const [versiones, setVersiones] = useState<DocumentoVersion[]>([])
+  const [plantillaId, setPlantillaId] = useState('')
+  const [variablesManuales, setVariablesManuales] = useState<Record<string, string>>({})
+  const [generando, setGenerando] = useState(false)
+
+  const plantillaSeleccionada = plantillas.find((p) => p.id === plantillaId)
+  const camposManuales = plantillaSeleccionada?.variables.filter((v) => v.manual) ?? []
+
+  async function handleGenerarDesdePlantilla(e: FormEvent) {
+    e.preventDefault()
+    if (!plantillaId) return
+    setError(null)
+    setGenerando(true)
+    try {
+      await generarDocumentoDesdePlantilla(plantillaId, casoId, variablesManuales)
+      setPlantillaId('')
+      setVariablesManuales({})
+      onCambio()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo generar el documento.')
+    } finally {
+      setGenerando(false)
+    }
+  }
 
   async function handleSubir(e: FormEvent) {
     e.preventDefault()
@@ -397,6 +427,50 @@ function DocumentosSeccion({
 
   return (
     <div>
+      {plantillas.length > 0 && (
+        <form onSubmit={handleGenerarDesdePlantilla} className="border border-line p-3 mb-4 space-y-2 text-sm">
+          <p className="text-slate">Generar desde plantilla</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <select
+              value={plantillaId}
+              onChange={(e) => {
+                setPlantillaId(e.target.value)
+                setVariablesManuales({})
+              }}
+              className="border border-line bg-paper-raised px-2 py-1"
+            >
+              <option value="">— elegir plantilla —</option>
+              {plantillas.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+            {plantillaId && (
+              <button
+                type="submit"
+                disabled={generando}
+                className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+              >
+                {generando ? 'Generando…' : 'Generar documento'}
+              </button>
+            )}
+          </div>
+          {camposManuales.map((v) => (
+            <div key={v.clave}>
+              <label className="block text-slate mb-1">{v.clave}</label>
+              <input
+                value={variablesManuales[v.clave] ?? ''}
+                onChange={(e) =>
+                  setVariablesManuales((prev) => ({ ...prev, [v.clave]: e.target.value }))
+                }
+                className="w-full max-w-sm border border-line bg-paper-raised px-2 py-1"
+              />
+            </div>
+          ))}
+        </form>
+      )}
+
       <form onSubmit={handleSubir} className="flex flex-wrap items-end gap-3 text-sm mb-4">
         <div>
           <label className="block text-slate mb-1">Categoría</label>

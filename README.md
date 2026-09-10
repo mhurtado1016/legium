@@ -71,6 +71,11 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   Implementado para texto plano/HTML; PDF y DOCX quedan pendientes de
   una librería de extracción dedicada.
 
+- `generar-documento-plantilla`: resuelve variables automáticas del
+  caso/cliente y manuales del formulario, rellena el `.docx` base con
+  docxtemplater + pizzip, y crea el documento resultante en el Módulo 4
+  (sección 8.3/8.4).
+
 ## Estado actual
 
 Implementado:
@@ -126,14 +131,28 @@ Implementado:
 - Límites definidos: 20 MB por archivo, tipos permitidos PDF, DOCX, DOC,
   JPG, PNG y texto plano (sección 7.5).
 
+**Fase 5 — Módulo 5: Plantillas de escritos**
+- Tabla `plantillas` (globales o propias del despacho) + bucket separado
+  `plantillas` en Storage.
+- Edge Function que resuelve variables automáticas (ej.
+  `caso.cliente.nombre`, `fecha_actual`) contra los datos reales del
+  caso, combina con las variables manuales del formulario, y genera el
+  `.docx` final con docxtemplater.
+- El documento generado queda vinculado al caso como un `documento`
+  normal del Módulo 4 (mismo historial de versiones, misma búsqueda).
+- **Aún no hay ninguna plantilla cargada**: hay que subir manualmente al
+  menos un `.docx` de prueba al bucket `plantillas` (ruta
+  `global/<archivo>.docx` o `<firma_id>/<archivo>.docx`) y crear su fila
+  en `plantillas` con las variables que use, para poder probar el flujo.
+
 Pendiente (ver la especificación técnica completa, sección 14 — Lista de
 tareas de desarrollo): pantalla de registro de firma, resto de Fase 0
 (creación de usuarios desde el panel del administrador, panel de
 configuración del tenant), localización automática del texto completo
 de sentencias en el sitio oficial, consultas guardadas en la UI,
 vincular sentencias desde el buscador directamente a un caso, botón de
-suscripción push en la UI, extracción de texto para PDF/DOCX, y los
-Módulos 5 a 7.
+suscripción push en la UI, extracción de texto para PDF/DOCX, catálogo
+inicial de plantillas globales, y los Módulos 6 y 7.
 
 ## Estructura
 
@@ -147,11 +166,12 @@ src/
     casos.ts           casos, clientes, actividad y vínculo con sentencias (Módulo 2)
     plazos.ts          plazos, notificaciones y suscripción push (Módulo 3)
     documentos.ts      documentos, versiones y subida a Storage (Módulo 4)
+    plantillas.ts      generación de documentos desde plantilla (Módulo 5)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
-    CasoDetailPage.tsx ficha de caso: actividad, plazos y documentos (sección 13.5)
+    CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos y plantillas (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)
 public/
   sw.js                service worker para notificaciones push
