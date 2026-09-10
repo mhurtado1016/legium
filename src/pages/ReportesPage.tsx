@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { AppHeader } from '../components/AppHeader'
 import {
   obtenerCartera,
   obtenerCasosPorEstado,
@@ -42,25 +42,7 @@ export function ReportesPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="flex items-center justify-between border-b border-line px-6 py-4">
-        <Link to="/" className="font-display text-xl">
-          Legium
-        </Link>
-        <nav className="flex gap-4 text-sm text-slate">
-          <Link to="/casos" className="hover:text-ink">
-            Casos
-          </Link>
-          <Link to="/plazos" className="hover:text-ink">
-            Plazos
-          </Link>
-          <Link to="/facturacion" className="hover:text-ink">
-            Facturación
-          </Link>
-          <Link to="/reportes" className="text-ink underline underline-offset-4">
-            Reportes
-          </Link>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="px-6 py-6 max-w-3xl">
         <div className="flex items-center justify-between mb-6">

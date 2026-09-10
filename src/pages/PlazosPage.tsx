@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AppHeader } from '../components/AppHeader'
 import { diasRestantes, listarPlazos, marcarCumplido, type EstadoPlazo, type Plazo } from '../lib/plazos'
 
 const ESTADOS: EstadoPlazo[] = ['pendiente', 'vencido', 'cumplido']
@@ -31,25 +32,7 @@ export function PlazosPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="flex items-center justify-between border-b border-line px-6 py-4">
-        <Link to="/" className="font-display text-xl">
-          Legium
-        </Link>
-        <nav className="flex gap-4 text-sm text-slate">
-          <Link to="/casos" className="hover:text-ink">
-            Casos
-          </Link>
-          <Link to="/plazos" className="text-ink underline underline-offset-4">
-            Plazos
-          </Link>
-          <Link to="/facturacion" className="hover:text-ink">
-            Facturación
-          </Link>
-          <Link to="/reportes" className="hover:text-ink">
-            Reportes
-          </Link>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="px-6 py-6">
         <div className="flex items-center justify-between mb-4">

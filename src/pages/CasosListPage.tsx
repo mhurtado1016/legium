@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
   crearCaso,
@@ -42,25 +43,7 @@ export function CasosListPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="flex items-center justify-between border-b border-line px-6 py-4">
-        <Link to="/" className="font-display text-xl">
-          Legium
-        </Link>
-        <nav className="text-sm text-slate flex gap-4">
-          <Link to="/casos" className="text-ink underline underline-offset-4">
-            Casos
-          </Link>
-          <Link to="/plazos" className="hover:text-ink">
-            Plazos
-          </Link>
-          <Link to="/facturacion" className="hover:text-ink">
-            Facturación
-          </Link>
-          <Link to="/reportes" className="hover:text-ink">
-            Reportes
-          </Link>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="px-6 py-6">
         <div className="flex items-center justify-between mb-4">

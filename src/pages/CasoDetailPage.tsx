@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
   actualizarEstadoCaso,
@@ -110,12 +111,16 @@ export function CasoDetailPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="flex items-center gap-4 border-b border-line px-6 py-4">
-        <Link to="/casos" className="text-sm text-slate hover:text-ink">
-          ← Casos
-        </Link>
-        <h1 className="font-display text-lg">{caso.titulo}</h1>
-      </header>
+      <AppHeader
+        left={
+          <div className="flex items-center gap-4">
+            <Link to="/casos" className="text-sm text-slate hover:text-ink">
+              ← Casos
+            </Link>
+            <h1 className="font-display text-lg">{caso.titulo}</h1>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-8 px-6 py-6">
         <nav className="text-sm text-slate space-y-2 self-start">

@@ -208,6 +208,8 @@ de encontrar sentencias que sí existen, revisar primero
 
 ```
 src/
+  components/
+    AppHeader.tsx      encabezado compartido con menú hamburguesa
   lib/
     supabase.ts       cliente de Supabase
     AuthContext.tsx   sesión, login, logout, recuperación de contraseña

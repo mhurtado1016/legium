@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../lib/AuthContext'
+import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
   buscarSentencias,
@@ -17,7 +16,6 @@ import {
  * plazos y casos abiertos se incorporan en las Fases 2 y 3).
  */
 export function DashboardPage() {
-  const { signOut } = useAuth()
   const { usuario } = useUsuario()
 
   const [texto, setTexto] = useState('')
@@ -55,29 +53,7 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="flex items-center justify-between border-b border-line px-6 py-4">
-        <h1 className="text-xl font-display">Legium</h1>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link to="/casos" className="text-slate hover:text-ink underline underline-offset-4">
-            Casos
-          </Link>
-          <Link to="/plazos" className="text-slate hover:text-ink underline underline-offset-4">
-            Plazos
-          </Link>
-          <Link to="/facturacion" className="text-slate hover:text-ink underline underline-offset-4">
-            Facturación
-          </Link>
-          <Link to="/reportes" className="text-slate hover:text-ink underline underline-offset-4">
-            Reportes
-          </Link>
-          <button
-            onClick={() => signOut()}
-            className="text-slate hover:text-ink underline underline-offset-4"
-          >
-            Cerrar sesión
-          </button>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="px-6 py-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
         <section>
