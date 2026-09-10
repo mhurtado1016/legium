@@ -12,7 +12,12 @@
 // los demás formatos (ver sección 7.5, pendiente de definir).
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+// Headers CORS: sin esto, el navegador bloquea la respuesta por venir
+// de un origen distinto al de la app (Vercel vs. Supabase).
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 interface Body {
   documento_version_id: string
