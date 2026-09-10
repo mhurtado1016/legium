@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { SentenciaDetailPage } from './pages/SentenciaDetailPage'
 import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
 import { PlazosPage } from './pages/PlazosPage'
@@ -25,6 +26,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sentencias/:id"
+        element={
+          <ProtectedRoute>
+            <SentenciaDetailPage />
           </ProtectedRoute>
         }
       />

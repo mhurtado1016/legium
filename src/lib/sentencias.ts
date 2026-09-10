@@ -7,9 +7,19 @@ export interface Sentencia {
   sala: string | null
   magistrado_a: string | null
   fecha_sentencia: string | null
-  resumen_ia: string | null
-  resumen_ia_verificado: boolean
+  proceso: string | null
+  expediente_tipo: string | null
+  expediente_numero: string | null
+  sv_spv: string | null
+  av_apv: string | null
+  texto_completo_url: string | null
   texto_completo_no_disponible: boolean
+  resumen_ia: string | null
+  hechos_ia: string | null
+  problema_juridico_ia: string | null
+  consideraciones_ia: string | null
+  decision_ia: string | null
+  resumen_ia_verificado: boolean
 }
 
 export interface CriteriosBusqueda {
@@ -30,7 +40,30 @@ export async function buscarSentencias(criterios: CriteriosBusqueda) {
   return data as { resultados: Sentencia[]; fuente: 'cache' | 'api_en_vivo' }
 }
 
-// Verificación humana de un resumen generado por IA (sección 4.3.3).
+export async function obtenerSentencia(id: string) {
+  const { data, error } = await supabase.from('sentencias_cache').select('*').eq('id', id).single()
+  if (error) throw error
+  return data as Sentencia
+}
+
+// Invoca localizar-texto-sentencia (sección 4.3.1).
+export async function localizarTexto(sentenciaId: string) {
+  const { data, error } = await supabase.functions.invoke('localizar-texto-sentencia', {
+    body: { sentencia_id: sentenciaId },
+  })
+  if (error) throw error
+  return data as { ok: boolean; url?: string; motivo?: string }
+}
+
+// Invoca generar-resumen-ia (sección 4.3.2). Localiza el texto primero
+// si todavía no está resuelto.
+export async function generarAnalisisIA(sentenciaId: string) {
+  const { data, error } = await supabase.functions.invoke('generar-resumen-ia', {
+    body: { sentencia_id: sentenciaId },
+  })
+  if (error) throw error
+  return data as { ok: boolean; motivo?: string; analisis?: Record<string, string> }
+}
 export async function verificarResumen(sentenciaId: string, firmaId: string, usuarioId: string) {
   const { error: updateError } = await supabase
     .from('sentencias_cache')

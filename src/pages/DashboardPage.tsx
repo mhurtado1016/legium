@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -21,6 +22,7 @@ export function DashboardPage() {
   const [texto, setTexto] = useState('')
   const [resultados, setResultados] = useState<Sentencia[]>([])
   const [buscando, setBuscando] = useState(false)
+  const [buscado, setBuscado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [verificacionesPendientes, setVerificacionesPendientes] = useState<number | null>(null)
 
@@ -35,6 +37,7 @@ export function DashboardPage() {
     try {
       const { resultados } = await buscarSentencias({ texto })
       setResultados(resultados)
+      setBuscado(true)
     } catch {
       setError('No se pudo completar la búsqueda. Intenta de nuevo.')
     } finally {
@@ -77,6 +80,14 @@ export function DashboardPage() {
 
           {error && <p className="text-sm text-seal mb-4">{error}</p>}
 
+          {buscado && (
+            <p className="text-sm text-slate mb-2">
+              {resultados.length === 1
+                ? '1 resultado encontrado'
+                : `${resultados.length} resultados encontrados`}
+            </p>
+          )}
+
           <ul className="divide-y divide-line border-t border-b border-line">
             {resultados.map((s) => (
               <li key={s.id} className="py-4">
@@ -111,10 +122,20 @@ export function DashboardPage() {
                     Análisis no disponible: no se pudo obtener el texto completo.
                   </p>
                 )}
+
+                <Link
+                  to={`/sentencias/${s.id}`}
+                  className="text-sm text-slate hover:text-ink underline underline-offset-4 mt-2 inline-block"
+                >
+                  ver detalle
+                </Link>
               </li>
             ))}
 
-            {!buscando && resultados.length === 0 && (
+            {buscado && resultados.length === 0 && (
+              <li className="py-4 text-sm text-slate">Sin resultados para esta búsqueda.</li>
+            )}
+            {!buscado && !buscando && (
               <li className="py-4 text-sm text-slate">
                 Busca por número de sentencia, magistrado, sala o texto libre.
               </li>

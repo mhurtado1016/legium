@@ -191,6 +191,13 @@ Implementado:
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
 
+**Sobre el visor embebido del texto completo** (`SentenciaDetailPage`):
+usa un `<iframe>` apuntando a la página oficial de la Corte. Algunos
+sitios de gobierno bloquean ser embebidos así (header `X-Frame-Options`
+o `Content-Security-Policy: frame-ancestors`) — si eso pasa, el iframe
+se ve en blanco. No lo pude verificar desde este entorno; el enlace
+"Abrir en una pestaña nueva" siempre está disponible como respaldo.
+
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
 de tareas de desarrollo, y el resto de "pendientes de definir" en cada
@@ -230,6 +237,7 @@ src/
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
+    SentenciaDetailPage.tsx ficha de sentencia: metadatos, análisis IA y visor del texto completo
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
     CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)
