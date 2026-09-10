@@ -24,6 +24,15 @@ import {
   type DocumentoVersion,
 } from '../lib/documentos'
 import { generarDocumentoDesdePlantilla, listarPlantillas, type Plantilla } from '../lib/plantillas'
+import {
+  definirHonorarioFijo,
+  generarCuentaCobro,
+  listarRegistrosTiempo,
+  obtenerHonorarioFijo,
+  registrarTiempo,
+  type HonorarioFijo,
+  type RegistroTiempo,
+} from '../lib/facturacion'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const SECCIONES = [
@@ -32,6 +41,7 @@ const SECCIONES = [
   { id: 'sentencias', label: 'Sentencias' },
   { id: 'plazos', label: 'Plazos' },
   { id: 'documentos', label: 'Documentos' },
+  { id: 'facturacion', label: 'Facturación' },
 ]
 
 /**
@@ -48,11 +58,13 @@ export function CasoDetailPage() {
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [categorias, setCategorias] = useState<CategoriaDocumento[]>([])
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
+  const [registrosTiempo, setRegistrosTiempo] = useState<RegistroTiempo[]>([])
+  const [honorarioFijo, setHonorarioFijo] = useState<HonorarioFijo | null>(null)
   const [nuevaNota, setNuevaNota] = useState('')
 
   async function cargar() {
     if (!id) return
-    const [c, a, s, p, d, cat, plant] = await Promise.all([
+    const [c, a, s, p, d, cat, plant, rt, hf] = await Promise.all([
       obtenerCaso(id),
       listarActividad(id),
       listarSentenciasVinculadas(id),
@@ -60,6 +72,8 @@ export function CasoDetailPage() {
       listarDocumentos(id),
       listarCategorias(),
       listarPlantillas(),
+      listarRegistrosTiempo(id),
+      obtenerHonorarioFijo(id),
     ])
     setCaso(c)
     setActividad(a)
@@ -68,6 +82,8 @@ export function CasoDetailPage() {
     setDocumentos(d)
     setCategorias(cat)
     setPlantillas(plant)
+    setRegistrosTiempo(rt)
+    setHonorarioFijo(hf)
   }
 
   useEffect(() => {
@@ -235,6 +251,22 @@ export function CasoDetailPage() {
                 categorias={categorias}
                 documentos={documentos}
                 plantillas={plantillas}
+                onCambio={cargar}
+              />
+            )}
+          </section>
+
+          <hr className="border-line" />
+
+          <section id="facturacion">
+            <h2 className="font-display text-base mb-2">Facturación</h2>
+            {usuario && (
+              <FacturacionSeccion
+                casoId={caso.id}
+                firmaId={usuario.firma_id}
+                usuarioId={usuario.id}
+                registrosTiempo={registrosTiempo}
+                honorarioFijo={honorarioFijo}
                 onCambio={cargar}
               />
             )}
@@ -583,6 +615,130 @@ function DocumentosSeccion({
           )}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function FacturacionSeccion({
+  casoId,
+  firmaId,
+  usuarioId,
+  registrosTiempo,
+  honorarioFijo,
+  onCambio,
+}: {
+  casoId: string
+  firmaId: string
+  usuarioId: string
+  registrosTiempo: RegistroTiempo[]
+  honorarioFijo: HonorarioFijo | null
+  onCambio: () => void
+}) {
+  const [horas, setHoras] = useState('')
+  const [descripcionHoras, setDescripcionHoras] = useState('')
+  const [montoFijo, setMontoFijo] = useState(honorarioFijo?.monto_acordado?.toString() ?? '')
+  const [generando, setGenerando] = useState(false)
+  const [resultado, setResultado] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleRegistrarHoras(e: FormEvent) {
+    e.preventDefault()
+    if (!horas) return
+    await registrarTiempo(casoId, firmaId, usuarioId, Number(horas), descripcionHoras)
+    setHoras('')
+    setDescripcionHoras('')
+    onCambio()
+  }
+
+  async function handleGuardarHonorarioFijo(e: FormEvent) {
+    e.preventDefault()
+    if (!montoFijo) return
+    await definirHonorarioFijo(casoId, firmaId, Number(montoFijo), '')
+    onCambio()
+  }
+
+  async function handleGenerarCuenta() {
+    setError(null)
+    setResultado(null)
+    setGenerando(true)
+    try {
+      const r = await generarCuentaCobro(casoId)
+      setResultado(`Cuenta ${r.numero} generada por $${r.total.toLocaleString('es-CO')}.`)
+      onCambio()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo generar la cuenta de cobro.')
+    } finally {
+      setGenerando(false)
+    }
+  }
+
+  const horasPendientes = registrosTiempo.filter((r) => !r.facturado)
+
+  return (
+    <div className="text-sm space-y-4">
+      <div>
+        <p className="text-slate mb-1">Honorario fijo (si aplica)</p>
+        <form onSubmit={handleGuardarHonorarioFijo} className="flex items-end gap-2">
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Monto acordado"
+            value={montoFijo}
+            onChange={(e) => setMontoFijo(e.target.value)}
+            className="border border-line bg-paper-raised px-2 py-1 w-40"
+          />
+          <button className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90">Guardar</button>
+        </form>
+        {honorarioFijo && (
+          <p className="text-slate mt-1">
+            Actual: ${honorarioFijo.monto_acordado.toLocaleString('es-CO')}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <p className="text-slate mb-1">Registrar horas trabajadas</p>
+        <form onSubmit={handleRegistrarHoras} className="flex items-end gap-2">
+          <input
+            type="number"
+            step="0.25"
+            placeholder="Horas"
+            value={horas}
+            onChange={(e) => setHoras(e.target.value)}
+            className="border border-line bg-paper-raised px-2 py-1 w-24"
+          />
+          <input
+            placeholder="Descripción"
+            value={descripcionHoras}
+            onChange={(e) => setDescripcionHoras(e.target.value)}
+            className="border border-line bg-paper-raised px-2 py-1 flex-1"
+          />
+          <button className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90">Registrar</button>
+        </form>
+        <ul className="text-slate divide-y divide-line mt-2">
+          {registrosTiempo.map((r) => (
+            <li key={r.id} className="py-1 flex justify-between">
+              <span>
+                {r.fecha} — {r.horas}h — {r.descripcion || 'sin descripción'}
+              </span>
+              <span>{r.facturado ? 'facturado' : 'pendiente'}</span>
+            </li>
+          ))}
+          {registrosTiempo.length === 0 && <li className="py-1">Sin horas registradas.</li>}
+        </ul>
+      </div>
+
+      <div>
+        <button
+          onClick={handleGenerarCuenta}
+          disabled={generando || (horasPendientes.length === 0 && !honorarioFijo)}
+          className="bg-ink text-paper-raised px-4 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+        >
+          {generando ? 'Generando…' : 'Generar cuenta de cobro'}
+        </button>
+        {resultado && <p className="text-slate mt-2">{resultado}</p>}
+        {error && <p className="text-seal mt-2">{error}</p>}
+      </div>
     </div>
   )
 }

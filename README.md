@@ -76,6 +76,11 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   docxtemplater + pizzip, y crea el documento resultante en el Módulo 4
   (sección 8.3/8.4).
 
+- `generar-cuenta-cobro`: agrega horas no facturadas o el honorario fijo
+  del caso, genera la cuenta de cobro con numeración consecutiva por
+  tenant (`fn_siguiente_numero_cobro`), y produce el PDF con pdf-lib —
+  sin integración DIAN (sección 9.4).
+
 ## Estado actual
 
 Implementado:
@@ -145,14 +150,29 @@ Implementado:
   `global/<archivo>.docx` o `<firma_id>/<archivo>.docx`) y crear su fila
   en `plantillas` con las variables que use, para poder probar el flujo.
 
+**Fase 6 — Módulo 6: Facturación y honorarios**
+- Esquema `tarifas_hora`, `registros_tiempo`, `honorarios_fijos`,
+  `cuentas_cobro`, `cuenta_cobro_items` + RLS.
+- Bucket privado `facturas` para los PDF generados.
+- Sección de facturación en la ficha de caso: registrar horas, definir
+  honorario fijo, y generar la cuenta de cobro con un botón.
+- Pantalla de listado de cuentas de cobro (`/facturacion`) con cambio de
+  estado (pendiente/pagada/vencida/anulada) y descarga del PDF.
+- Sin integración DIAN: el PDF incluye un aviso de que es un documento
+  interno de cobro, no factura electrónica.
+- La resolución de tarifa por hora (caso → usuario → despacho) usa una
+  consulta simplificada; conviene revisarla si el despacho maneja
+  tarifas distintas por usuario de forma más compleja.
+
 Pendiente (ver la especificación técnica completa, sección 14 — Lista de
 tareas de desarrollo): pantalla de registro de firma, resto de Fase 0
 (creación de usuarios desde el panel del administrador, panel de
-configuración del tenant), localización automática del texto completo
-de sentencias en el sitio oficial, consultas guardadas en la UI,
-vincular sentencias desde el buscador directamente a un caso, botón de
-suscripción push en la UI, extracción de texto para PDF/DOCX, catálogo
-inicial de plantillas globales, y los Módulos 6 y 7.
+configuración del tenant, incluyendo los campos de facturación), 
+localización automática del texto completo de sentencias en el sitio
+oficial, consultas guardadas en la UI, vincular sentencias desde el
+buscador directamente a un caso, botón de suscripción push en la UI,
+extracción de texto para PDF/DOCX, catálogo inicial de plantillas
+globales, reportes de facturación, y el Módulo 7.
 
 ## Estructura
 
@@ -167,12 +187,14 @@ src/
     plazos.ts          plazos, notificaciones y suscripción push (Módulo 3)
     documentos.ts      documentos, versiones y subida a Storage (Módulo 4)
     plantillas.ts      generación de documentos desde plantilla (Módulo 5)
+    facturacion.ts     horas, honorarios fijos y cuentas de cobro (Módulo 6)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
-    CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos y plantillas (sección 13.5)
+    CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)
+    CuentasCobroPage.tsx listado de cuentas de cobro
 public/
   sw.js                service worker para notificaciones push
 supabase/

@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
 import { PlazosPage } from './pages/PlazosPage'
+import { CuentasCobroPage } from './pages/CuentasCobroPage'
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
@@ -47,6 +48,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PlazosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/facturacion"
+        element={
+          <ProtectedRoute>
+            <CuentasCobroPage />
           </ProtectedRoute>
         }
       />

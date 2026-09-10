@@ -42,6 +42,9 @@ export function PlazosPage() {
           <Link to="/plazos" className="text-ink underline underline-offset-4">
             Plazos
           </Link>
+          <Link to="/facturacion" className="hover:text-ink">
+            Facturación
+          </Link>
         </nav>
       </header>
 

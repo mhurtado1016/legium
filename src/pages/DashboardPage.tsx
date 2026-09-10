@@ -64,6 +64,9 @@ export function DashboardPage() {
           <Link to="/plazos" className="text-slate hover:text-ink underline underline-offset-4">
             Plazos
           </Link>
+          <Link to="/facturacion" className="text-slate hover:text-ink underline underline-offset-4">
+            Facturación
+          </Link>
           <button
             onClick={() => signOut()}
             className="text-slate hover:text-ink underline underline-offset-4"

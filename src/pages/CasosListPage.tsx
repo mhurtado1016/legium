@@ -53,6 +53,9 @@ export function CasosListPage() {
           <Link to="/plazos" className="hover:text-ink">
             Plazos
           </Link>
+          <Link to="/facturacion" className="hover:text-ink">
+            Facturación
+          </Link>
         </nav>
       </header>
 
