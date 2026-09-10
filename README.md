@@ -11,6 +11,14 @@ multi-tenancy base, log de auditoría y panel de configuración del tenant.
 - Supabase (Postgres + Auth)
 - React Router
 
+## Seed de datos de prueba
+
+`supabase/seed/seed.sql` crea un despacho de prueba con clientes, casos,
+actividad, una sentencia de ejemplo y plazos, vinculados a un usuario que
+**ya debe existir en Authentication → Users** (ajusta el correo dentro
+del script si no es `mhurtado1016@gmail.com`). Ejecutarlo en el SQL
+Editor de Supabase, después de aplicar todas las migraciones.
+
 ## Configuración local
 
 1. Instalar dependencias:
