@@ -67,6 +67,9 @@ export function DashboardPage() {
           <Link to="/facturacion" className="text-slate hover:text-ink underline underline-offset-4">
             Facturación
           </Link>
+          <Link to="/reportes" className="text-slate hover:text-ink underline underline-offset-4">
+            Reportes
+          </Link>
           <button
             onClick={() => signOut()}
             className="text-slate hover:text-ink underline underline-offset-4"

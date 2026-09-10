@@ -6,6 +6,7 @@ import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
 import { PlazosPage } from './pages/PlazosPage'
 import { CuentasCobroPage } from './pages/CuentasCobroPage'
+import { ReportesPage } from './pages/ReportesPage'
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
@@ -56,6 +57,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CuentasCobroPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reportes"
+        element={
+          <ProtectedRoute>
+            <ReportesPage />
           </ProtectedRoute>
         }
       />

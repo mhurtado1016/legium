@@ -164,15 +164,31 @@ Implementado:
   consulta simplificada; conviene revisarla si el despacho maneja
   tarifas distintas por usuario de forma más compleja.
 
-Pendiente (ver la especificación técnica completa, sección 14 — Lista de
-tareas de desarrollo): pantalla de registro de firma, resto de Fase 0
-(creación de usuarios desde el panel del administrador, panel de
-configuración del tenant, incluyendo los campos de facturación), 
-localización automática del texto completo de sentencias en el sitio
-oficial, consultas guardadas en la UI, vincular sentencias desde el
-buscador directamente a un caso, botón de suscripción push en la UI,
+**Fase 7 — Módulo 7: Reportes y analítica**
+- Vistas `rpt_cartera`, `rpt_horas_por_usuario`, `rpt_casos_por_estado`,
+  `rpt_plazos_por_estado` (`security_invoker = true`, heredan el
+  aislamiento por `firma_id` de las tablas base sin duplicar RLS).
+- Pantalla `/reportes`: cartera (pendiente/vencida/cobrado, con "cobrado"
+  filtrable por período), casos por estado, plazos por estado, y horas
+  por usuario — todo visible para cualquier usuario del tenant.
+- Filtro de período (mes/trimestre/año/todo el tiempo) implementado en
+  el cliente para horas y cobrado; pendiente/vencida/casos/plazos son
+  totales actuales, no dependen del período (igual que en la
+  especificación).
+- No incluye exportación (CSV/PDF) todavía.
+
+Con esto quedan implementados los 7 módulos de la especificación
+técnica. Pendiente (ver la especificación completa, sección 14 — Lista
+de tareas de desarrollo, y el resto de "pendientes de definir" en cada
+sección): pantalla de registro de firma, resto de Fase 0 (creación de
+usuarios desde el panel del administrador, panel de configuración del
+tenant), localización automática del texto completo de sentencias en el
+sitio oficial, consultas guardadas en la UI, vincular sentencias desde
+el buscador directamente a un caso, botón de suscripción push en la UI,
 extracción de texto para PDF/DOCX, catálogo inicial de plantillas
-globales, reportes de facturación, y el Módulo 7.
+globales, exportación de reportes, y los módulos futuros discutidos
+pero no detallados (colaboración de equipo, portal del cliente, alertas
+normativas, conflictos de interés).
 
 ## Estructura
 
@@ -188,6 +204,7 @@ src/
     documentos.ts      documentos, versiones y subida a Storage (Módulo 4)
     plantillas.ts      generación de documentos desde plantilla (Módulo 5)
     facturacion.ts     horas, honorarios fijos y cuentas de cobro (Módulo 6)
+    reportes.ts        cartera, casos, plazos y horas por usuario (Módulo 7)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
@@ -195,6 +212,7 @@ src/
     CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)
     CuentasCobroPage.tsx listado de cuentas de cobro
+    ReportesPage.tsx   reportes y analítica
 public/
   sw.js                service worker para notificaciones push
 supabase/

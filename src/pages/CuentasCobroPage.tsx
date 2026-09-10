@@ -55,6 +55,9 @@ export function CuentasCobroPage() {
           <Link to="/facturacion" className="text-ink underline underline-offset-4">
             Facturación
           </Link>
+          <Link to="/reportes" className="hover:text-ink">
+            Reportes
+          </Link>
         </nav>
       </header>
 
