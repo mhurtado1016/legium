@@ -5,6 +5,7 @@ import { useUsuario } from '../lib/useUsuario'
 import {
   buscarSentencias,
   contarVerificacionesPendientes,
+  generarAnalisisIA,
   verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
@@ -25,6 +26,8 @@ export function DashboardPage() {
   const [buscado, setBuscado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [verificacionesPendientes, setVerificacionesPendientes] = useState<number | null>(null)
+  const [generando, setGenerando] = useState<Record<string, boolean>>({})
+  const [errorGeneracion, setErrorGeneracion] = useState<Record<string, string>>({})
 
   useEffect(() => {
     contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
@@ -52,6 +55,46 @@ export function DashboardPage() {
       prev.map((s) => (s.id === sentenciaId ? { ...s, resumen_ia_verificado: true } : s)),
     )
     setVerificacionesPendientes((prev) => (prev !== null ? Math.max(prev - 1, 0) : prev))
+  }
+
+  async function handleGenerarAnalisis(sentenciaId: string) {
+    setGenerando((prev) => ({ ...prev, [sentenciaId]: true }))
+    setErrorGeneracion((prev) => {
+      const { [sentenciaId]: _omitida, ...resto } = prev
+      return resto
+    })
+    try {
+      const r = await generarAnalisisIA(sentenciaId)
+      if (!r.ok) {
+        setErrorGeneracion((prev) => ({
+          ...prev,
+          [sentenciaId]:
+            r.motivo === 'texto_completo_no_disponible' || r.motivo === 'url_construida_no_responde'
+              ? 'No se pudo generar el análisis: no se encontró el texto completo en el sitio oficial.'
+              : 'No se pudo generar el análisis.',
+        }))
+      } else {
+        setResultados((prev) =>
+          prev.map((s) =>
+            s.id === sentenciaId
+              ? {
+                  ...s,
+                  resumen_ia: r.analisis?.resumen ?? s.resumen_ia,
+                  hechos_ia: r.analisis?.hechos ?? s.hechos_ia,
+                  problema_juridico_ia: r.analisis?.problema_juridico ?? s.problema_juridico_ia,
+                  consideraciones_ia: r.analisis?.consideraciones_relevantes ?? s.consideraciones_ia,
+                  decision_ia: r.analisis?.decision ?? s.decision_ia,
+                  resumen_ia_verificado: false,
+                }
+              : s,
+          ),
+        )
+      }
+    } catch {
+      setErrorGeneracion((prev) => ({ ...prev, [sentenciaId]: 'No se pudo generar el análisis.' }))
+    } finally {
+      setGenerando((prev) => ({ ...prev, [sentenciaId]: false }))
+    }
   }
 
   return (
@@ -100,11 +143,12 @@ export function DashboardPage() {
                 </p>
 
                 {s.resumen_ia && (
-                  <p className="text-sm mt-2">
+                  <div className="text-sm mt-2 space-y-1">
+                    <p>{s.resumen_ia}</p>
                     {s.resumen_ia_verificado ? (
-                      <span className="text-slate">Resumen IA · verificado</span>
+                      <p className="text-slate">Resumen IA · verificado</p>
                     ) : (
-                      <span className="text-seal">
+                      <p className="text-seal">
                         Resumen IA · pendiente de verificación{' '}
                         <button
                           onClick={() => handleVerificar(s.id)}
@@ -112,15 +156,30 @@ export function DashboardPage() {
                         >
                           marcar como verificado
                         </button>
-                      </span>
+                      </p>
                     )}
-                  </p>
+                  </div>
                 )}
 
-                {!s.resumen_ia && s.texto_completo_no_disponible && (
-                  <p className="text-sm text-slate mt-2">
-                    Análisis no disponible: no se pudo obtener el texto completo.
-                  </p>
+                {!s.resumen_ia && (
+                  <div className="text-sm mt-2">
+                    {errorGeneracion[s.id] ? (
+                      <p className="text-seal">{errorGeneracion[s.id]}</p>
+                    ) : s.texto_completo_no_disponible ? (
+                      <p className="text-seal">
+                        No se pudo generar el análisis: no se encontró el texto completo en el sitio
+                        oficial.
+                      </p>
+                    ) : (
+                      <button
+                        onClick={() => handleGenerarAnalisis(s.id)}
+                        disabled={generando[s.id]}
+                        className="text-slate hover:text-ink underline underline-offset-4 disabled:opacity-60"
+                      >
+                        {generando[s.id] ? 'Generando…' : 'Generar análisis con IA'}
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 <Link
