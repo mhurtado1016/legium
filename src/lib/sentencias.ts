@@ -1,5 +1,25 @@
 import { supabase } from './supabase'
 
+// El SDK de Supabase, cuando una Edge Function responde con un código de
+// error, normalmente da un mensaje genérico ("Edge Function returned a
+// non-2xx status code") que no dice nada útil. El cuerpo real de la
+// respuesta (nuestro propio { error: "..." }) queda en `error.context`
+// (un objeto Response). Esta función intenta leerlo para mostrar el
+// error real en pantalla.
+async function mensajeErrorFuncion(error: unknown): Promise<string> {
+  const conContexto = error as { message?: string; context?: Response }
+  if (conContexto?.context && typeof conContexto.context.json === 'function') {
+    try {
+      const cuerpo = await conContexto.context.clone().json()
+      if (cuerpo?.error) return String(cuerpo.error)
+      if (cuerpo?.motivo) return String(cuerpo.motivo)
+    } catch {
+      // el cuerpo no era JSON; se usa el mensaje genérico como respaldo
+    }
+  }
+  return conContexto?.message ?? String(error)
+}
+
 export interface Sentencia {
   id: string
   sentencia: string
@@ -36,7 +56,7 @@ export async function buscarSentencias(criterios: CriteriosBusqueda) {
   const { data, error } = await supabase.functions.invoke('buscar-sentencias', {
     body: criterios,
   })
-  if (error) throw error
+  if (error) throw new Error(await mensajeErrorFuncion(error))
   return data as { resultados: Sentencia[]; fuente: 'cache' | 'api_en_vivo' }
 }
 
@@ -51,7 +71,7 @@ export async function localizarTexto(sentenciaId: string) {
   const { data, error } = await supabase.functions.invoke('localizar-texto-sentencia', {
     body: { sentencia_id: sentenciaId },
   })
-  if (error) throw error
+  if (error) throw new Error(await mensajeErrorFuncion(error))
   return data as { ok: boolean; url?: string; motivo?: string }
 }
 
@@ -61,7 +81,7 @@ export async function generarAnalisisIA(sentenciaId: string) {
   const { data, error } = await supabase.functions.invoke('generar-resumen-ia', {
     body: { sentencia_id: sentenciaId },
   })
-  if (error) throw error
+  if (error) throw new Error(await mensajeErrorFuncion(error))
   return data as { ok: boolean; motivo?: string; analisis?: Record<string, string> }
 }
 // Descarga el HTML del texto completo del lado del servidor, para
@@ -71,7 +91,7 @@ export async function obtenerHtmlTextoCompleto(url: string) {
   const { data, error } = await supabase.functions.invoke('obtener-texto-sentencia', {
     body: { url },
   })
-  if (error) throw error
+  if (error) throw new Error(await mensajeErrorFuncion(error))
   return data as { html: string }
 }
 

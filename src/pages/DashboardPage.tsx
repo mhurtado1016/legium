@@ -9,6 +9,8 @@ import {
   verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
+import { diasRestantes, listarPlazos, type Plazo } from '../lib/plazos'
+import { listarCasos, type Caso } from '../lib/casos'
 
 /**
  * Dashboard + buscador de sentencias unificados.
@@ -26,11 +28,19 @@ export function DashboardPage() {
   const [buscado, setBuscado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [verificacionesPendientes, setVerificacionesPendientes] = useState<number | null>(null)
+  const [plazosProximos, setPlazosProximos] = useState<Plazo[]>([])
+  const [casosAbiertos, setCasosAbiertos] = useState<Caso[]>([])
   const [generando, setGenerando] = useState<Record<string, boolean>>({})
   const [errorGeneracion, setErrorGeneracion] = useState<Record<string, string>>({})
 
   useEffect(() => {
     contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
+    listarPlazos({ estado: 'pendiente' })
+      .then((p) => setPlazosProximos(p.slice(0, 5)))
+      .catch(() => {})
+    listarCasos()
+      .then((c) => setCasosAbiertos(c.filter((x) => x.estado === 'abierto' || x.estado === 'en_curso').slice(0, 5)))
+      .catch(() => {})
   }, [])
 
   async function handleBuscar(e: FormEvent) {
@@ -41,8 +51,8 @@ export function DashboardPage() {
       const { resultados } = await buscarSentencias({ texto })
       setResultados(resultados)
       setBuscado(true)
-    } catch {
-      setError('No se pudo completar la búsqueda. Intenta de nuevo.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : JSON.stringify(err))
     } finally {
       setBuscando(false)
     }
@@ -90,8 +100,11 @@ export function DashboardPage() {
           ),
         )
       }
-    } catch {
-      setErrorGeneracion((prev) => ({ ...prev, [sentenciaId]: 'No se pudo generar el análisis.' }))
+    } catch (err) {
+      setErrorGeneracion((prev) => ({
+        ...prev,
+        [sentenciaId]: err instanceof Error ? err.message : JSON.stringify(err),
+      }))
     } finally {
       setGenerando((prev) => ({ ...prev, [sentenciaId]: false }))
     }
@@ -204,15 +217,46 @@ export function DashboardPage() {
 
         <aside>
           <h2 className="font-display text-lg mb-2">Su actividad</h2>
-          <div className="border-t border-line pt-3">
+
+          <div className="border-t border-line pt-3 mb-6">
             <p className="text-sm text-slate mb-1">Verificaciones pendientes</p>
             <p className="text-2xl">
               {verificacionesPendientes === null ? '—' : verificacionesPendientes}
             </p>
           </div>
-          <p className="text-sm text-slate mt-6">
-            Plazos próximos y casos abiertos se incorporan en las Fases 2 y 3.
-          </p>
+
+          <div className="border-t border-line pt-3 mb-6">
+            <p className="text-sm text-slate mb-2">Plazos próximos</p>
+            <ul className="text-sm space-y-1">
+              {plazosProximos.map((p) => {
+                const dias = diasRestantes(p.fecha_vencimiento)
+                return (
+                  <li key={p.id}>
+                    <Link to={`/casos/${p.caso_id}`} className="hover:underline">
+                      {p.titulo}
+                    </Link>{' '}
+                    <span className="text-slate">— {dias <= 0 ? 'hoy o vencido' : `${dias} días`}</span>
+                  </li>
+                )
+              })}
+              {plazosProximos.length === 0 && <li className="text-slate">Sin plazos pendientes.</li>}
+            </ul>
+          </div>
+
+          <div className="border-t border-line pt-3">
+            <p className="text-sm text-slate mb-2">Casos abiertos</p>
+            <ul className="text-sm space-y-1">
+              {casosAbiertos.map((c) => (
+                <li key={c.id}>
+                  <Link to={`/casos/${c.id}`} className="hover:underline">
+                    {c.titulo}
+                  </Link>{' '}
+                  <span className="text-slate">— {c.estado}</span>
+                </li>
+              ))}
+              {casosAbiertos.length === 0 && <li className="text-slate">Sin casos abiertos.</li>}
+            </ul>
+          </div>
         </aside>
       </main>
     </div>

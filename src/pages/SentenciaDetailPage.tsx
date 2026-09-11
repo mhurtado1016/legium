@@ -33,8 +33,8 @@ export function SentenciaDetailPage() {
     try {
       const s = await obtenerSentencia(id)
       setSentencia(s)
-    } catch {
-      setErrorCarga('No se pudo cargar esta sentencia. Puede que el enlace sea incorrecto.')
+    } catch (err) {
+      setErrorCarga(err instanceof Error ? err.message : JSON.stringify(err))
     }
   }
 
@@ -49,7 +49,7 @@ export function SentenciaDetailPage() {
     setErrorTexto(null)
     obtenerHtmlTextoCompleto(sentencia.texto_completo_url)
       .then((r) => setHtmlTexto(r.html))
-      .catch(() => setErrorTexto('No se pudo cargar el texto completo desde el sitio oficial.'))
+      .catch((err) => setErrorTexto(err instanceof Error ? err.message : JSON.stringify(err)))
       .finally(() => setCargandoTexto(false))
   }, [sentencia?.texto_completo_url])
 
@@ -67,8 +67,8 @@ export function SentenciaDetailPage() {
         )
       }
       await cargar()
-    } catch {
-      setError('No se pudo generar el análisis.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : JSON.stringify(err))
     } finally {
       setGenerando(false)
     }
@@ -80,8 +80,8 @@ export function SentenciaDetailPage() {
     try {
       await localizarTexto(id)
       await cargar()
-    } catch {
-      setError('No se pudo localizar el texto completo.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : JSON.stringify(err))
     }
   }
 
