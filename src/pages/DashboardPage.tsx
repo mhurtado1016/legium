@@ -159,7 +159,7 @@ export function DashboardPage() {
             </button>
 
             {filtrosAbiertos && (
-              <div className="border border-line p-4 mb-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="border border-line p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <label className="block text-slate mb-1">Tipo de sentencia</label>
                   <select
@@ -227,7 +227,7 @@ export function DashboardPage() {
                     className="w-full border border-line bg-paper-raised px-2 py-1.5"
                   />
                 </div>
-                <p className="col-span-2 text-slate">
+                <p className="sm:col-span-2 text-slate">
                   Nota: el dataset público de la Corte no incluye las partes del proceso
                   (demandante/demandado); el magistrado(a) ponente es el único dato de persona
                   disponible.
