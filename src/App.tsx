@@ -17,10 +17,27 @@ function ProtectedRoute({ children }: { children: React.ReactElement }) {
   return children
 }
 
+// Guardia inversa: si ya hay sesión activa, no tiene sentido mostrar el
+// login — se redirige directo al dashboard.
+function PublicOnlyRoute({ children }: { children: React.ReactElement }) {
+  const { session, loading } = useAuth()
+
+  if (loading) return null
+  if (session) return <Navigate to="/" replace />
+  return children
+}
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        }
+      />
       <Route
         path="/"
         element={
