@@ -196,8 +196,9 @@ Implementado:
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
 
-**Sobre el texto completo** (`SentenciaDetailPage`): se muestra como
-texto plano dentro del flujo normal de la página, no en un iframe con
+**Sobre el texto completo**: se muestra como
+texto plano dentro del panel expandido de cada resultado del buscador
+(`DashboardPage`), no en un iframe con
 scroll aparte — `api/proxy-corte.ts` extrae solo el texto (sin
 etiquetas HTML ni la navegación/menús del sitio) y detecta la
 codificación real del documento antes de decodificarlo (varios sitios
@@ -289,8 +290,7 @@ src/
     reportes.ts        cartera, casos, plazos y horas por usuario (Módulo 7)
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
-    DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
-    SentenciaDetailPage.tsx ficha de sentencia (ruta por número, ej. /sentencias/T-760%2F98, no por id — evita depender de que un id capturado antes siga siendo válido)
+    DashboardPage.tsx  dashboard + buscador de sentencias, con detalle expandible en la misma tarjeta (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
     CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)

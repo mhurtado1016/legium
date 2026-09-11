@@ -6,7 +6,7 @@ import {
   User,
   Sparkles,
   AlertCircle,
-  ChevronRight,
+  ChevronDown,
   Loader2,
   FolderOpen,
   Clock3,
@@ -18,6 +18,8 @@ import {
   buscarSentencias,
   contarVerificacionesPendientes,
   generarAnalisisIA,
+  localizarTexto,
+  obtenerTextoCompleto,
   verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
@@ -51,6 +53,10 @@ export function DashboardPage() {
   const [casosAbiertos, setCasosAbiertos] = useState<Caso[]>([])
   const [generando, setGenerando] = useState<Record<string, boolean>>({})
   const [errorGeneracion, setErrorGeneracion] = useState<Record<string, string>>({})
+  const [expandidoId, setExpandidoId] = useState<string | null>(null)
+  const [textoPorId, setTextoPorId] = useState<Record<string, string>>({})
+  const [cargandoTextoId, setCargandoTextoId] = useState<string | null>(null)
+  const [errorTextoPorId, setErrorTextoPorId] = useState<Record<string, string>>({})
 
   useEffect(() => {
     contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
@@ -82,6 +88,53 @@ export function DashboardPage() {
       setError(err instanceof Error ? err.message : JSON.stringify(err))
     } finally {
       setBuscando(false)
+    }
+  }
+
+  function handleExpandir(s: Sentencia) {
+    const yaAbierto = expandidoId === s.id
+    setExpandidoId(yaAbierto ? null : s.id)
+
+    if (!yaAbierto && s.texto_completo_url && !textoPorId[s.id]) {
+      setCargandoTextoId(s.id)
+      obtenerTextoCompleto(s.texto_completo_url)
+        .then((r) => setTextoPorId((prev) => ({ ...prev, [s.id]: r.texto })))
+        .catch((err) =>
+          setErrorTextoPorId((prev) => ({
+            ...prev,
+            [s.id]: err instanceof Error ? err.message : JSON.stringify(err),
+          })),
+        )
+        .finally(() => setCargandoTextoId(null))
+    }
+  }
+
+  async function handleLocalizarTexto(sentenciaId: string) {
+    setErrorGeneracion((prev) => {
+      const { [sentenciaId]: _omitida, ...resto } = prev
+      return resto
+    })
+    try {
+      const r = await localizarTexto(sentenciaId)
+      if (!r.ok) {
+        setErrorGeneracion((prev) => ({
+          ...prev,
+          [sentenciaId]: `${r.motivo ?? 'No se pudo localizar el texto.'}${r.detalle ? ` (${r.detalle})` : ''}`,
+        }))
+        return
+      }
+      setResultados((prev) =>
+        prev.map((s) =>
+          s.id === sentenciaId
+            ? { ...s, texto_completo_url: r.url ?? s.texto_completo_url, texto_completo_no_disponible: false }
+            : s,
+        ),
+      )
+    } catch (err) {
+      setErrorGeneracion((prev) => ({
+        ...prev,
+        [sentenciaId]: err instanceof Error ? err.message : JSON.stringify(err),
+      }))
     }
   }
 
@@ -261,106 +314,201 @@ export function DashboardPage() {
           )}
 
           <ul className="space-y-3">
-            {resultados.map((s) => (
-              <li key={s.id}>
-                <div className="card p-5 hover:shadow-[var(--shadow-raised)] transition-shadow">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="shrink-0 rounded-full bg-paper p-2.5 text-ink">
-                        <Scale size={18} strokeWidth={1.75} />
+            {resultados.map((s) => {
+              const expandido = expandidoId === s.id
+              return (
+                <li key={s.id}>
+                  <div className="card overflow-hidden hover:shadow-[var(--shadow-raised)] transition-shadow">
+                    <button
+                      onClick={() => handleExpandir(s)}
+                      className="w-full text-left p-5 hover:bg-paper transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <div className="shrink-0 rounded-full bg-paper p-2.5 text-ink">
+                            <Scale size={18} strokeWidth={1.75} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-ink">
+                              {s.sentencia}{' '}
+                              <span className="text-slate font-normal">
+                                · {s.sala ?? 'Sala no especificada'}
+                              </span>
+                            </p>
+                            <p className="inline-flex items-center gap-1.5 text-sm text-slate mt-1.5">
+                              <Calendar size={14} strokeWidth={1.75} />
+                              {s.fecha_sentencia
+                                ? new Date(s.fecha_sentencia).toLocaleDateString('es-CO')
+                                : '—'}
+                            </p>
+                            {s.magistrado_a && (
+                              <p className="flex items-center gap-1.5 text-sm text-slate mt-1 w-full">
+                                <User size={14} strokeWidth={1.75} className="shrink-0" />
+                                <span>{s.magistrado_a}</span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <ChevronDown
+                          size={18}
+                          strokeWidth={1.75}
+                          className={
+                            'shrink-0 mt-1 text-slate transition-transform ' +
+                            (expandido ? 'rotate-180' : '')
+                          }
+                        />
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-ink">
-                          {s.sentencia}{' '}
-                          <span className="text-slate font-normal">
-                            · {s.sala ?? 'Sala no especificada'}
-                          </span>
+
+                      {s.resumen_ia && !expandido && (
+                        <p className="mt-3 pt-3 border-t border-line text-sm text-ink line-clamp-2">
+                          {s.resumen_ia}
                         </p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate mt-1.5">
-                          <span className="inline-flex items-center gap-1.5">
-                            <Calendar size={14} strokeWidth={1.75} />
-                            {s.fecha_sentencia
-                              ? new Date(s.fecha_sentencia).toLocaleDateString('es-CO')
-                              : '—'}
-                          </span>
-                          {s.magistrado_a && (
-                            <span className="inline-flex items-center gap-1.5">
-                              <User size={14} strokeWidth={1.75} />
-                              {s.magistrado_a}
-                            </span>
+                      )}
+                    </button>
+
+                    {expandido && (
+                      <div className="border-t border-line p-5 space-y-5 text-sm">
+                        <table className="w-full">
+                          <tbody className="divide-y divide-line">
+                            <tr>
+                              <td className="py-1.5 text-slate w-40">Proceso</td>
+                              <td className="py-1.5">{s.proceso ?? '—'}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5 text-slate">Expediente</td>
+                              <td className="py-1.5">
+                                {s.expediente_tipo ?? '—'} {s.expediente_numero ?? ''}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5 text-slate">Salvamentos de voto</td>
+                              <td className="py-1.5">
+                                {s.sv_spv ?? 'no disponible en la fuente consultada'}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5 text-slate">Aclaraciones de voto</td>
+                              <td className="py-1.5">
+                                {s.av_apv ?? 'no disponible en la fuente consultada'}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <div>
+                          <h3 className="font-display text-base mb-2">Análisis</h3>
+
+                          {!s.resumen_ia && !s.texto_completo_no_disponible && (
+                            <button
+                              onClick={() => handleGenerarAnalisis(s.id)}
+                              disabled={generando[s.id]}
+                              className="inline-flex items-center gap-1.5 btn-primary btn-sm"
+                            >
+                              {generando[s.id] ? (
+                                <>
+                                  <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
+                                  Generando…
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles size={14} strokeWidth={1.75} />
+                                  Generar análisis con IA
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {s.texto_completo_no_disponible && !s.texto_completo_url && (
+                            <div className="text-slate space-y-2">
+                              <p className="inline-flex items-center gap-1.5 text-seal">
+                                <AlertCircle size={14} strokeWidth={1.75} />
+                                No se pudo localizar el texto completo en el sitio oficial.
+                              </p>
+                              <button
+                                onClick={() => handleLocalizarTexto(s.id)}
+                                className="link"
+                              >
+                                Reintentar localización
+                              </button>
+                            </div>
+                          )}
+
+                          {errorGeneracion[s.id] && (
+                            <p className="inline-flex items-center gap-1.5 text-seal mt-2">
+                              <AlertCircle size={14} strokeWidth={1.75} />
+                              {errorGeneracion[s.id]}
+                            </p>
+                          )}
+
+                          {s.resumen_ia && (
+                            <div className="space-y-4 mt-3">
+                              <p>
+                                {s.resumen_ia_verificado ? (
+                                  <span className="inline-flex items-center gap-1.5 text-slate">
+                                    <ShieldCheck size={14} strokeWidth={1.75} />
+                                    Verificado por el despacho
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex flex-wrap items-center gap-1.5 text-seal">
+                                    <Sparkles size={14} strokeWidth={1.75} />
+                                    Generado por IA · pendiente de verificación —{' '}
+                                    <button
+                                      onClick={() => handleVerificar(s.id)}
+                                      className="underline underline-offset-4"
+                                    >
+                                      marcar como verificado
+                                    </button>
+                                  </span>
+                                )}
+                              </p>
+                              <Seccion titulo="Resumen" texto={s.resumen_ia} />
+                              <Seccion titulo="Hechos" texto={s.hechos_ia} />
+                              <Seccion titulo="Problema jurídico" texto={s.problema_juridico_ia} />
+                              <Seccion titulo="Consideraciones relevantes" texto={s.consideraciones_ia} />
+                              <Seccion titulo="Decisión" texto={s.decision_ia} />
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-display text-base mb-2">Texto completo</h3>
+                          {s.texto_completo_url ? (
+                            <>
+                              {cargandoTextoId === s.id && <p className="text-slate">Cargando…</p>}
+                              {errorTextoPorId[s.id] && (
+                                <p className="text-seal mb-2">{errorTextoPorId[s.id]}</p>
+                              )}
+                              {textoPorId[s.id] && (
+                                <div className="space-y-3 whitespace-pre-wrap max-h-96 overflow-y-auto pr-2">
+                                  {textoPorId[s.id].split('\n\n').map((parrafo, i) => (
+                                    <p key={i}>{parrafo}</p>
+                                  ))}
+                                </div>
+                              )}
+                              <a
+                                href={s.texto_completo_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="link mt-3 inline-block"
+                              >
+                                Ver en el sitio oficial
+                              </a>
+                            </>
+                          ) : (
+                            <p className="text-slate">
+                              {s.texto_completo_no_disponible
+                                ? 'No disponible.'
+                                : 'Aún no se ha localizado el texto completo de esta sentencia.'}
+                            </p>
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    <Link
-                      to={`/sentencias/${encodeURIComponent(s.sentencia)}`}
-                      className="shrink-0 inline-flex items-center gap-1 text-sm link"
-                    >
-                      Ver detalle <ChevronRight size={14} strokeWidth={1.75} />
-                    </Link>
+                    )}
                   </div>
-
-                  {s.resumen_ia && (
-                    <div className="mt-4 pt-4 border-t border-line text-sm space-y-2">
-                      <p className="text-ink">{s.resumen_ia}</p>
-                      {s.resumen_ia_verificado ? (
-                        <p className="inline-flex items-center gap-1.5 text-slate">
-                          <ShieldCheck size={14} strokeWidth={1.75} />
-                          Resumen IA · verificado
-                        </p>
-                      ) : (
-                        <p className="inline-flex items-center gap-1.5 text-seal flex-wrap">
-                          <Sparkles size={14} strokeWidth={1.75} />
-                          Resumen IA · pendiente de verificación —{' '}
-                          <button
-                            onClick={() => handleVerificar(s.id)}
-                            className="underline underline-offset-4"
-                          >
-                            marcar como verificado
-                          </button>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {!s.resumen_ia && (
-                    <div className="mt-4 pt-4 border-t border-line text-sm">
-                      {errorGeneracion[s.id] ? (
-                        <p className="inline-flex items-center gap-1.5 text-seal">
-                          <AlertCircle size={14} strokeWidth={1.75} />
-                          {errorGeneracion[s.id]}
-                        </p>
-                      ) : s.texto_completo_no_disponible ? (
-                        <p className="inline-flex items-center gap-1.5 text-seal">
-                          <AlertCircle size={14} strokeWidth={1.75} />
-                          No se pudo generar el análisis: no se encontró el texto completo en el
-                          sitio oficial.
-                        </p>
-                      ) : (
-                        <button
-                          onClick={() => handleGenerarAnalisis(s.id)}
-                          disabled={generando[s.id]}
-                          className="inline-flex items-center gap-1.5 link disabled:opacity-50"
-                        >
-                          {generando[s.id] ? (
-                            <>
-                              <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
-                              Generando…
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles size={14} strokeWidth={1.75} />
-                              Generar análisis con IA
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
+                </li>
+              )
+            })}
 
             {buscado && resultados.length === 0 && (
               <li className="py-4 text-sm text-slate">Sin resultados para esta búsqueda.</li>
@@ -426,6 +574,16 @@ export function DashboardPage() {
           </div>
         </aside>
       </main>
+    </div>
+  )
+}
+
+function Seccion({ titulo, texto }: { titulo: string; texto: string | null }) {
+  if (!texto) return null
+  return (
+    <div>
+      <p className="text-slate mb-1">{titulo}</p>
+      <p>{texto}</p>
     </div>
   )
 }
