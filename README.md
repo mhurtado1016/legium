@@ -46,6 +46,21 @@ Editor de Supabase, después de aplicar todas las migraciones.
    npm run dev
    ```
 
+## Despliegue automático de Edge Functions
+
+`.github/workflows/deploy-functions.yml` despliega automáticamente
+todas las Edge Functions cada vez que hay un push a `main` que toca
+algo dentro de `supabase/functions/` — ya no hace falta copiar y pegar
+código manualmente en el panel de Supabase.
+
+Para activarlo (una sola vez), en **Settings → Secrets and variables →
+Actions** del repo, crear:
+
+- `SUPABASE_ACCESS_TOKEN` — generado en
+  [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens)
+- `SUPABASE_PROJECT_REF` — el Reference ID del proyecto (Project
+  Settings → General, en el panel de Supabase)
+
 ## Edge Functions
 
 Todas las funciones invocadas desde el navegador (`supabase.functions.invoke`)

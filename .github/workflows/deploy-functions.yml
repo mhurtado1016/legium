@@ -1,0 +1,27 @@
+name: Desplegar Edge Functions de Supabase
+
+# Se ejecuta automáticamente cada vez que hay un push a main que toca
+# algo dentro de supabase/functions/ — así nunca hay que copiar y pegar
+# código manualmente en el panel de Supabase.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch: {} # también se puede disparar a mano desde la pestaña Actions de GitHub
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy de todas las funciones
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
