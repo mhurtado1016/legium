@@ -143,9 +143,19 @@ const clienteCorteConstitucional = Deno.createHttpClient({
   caCerts: CADENA_CORTE_CONSTITUCIONAL,
 })
 
+// Algunos sitios de gobierno bloquean peticiones sin un User-Agent que
+// parezca un navegador real. Se usa uno estándar de Chrome para todas
+// las peticiones a corteconstitucional.gov.co.
+const HEADERS_NAVEGADOR = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+  'Accept':
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+}
+
 async function existeLaUrl(url: string): Promise<boolean> {
   try {
-    const resp = await fetch(url, { client: clienteCorteConstitucional })
+    const resp = await fetch(url, { client: clienteCorteConstitucional, headers: HEADERS_NAVEGADOR })
     return resp.ok
   } catch {
     return false

@@ -78,7 +78,7 @@ export async function localizarTexto(sentenciaId: string) {
     body: { sentencia_id: sentenciaId },
   })
   if (error) throw new Error(await mensajeErrorFuncion(error))
-  return data as { ok: boolean; url?: string; motivo?: string }
+  return data as { ok: boolean; url?: string; motivo?: string; url_intentada?: string; detalle?: string }
 }
 
 // Invoca generar-resumen-ia (sección 4.3.2). Localiza el texto primero

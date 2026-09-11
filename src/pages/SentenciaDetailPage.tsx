@@ -78,7 +78,10 @@ export function SentenciaDetailPage() {
     if (!sentencia) return
     setError(null)
     try {
-      await localizarTexto(sentencia.id)
+      const r = await localizarTexto(sentencia.id)
+      if (!r.ok) {
+        setError(`${r.motivo ?? 'No se pudo localizar el texto.'}${r.detalle ? ` (${r.detalle})` : ''}`)
+      }
       await cargar()
     } catch (err) {
       setError(err instanceof Error ? err.message : JSON.stringify(err))
