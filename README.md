@@ -214,21 +214,28 @@ navegadores lo tienen resuelto porque ya confían directamente en la
 raíz R1 o completan la cadena por su cuenta; Deno no, y falla con
 `invalid peer certificate: UnknownIssuer`.
 
-Solución implementada: `generar-resumen-ia`, `localizar-texto-sentencia`,
-`localizar-textos-sentencias-lote` y `obtener-texto-sentencia` incluyen
-la cadena completa (Intermedio DV R1v1 → Raíz R1 cross-signed → Raíz G2,
-obtenida de `certs.godaddy.com/repository/gd_bundle_dv-r1-g2.crt.pem`)
-como constantes, usadas vía `Deno.createHttpClient({ caCerts: [...] })`
-para las peticiones a ese dominio específico. Verificado con
-`openssl verify` antes de integrarlo. No depende de ningún servicio de
+Se intentó primero pinnear el certificado directamente en las Edge
+Functions con `Deno.createHttpClient({ caCerts: [...] })`, pero
+`caCerts` [no funciona de forma confiable en el runtime de Supabase
+Edge Functions](https://github.com/orgs/supabase/discussions/36035)
+(usa una versión de Deno más antigua que la vainilla). **Solución
+final**: `api/proxy-corte.ts`, una función serverless de **Vercel**
+(runtime Node.js) que sí maneja certificados personalizados de forma
+confiable vía `https.Agent({ ca: [...] })`. Las cuatro Edge Functions
+que necesitan hablar con el sitio de la Corte (`generar-resumen-ia`,
+`localizar-texto-sentencia`, `localizar-textos-sentencias-lote`,
+`obtener-texto-sentencia`) le piden el contenido a este endpoint en vez
+de conectarse directamente. Sigue siendo infraestructura 100% propia
+(Vercel, donde ya vive el frontend), sin depender de ningún servicio de
 terceros.
 
-Si GoDaddy rota estos certificados en el futuro (tienen vigencia hasta
-2027 para el intermedio, más allá para las raíces), este error volverá
-a aparecer y habrá que repetir el proceso: bajar el bundle actualizado
-de `certs.godaddy.com/repository/gd_bundle_dv-r1-g2.crt.pem` y
-reemplazar la constante `CADENA_CORTE_CONSTITUCIONAL` en las cuatro
-funciones.
+La cadena de certificados (Intermedio DV R1v1 → Raíz R1 cross-signed →
+Raíz G2, obtenida de
+`certs.godaddy.com/repository/gd_bundle_dv-r1-g2.crt.pem` y verificada
+con `openssl verify`) vive embebida en `api/proxy-corte.ts`. Si GoDaddy
+la rota en el futuro (vigencia del intermedio hasta 2027), hay que
+repetir el proceso y reemplazarla ahí — es el único lugar donde vive
+ahora.
 
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
@@ -275,6 +282,10 @@ src/
     PlazosPage.tsx     vista general de plazos (sección 13.6)
     CuentasCobroPage.tsx listado de cuentas de cobro
     ReportesPage.tsx   reportes y analítica
+api/
+  proxy-corte.ts       función serverless de Vercel (Node.js) que resuelve el
+                       problema de certificado TLS del sitio de la Corte —
+                       ver la nota más arriba
 public/
   sw.js                service worker para notificaciones push
 supabase/
