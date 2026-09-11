@@ -209,22 +209,22 @@ export function DashboardPage() {
                     className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-slate mb-1">Fecha desde</label>
                   <input
                     type="date"
                     value={fechaDesde}
                     onChange={(e) => setFechaDesde(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full min-w-0 border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-slate mb-1">Fecha hasta</label>
                   <input
                     type="date"
                     value={fechaHasta}
                     onChange={(e) => setFechaHasta(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full min-w-0 border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
                 <p className="sm:col-span-2 text-slate">
