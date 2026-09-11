@@ -20,7 +20,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_MODEL = 'gemini-3.8-flash' // gemini-2.0-flash fue apagado el 1 de junio de 2026
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 interface Body {
@@ -164,7 +164,11 @@ Texto de la providencia:
         generationConfig: { responseMimeType: 'application/json' },
       }),
     })
-    if (!geminiResp.ok) throw new Error(`Gemini respondió ${geminiResp.status}`)
+    if (!geminiResp.ok) {
+      const cuerpoError = await geminiResp.json().catch(() => null)
+      const detalle = cuerpoError?.error?.message
+      throw new Error(`Gemini respondió ${geminiResp.status}${detalle ? `: ${detalle}` : ''}`)
+    }
 
     const geminiData = await geminiResp.json()
     const jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
