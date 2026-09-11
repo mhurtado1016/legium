@@ -54,7 +54,7 @@ async function fetchCorteConstitucional(url: string): Promise<{ ok: boolean; sta
     throw new Error(`Proxy respondió ${resp.status}${data?.error ? `: ${data.error}` : ''}`)
   }
   if (data?.error) throw new Error(data.error)
-  return { ok: data.status >= 200 && data.status < 300, status: data.status, text: data.body }
+  return { ok: data.status >= 200 && data.status < 300, status: data.status, text: data.texto }
 }
 
 async function existeLaUrl(url: string): Promise<boolean> {

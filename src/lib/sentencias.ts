@@ -93,15 +93,17 @@ export async function generarAnalisisIA(sentenciaId: string) {
   if (error) throw new Error(await mensajeErrorFuncion(error))
   return data as { ok: boolean; motivo?: string; analisis?: Record<string, string> }
 }
-// Obtiene el texto plano del texto completo (el proxy en Vercel ya lo
-// extrae, sin etiquetas HTML ni navegación del sitio). Se muestra como
-// texto normal dentro de la página, no en un visor con scroll aparte.
+// Obtiene el texto completo con su formato original (negrita, cursiva,
+// listas, tablas) — el proxy en Vercel lo sanitiza (sin scripts ni
+// atributos peligrosos) pero conserva las etiquetas de formato, para
+// que se vea igual al sitio oficial. Se muestra dentro de la página,
+// no en un visor con scroll aparte.
 export async function obtenerTextoCompleto(url: string) {
   const { data, error } = await supabase.functions.invoke('obtener-texto-sentencia', {
     body: { url },
   })
   if (error) throw new Error(await mensajeErrorFuncion(error))
-  return data as { texto: string }
+  return data as { html: string }
 }
 
 export async function verificarResumen(sentenciaId: string, firmaId: string, usuarioId: string) {

@@ -54,7 +54,7 @@ export function DashboardPage() {
   const [generando, setGenerando] = useState<Record<string, boolean>>({})
   const [errorGeneracion, setErrorGeneracion] = useState<Record<string, string>>({})
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
-  const [textoPorId, setTextoPorId] = useState<Record<string, string>>({})
+  const [htmlPorId, setHtmlPorId] = useState<Record<string, string>>({})
   const [cargandoTextoId, setCargandoTextoId] = useState<string | null>(null)
   const [errorTextoPorId, setErrorTextoPorId] = useState<Record<string, string>>({})
 
@@ -95,10 +95,10 @@ export function DashboardPage() {
     const yaAbierto = expandidoId === s.id
     setExpandidoId(yaAbierto ? null : s.id)
 
-    if (!yaAbierto && s.texto_completo_url && !textoPorId[s.id]) {
+    if (!yaAbierto && s.texto_completo_url && !htmlPorId[s.id]) {
       setCargandoTextoId(s.id)
       obtenerTextoCompleto(s.texto_completo_url)
-        .then((r) => setTextoPorId((prev) => ({ ...prev, [s.id]: r.texto })))
+        .then((r) => setHtmlPorId((prev) => ({ ...prev, [s.id]: r.html })))
         .catch((err) =>
           setErrorTextoPorId((prev) => ({
             ...prev,
@@ -479,12 +479,11 @@ export function DashboardPage() {
                               {errorTextoPorId[s.id] && (
                                 <p className="text-seal mb-2">{errorTextoPorId[s.id]}</p>
                               )}
-                              {textoPorId[s.id] && (
-                                <div className="space-y-3 whitespace-pre-wrap max-h-96 overflow-y-auto pr-2">
-                                  {textoPorId[s.id].split('\n\n').map((parrafo, i) => (
-                                    <p key={i}>{parrafo}</p>
-                                  ))}
-                                </div>
+                              {htmlPorId[s.id] && (
+                                <div
+                                  className="texto-oficial max-h-96 overflow-y-auto pr-2"
+                                  dangerouslySetInnerHTML={{ __html: htmlPorId[s.id] }}
+                                />
                               )}
                               <a
                                 href={s.texto_completo_url}

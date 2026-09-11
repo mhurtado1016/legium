@@ -1,12 +1,13 @@
 // Edge Function: obtener-texto-sentencia
 //
-// Pide al proxy de Vercel (api/proxy-corte.ts) el texto de una
+// Pide al proxy de Vercel (api/proxy-corte.ts) el HTML de una
 // providencia y lo devuelve tal cual — el proxy ya se encarga de
 // detectar la codificación real del sitio (evita símbolos corruptos por
-// asumir UTF-8 cuando el sitio usa otra) y de extraer solo el texto
-// plano, sin las etiquetas HTML ni la navegación/menús del sitio. El
-// frontend lo muestra como texto normal dentro de la página, no en un
-// iframe con scroll propio.
+// asumir UTF-8 cuando el sitio usa otra) y de sanitizar el HTML
+// conservando negrita, cursiva, listas, tablas y demás formato (para
+// que se vea igual al sitio oficial), quitando solo lo peligroso
+// (scripts, manejadores de eventos, atributos). El frontend lo muestra
+// dentro de la página, no en un iframe con scroll propio.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,14 +24,14 @@ const corsHeaders = {
 // propia, sin depender de ningún servicio de terceros.
 const PROXY_CORTE_URL = 'https://legium.vercel.app/api/proxy-corte'
 
-async function fetchCorteConstitucional(url: string): Promise<{ ok: boolean; status: number; text: string }> {
+async function fetchCorteConstitucional(url: string): Promise<{ ok: boolean; status: number; html: string }> {
   const resp = await fetch(`${PROXY_CORTE_URL}?url=${encodeURIComponent(url)}`)
   const data = await resp.json().catch(() => null)
   if (!resp.ok) {
     throw new Error(`Proxy respondió ${resp.status}${data?.error ? `: ${data.error}` : ''}`)
   }
   if (data?.error) throw new Error(data.error)
-  return { ok: data.status >= 200 && data.status < 300, status: data.status, text: data.body }
+  return { ok: data.status >= 200 && data.status < 300, status: data.status, html: data.html }
 }
 
 Deno.serve(async (req) => {
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
     const resp = await fetchCorteConstitucional(url)
     if (!resp.ok) throw new Error(`El sitio respondió ${resp.status}`)
 
-    return new Response(JSON.stringify({ texto: resp.text }), {
+    return new Response(JSON.stringify({ html: resp.html }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {

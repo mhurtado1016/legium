@@ -132,4 +132,44 @@
   .table-modern tbody tr {
     @apply transition-colors hover:bg-paper;
   }
+
+  /* Contenedor del texto completo de una sentencia, tal como llega
+     sanitizado desde api/proxy-corte.ts — conserva negrita, cursiva,
+     listas y tablas del sitio oficial, con la tipografía y el espaciado
+     del resto de la app en vez del estilo del sitio original. */
+  .texto-oficial {
+    @apply text-sm text-ink;
+  }
+  .texto-oficial p,
+  .texto-oficial div {
+    @apply mb-3;
+  }
+  .texto-oficial h1, .texto-oficial h2, .texto-oficial h3,
+  .texto-oficial h4, .texto-oficial h5, .texto-oficial h6 {
+    @apply font-display font-semibold text-ink mt-4 mb-2;
+  }
+  .texto-oficial strong, .texto-oficial b {
+    @apply font-semibold text-ink;
+  }
+  .texto-oficial em, .texto-oficial i {
+    @apply italic;
+  }
+  .texto-oficial ul, .texto-oficial ol {
+    @apply pl-5 mb-3 space-y-1;
+  }
+  .texto-oficial ul {
+    @apply list-disc;
+  }
+  .texto-oficial ol {
+    @apply list-decimal;
+  }
+  .texto-oficial table {
+    @apply w-full border-collapse mb-3;
+  }
+  .texto-oficial td, .texto-oficial th {
+    @apply border border-line px-2 py-1 align-top;
+  }
+  .texto-oficial blockquote {
+    @apply border-l-2 border-line pl-3 italic text-slate mb-3;
+  }
 }

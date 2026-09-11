@@ -218,11 +218,18 @@ Implementado:
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
 
-**Sobre el texto completo**: se muestra como
-texto plano dentro del panel expandido de cada resultado del buscador
-(`DashboardPage`), no en un iframe con
-scroll aparte — `api/proxy-corte.ts` extrae solo el texto (sin
-etiquetas HTML ni la navegación/menús del sitio) y detecta la
+**Sobre el texto completo**: se muestra con su formato original
+(negrita, cursiva, listas, tablas) dentro del panel expandido de cada
+resultado del buscador (`DashboardPage`), no en un iframe con scroll
+aparte. `api/proxy-corte.ts` extrae dos versiones del documento:
+`texto` (texto plano, usado solo como insumo del prompt de Gemini, sin
+formato) y `html` (sanitizado con la librería `sanitize-html` — nunca
+con expresiones regulares hechas a mano — que conserva únicamente
+etiquetas de formato como `<b>`, `<i>`, `<ul>`, `<table>`, quitando
+`<script>`, atributos y manejadores de eventos). El frontend renderiza
+ese `html` con `dangerouslySetInnerHTML` dentro de un contenedor
+(`.texto-oficial` en `index.css`) que le aplica la tipografía del
+resto de la app. También detecta la
 codificación real del documento antes de decodificarlo (varios sitios
 de gobierno colombianos usan ISO-8859-1/Windows-1252 en vez de UTF-8;
 asumir UTF-8 a ciegas produce símbolos corruptos en tildes y la ñ).

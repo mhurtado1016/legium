@@ -24,6 +24,7 @@
 // ninguna otra conexión.
 
 import https from 'node:https'
+import sanitizeHtml from 'sanitize-html'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Fuerza el runtime Node.js de Vercel (no el runtime "Edge", que no
@@ -103,7 +104,33 @@ function extraerTextoPlano(html: string): string {
     .trim()
 }
 
-function fetchViaHttps(url: string): Promise<{ status: number; body: string }> {
+// Conserva el formato real de la providencia (negrita, cursiva,
+// subrayado, títulos, listas, tablas) para que el texto se vea idéntico
+// al del sitio oficial — a diferencia de extraerTextoPlano(), que
+// aplana todo a texto simple (usado solo como insumo para el prompt de
+// Gemini, donde el formato no aporta nada). Se usa una librería real de
+// sanitización (no expresiones regulares) porque limpiar HTML a mano de
+// forma segura es fácil de hacer mal: sanitize-html quita explícitamente
+// <script>, <style>, manejadores de eventos (onclick, etc.) y cualquier
+// atributo, dejando solo la estructura de formato.
+function sanitizarHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: [
+      'p', 'br', 'div', 'span',
+      'b', 'strong', 'i', 'em', 'u', 's', 'sub', 'sup',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'ul', 'ol', 'li',
+      'table', 'thead', 'tbody', 'tr', 'td', 'th',
+      'blockquote', 'hr',
+    ],
+    allowedAttributes: {}, // se quita todo atributo (style, class, onclick, etc.)
+    exclusiveFilter: (frame) =>
+      // Quita contenedores vacíos que sobran al eliminar scripts/estilos/nav.
+      ['div', 'span'].includes(frame.tag) && !frame.text.trim() && frame.attribs && Object.keys(frame.attribs).length === 0,
+  })
+}
+
+function fetchViaHttps(url: string): Promise<{ status: number; texto: string; html: string }> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
@@ -113,9 +140,12 @@ function fetchViaHttps(url: string): Promise<{ status: number; body: string }> {
         res.on('data', (chunk) => chunks.push(chunk))
         res.on('end', () => {
           const buffer = Buffer.concat(chunks)
-          const html = decodificarBuffer(buffer, res.headers['content-type'])
-          const texto = extraerTextoPlano(html)
-          resolve({ status: res.statusCode ?? 0, body: texto })
+          const htmlOriginal = decodificarBuffer(buffer, res.headers['content-type'])
+          resolve({
+            status: res.statusCode ?? 0,
+            texto: extraerTextoPlano(htmlOriginal),
+            html: sanitizarHtml(htmlOriginal),
+          })
         })
         res.on('error', reject)
       },
@@ -145,8 +175,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { status, body } = await fetchViaHttps(url)
-    res.status(200).json({ status, body })
+    const { status, texto, html } = await fetchViaHttps(url)
+    res.status(200).json({ status, texto, html })
   } catch (err) {
     console.error('proxy-corte error:', err)
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
