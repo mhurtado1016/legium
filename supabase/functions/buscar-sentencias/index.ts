@@ -17,14 +17,14 @@ const corsHeaders = {
 const DATOS_GOV_URL = 'https://www.datos.gov.co/resource/v2k4-2t8s.json'
 const MIN_RESULTADOS_CACHE = 1 // debajo de esto, se intenta la API en vivo
 
-// Mismo patrón que localizar-texto-sentencia/index.ts: se resuelve la URL
-// del texto completo para cada resultado ANTES de responder, en vez de
-// esperar a que el usuario pida el análisis IA. La verificación real pasa
-// por el proxy de Vercel (api/proxy-corte.ts), no por un fetch directo
-// desde Deno — el sitio de la Corte tiene un certificado TLS incompleto
-// que Deno rechaza (ver notas en esa función y en el README).
-const PROXY_CORTE_URL = 'https://legium.vercel.app/api/proxy-corte'
-
+// Construye la URL del texto completo con los datos que ya vienen en la
+// propia búsqueda (sentencia, sentencia_tipo, fecha_sentencia) — sin
+// ninguna consulta adicional a la red. No se verifica que la URL
+// responda en este punto (eso agregaría una consulta por resultado y
+// ralentizaría la búsqueda); si el patrón resulta incorrecto para algún
+// caso puntual, se detecta más adelante al intentar generar el análisis
+// IA o abrir el enlace, donde sí hay margen para manejarlo sin afectar
+// la velocidad de la búsqueda.
 function construirUrlCandidata(
   sentenciaTipo: string,
   sentencia: string,
@@ -42,16 +42,6 @@ function construirUrlCandidata(
     tipo === 'SU' ? `SU${numero}-${anioYY}` : `${tipo.toLowerCase()}-${numero}-${anioYY}`
 
   return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
-}
-
-async function existeLaUrl(url: string): Promise<boolean> {
-  try {
-    const resp = await fetch(`${PROXY_CORTE_URL}?url=${encodeURIComponent(url)}`)
-    const data = await resp.json().catch(() => null)
-    return resp.ok && data?.status >= 200 && data?.status < 300
-  } catch {
-    return false
-  }
 }
 
 interface Criterios {
@@ -189,34 +179,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Resolver el texto completo de cada resultado que aún no lo tenga,
-    // en paralelo, antes de responder — así no hace falta ninguna acción
-    // extra del usuario para ver el enlace al sitio oficial.
-    const pendientesDeLocalizar = resultados.filter(
+    // 3. Construir el texto_completo_url de cada resultado que aún no lo
+    // tenga — con datos que ya están en la propia respuesta, sin ninguna
+    // consulta adicional. Se guarda en el cache para no recalcularlo la
+    // próxima vez que aparezca este resultado.
+    const pendientesDeConstruir = resultados.filter(
       (r) => !r.texto_completo_url && !r.texto_completo_no_disponible && r.sentencia_tipo && r.fecha_sentencia,
     )
-    if (pendientesDeLocalizar.length > 0) {
-      await Promise.allSettled(
-        pendientesDeLocalizar.map(async (r) => {
-          const candidata = construirUrlCandidata(r.sentencia_tipo, r.sentencia, r.fecha_sentencia)
-          if (!candidata) return
-
-          const existe = await existeLaUrl(candidata)
-          if (existe) {
-            r.texto_completo_url = candidata
-            await admin
-              .from('sentencias_cache')
-              .update({ texto_completo_url: candidata, texto_completo_no_disponible: false })
-              .eq('id', r.id)
-          } else {
-            r.texto_completo_no_disponible = true
-            await admin
-              .from('sentencias_cache')
-              .update({ texto_completo_no_disponible: true })
-              .eq('id', r.id)
-          }
-        }),
-      )
+    if (pendientesDeConstruir.length > 0) {
+      for (const r of pendientesDeConstruir) {
+        const candidata = construirUrlCandidata(r.sentencia_tipo, r.sentencia, r.fecha_sentencia)
+        if (candidata) {
+          r.texto_completo_url = candidata
+          await admin.from('sentencias_cache').update({ texto_completo_url: candidata }).eq('id', r.id)
+        }
+      }
     }
 
     // 4. Registrar la búsqueda en el historial del tenant
