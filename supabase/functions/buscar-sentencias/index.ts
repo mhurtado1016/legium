@@ -72,10 +72,19 @@ Deno.serve(async (req) => {
       if (criterios.sentencia) params.set('sentencia', criterios.sentencia)
       if (criterios.sentencia_tipo) params.set('sentencia_tipo', criterios.sentencia_tipo)
       if (criterios.expediente_tipo) params.set('expediente_tipo', criterios.expediente_tipo)
-      if (criterios.magistrado_a) params.set('magistrado_a', criterios.magistrado_a)
-      if (criterios.sala) params.set('sala', criterios.sala)
 
       const condicionesWhere: string[] = []
+      // magistrado_a y sala usan coincidencia parcial (like), igual que en
+      // el cache — un parámetro de igualdad exacta en Socrata obligaría a
+      // escribir el nombre completo tal como aparece en el dataset.
+      if (criterios.magistrado_a) {
+        const escapado = criterios.magistrado_a.replace(/'/g, "''")
+        condicionesWhere.push(`upper(magistrado_a) like upper('%${escapado}%')`)
+      }
+      if (criterios.sala) {
+        const escapado = criterios.sala.replace(/'/g, "''")
+        condicionesWhere.push(`upper(sala) like upper('%${escapado}%')`)
+      }
       if (criterios.texto) {
         // Se restringe la búsqueda de texto en la API en vivo a los mismos
         // campos que en el cache (sentencia, proceso), en vez de usar el
