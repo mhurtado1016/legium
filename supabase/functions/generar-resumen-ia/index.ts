@@ -140,7 +140,9 @@ Deno.serve(async (req) => {
         { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       )
     }
-    const textoCompleto = docResp.text.replace(/<[^>]+>/g, ' ').slice(0, 100_000)
+    // El proxy (api/proxy-corte.ts) ya entrega texto plano, sin
+    // etiquetas HTML ni navegación del sitio.
+    const textoCompleto = docResp.text.slice(0, 100_000)
 
     // Sección 4.3.2: generación estructurada con Gemini, únicamente a
     // partir del texto completo (nunca del registro estructurado de la API).

@@ -196,14 +196,14 @@ Implementado:
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
 
-**Sobre el visor del texto completo** (`SentenciaDetailPage`): en vez de
-un `<iframe src="...">` apuntando directo al sitio de la Corte (que
-varios sitios de gobierno bloquean con `X-Frame-Options`), una Edge
-Function (`obtener-texto-sentencia`) descarga el HTML del lado del
-servidor y el frontend lo muestra con `srcDoc` en un iframe
-`sandbox=""` — evita el bloqueo porque no es el navegador quien pide
-embeber la página ajena. Si aun así falla, siempre queda el enlace
-"Abrir en una pestaña nueva" como respaldo.
+**Sobre el texto completo** (`SentenciaDetailPage`): se muestra como
+texto plano dentro del flujo normal de la página, no en un iframe con
+scroll aparte — `api/proxy-corte.ts` extrae solo el texto (sin
+etiquetas HTML ni la navegación/menús del sitio) y detecta la
+codificación real del documento antes de decodificarlo (varios sitios
+de gobierno colombianos usan ISO-8859-1/Windows-1252 en vez de UTF-8;
+asumir UTF-8 a ciegas produce símbolos corruptos en tildes y la ñ).
+Queda un enlace "Ver en el sitio oficial" como respaldo.
 
 **Sobre el certificado TLS del sitio de la Corte**: el servidor de
 `corteconstitucional.gov.co` usa un certificado emitido por GoDaddy bajo

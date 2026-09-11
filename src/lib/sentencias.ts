@@ -93,15 +93,15 @@ export async function generarAnalisisIA(sentenciaId: string) {
   if (error) throw new Error(await mensajeErrorFuncion(error))
   return data as { ok: boolean; motivo?: string; analisis?: Record<string, string> }
 }
-// Descarga el HTML del texto completo del lado del servidor, para
-// mostrarlo con `srcDoc` (evita el bloqueo por X-Frame-Options de
-// sitios que no permiten ser embebidos directamente con <iframe src>).
-export async function obtenerHtmlTextoCompleto(url: string) {
+// Obtiene el texto plano del texto completo (el proxy en Vercel ya lo
+// extrae, sin etiquetas HTML ni navegación del sitio). Se muestra como
+// texto normal dentro de la página, no en un visor con scroll aparte.
+export async function obtenerTextoCompleto(url: string) {
   const { data, error } = await supabase.functions.invoke('obtener-texto-sentencia', {
     body: { url },
   })
   if (error) throw new Error(await mensajeErrorFuncion(error))
-  return data as { html: string }
+  return data as { texto: string }
 }
 
 export async function verificarResumen(sentenciaId: string, firmaId: string, usuarioId: string) {

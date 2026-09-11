@@ -5,22 +5,23 @@ import { useUsuario } from '../lib/useUsuario'
 import {
   generarAnalisisIA,
   localizarTexto,
-  obtenerHtmlTextoCompleto,
   obtenerSentenciaPorNumero,
+  obtenerTextoCompleto,
   verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
 
 /**
  * Ficha de una sentencia: metadatos verificados de la API, análisis IA
- * (con su estado de verificación) y visor embebido del texto completo
- * en el sitio oficial, cuando está disponible.
+ * (con su estado de verificación) y el texto completo del sitio oficial
+ * como texto plano, dentro del flujo normal de la página (sin visor
+ * aparte ni scroll propio).
  */
 export function SentenciaDetailPage() {
   const { numero } = useParams<{ numero: string }>()
   const { usuario } = useUsuario()
   const [sentencia, setSentencia] = useState<Sentencia | null>(null)
-  const [htmlTexto, setHtmlTexto] = useState<string | null>(null)
+  const [textoCompleto, setTextoCompleto] = useState<string | null>(null)
   const [cargandoTexto, setCargandoTexto] = useState(false)
   const [errorTexto, setErrorTexto] = useState<string | null>(null)
   const [generando, setGenerando] = useState(false)
@@ -47,8 +48,8 @@ export function SentenciaDetailPage() {
     if (!sentencia?.texto_completo_url) return
     setCargandoTexto(true)
     setErrorTexto(null)
-    obtenerHtmlTextoCompleto(sentencia.texto_completo_url)
-      .then((r) => setHtmlTexto(r.html))
+    obtenerTextoCompleto(sentencia.texto_completo_url)
+      .then((r) => setTextoCompleto(r.texto))
       .catch((err) => setErrorTexto(err instanceof Error ? err.message : JSON.stringify(err)))
       .finally(() => setCargandoTexto(false))
   }, [sentencia?.texto_completo_url])
@@ -197,22 +198,20 @@ export function SentenciaDetailPage() {
             <>
               {cargandoTexto && <p className="text-sm text-slate">Cargando…</p>}
               {errorTexto && <p className="text-sm text-seal mb-2">{errorTexto}</p>}
-              {htmlTexto && (
-                <iframe
-                  srcDoc={htmlTexto}
-                  sandbox=""
-                  title={`Texto completo de ${sentencia.sentencia}`}
-                  className="w-full border border-line"
-                  style={{ height: '75vh' }}
-                />
+              {textoCompleto && (
+                <div className="text-sm space-y-3 whitespace-pre-wrap">
+                  {textoCompleto.split('\n\n').map((parrafo, i) => (
+                    <p key={i}>{parrafo}</p>
+                  ))}
+                </div>
               )}
               <a
                 href={sentencia.texto_completo_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-slate hover:text-ink underline underline-offset-4 mt-2 inline-block"
+                className="text-sm text-slate hover:text-ink underline underline-offset-4 mt-4 inline-block"
               >
-                Abrir en una pestaña nueva
+                Ver en el sitio oficial
               </a>
             </>
           ) : (

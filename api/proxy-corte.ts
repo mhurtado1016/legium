@@ -42,15 +42,81 @@ const HEADERS_NAVEGADOR = {
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 }
 
+function detectarCharset(headerContentType: string | undefined, muestraLatin1: string): string {
+  // 1. Content-Type del header HTTP
+  const enHeader = headerContentType?.match(/charset=["']?([\w-]+)/i)?.[1]
+  if (enHeader) return enHeader.toLowerCase()
+
+  // 2. <meta charset="..."> o <meta http-equiv="Content-Type" content="...charset=...">
+  const enMeta =
+    muestraLatin1.match(/<meta[^>]+charset=["']?([\w-]+)/i)?.[1] ??
+    muestraLatin1.match(/<meta[^>]+http-equiv=["']content-type["'][^>]+content=["'][^"']*charset=([\w-]+)/i)?.[1]
+  if (enMeta) return enMeta.toLowerCase()
+
+  return 'utf-8'
+}
+
+function decodificarBuffer(buffer: Buffer, headerContentType: string | undefined): string {
+  const muestraLatin1 = buffer.subarray(0, 2000).toString('latin1')
+  const charset = detectarCharset(headerContentType, muestraLatin1)
+
+  // UTF-8 se decodifica tal cual. Cualquier variante de ISO-8859-1 /
+  // Windows-1252 (lo más común en sitios de gobierno colombianos) se
+  // trata como 'latin1': Node no tiene un decodificador nativo para
+  // windows-1252, pero para las letras con tilde y la ñ del español
+  // ambas codificaciones coinciden, así que el resultado es correcto
+  // en la práctica.
+  if (charset.includes('utf-8') || charset.includes('utf8')) {
+    return buffer.toString('utf-8')
+  }
+  return buffer.toString('latin1')
+}
+
+function extraerTextoPlano(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<(p|br|div|li|tr|h[1-6])[^>]*>/gi, '\n') // saltos de línea en bloques
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&aacute;/gi, 'á')
+    .replace(/&eacute;/gi, 'é')
+    .replace(/&iacute;/gi, 'í')
+    .replace(/&oacute;/gi, 'ó')
+    .replace(/&uacute;/gi, 'ú')
+    .replace(/&ntilde;/gi, 'ñ')
+    .replace(/&Aacute;/g, 'Á')
+    .replace(/&Eacute;/g, 'É')
+    .replace(/&Iacute;/g, 'Í')
+    .replace(/&Oacute;/g, 'Ó')
+    .replace(/&Uacute;/g, 'Ú')
+    .replace(/&Ntilde;/g, 'Ñ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#(\d+);/g, (_m, dec) => String.fromCharCode(Number(dec)))
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n') // colapsar líneas en blanco repetidas
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join('\n\n')
+    .trim()
+}
+
 function fetchViaHttps(url: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
       { agent: agenteSinVerificacion, headers: HEADERS_NAVEGADOR, timeout: 20_000 },
       (res) => {
-        let data = ''
-        res.on('data', (chunk) => (data += chunk))
-        res.on('end', () => resolve({ status: res.statusCode ?? 0, body: data }))
+        const chunks: Buffer[] = []
+        res.on('data', (chunk) => chunks.push(chunk))
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks)
+          const html = decodificarBuffer(buffer, res.headers['content-type'])
+          const texto = extraerTextoPlano(html)
+          resolve({ status: res.statusCode ?? 0, body: texto })
+        })
         res.on('error', reject)
       },
     )

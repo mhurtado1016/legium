@@ -1,12 +1,12 @@
 // Edge Function: obtener-texto-sentencia
 //
-// Descarga del lado del servidor el HTML de texto_completo_url y lo
-// devuelve como texto plano, para que el frontend lo muestre con
-// `srcDoc` en un iframe sandboxed. Esto evita el bloqueo por
-// X-Frame-Options que muchos sitios de gobierno aplican cuando se
-// intenta embeber su página directamente con <iframe src="...">
-// (esa cabecera solo restringe el navegador del usuario, no una
-// petición servidor-a-servidor como esta).
+// Pide al proxy de Vercel (api/proxy-corte.ts) el texto de una
+// providencia y lo devuelve tal cual — el proxy ya se encarga de
+// detectar la codificación real del sitio (evita símbolos corruptos por
+// asumir UTF-8 cuando el sitio usa otra) y de extraer solo el texto
+// plano, sin las etiquetas HTML ni la navegación/menús del sitio. El
+// frontend lo muestra como texto normal dentro de la página, no en un
+// iframe con scroll propio.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,14 +44,8 @@ Deno.serve(async (req) => {
 
     const resp = await fetchCorteConstitucional(url)
     if (!resp.ok) throw new Error(`El sitio respondió ${resp.status}`)
-    let html = resp.text
 
-    // Insertar una etiqueta <base> para que las rutas relativas del
-    // sitio (imágenes, CSS) sigan resolviendo contra el dominio original.
-    const base = `<base href="${url}">`
-    html = html.includes('<head>') ? html.replace('<head>', `<head>${base}`) : base + html
-
-    return new Response(JSON.stringify({ html }), {
+    return new Response(JSON.stringify({ texto: resp.text }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
