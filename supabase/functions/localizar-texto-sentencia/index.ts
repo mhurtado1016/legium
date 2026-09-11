@@ -53,6 +53,28 @@ function construirUrlCandidata(
   return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
 }
 
+// El sitio de la Corte a veces no envía la cadena completa de
+// certificados TLS (le falta el intermedio), lo que hace que el cliente
+// HTTP de Deno rechace la conexión con "UnknownIssuer" aunque un
+// navegador normal sí la acepte. Como respaldo para la verificación, si
+// la petición directa falla por red/certificado, se reintenta a través
+// de un servicio de lectura público. Se sigue guardando la URL oficial
+// (`candidata`), nunca la del proxy, una vez confirmada su existencia.
+async function existeLaUrl(url: string): Promise<boolean> {
+  try {
+    const resp = await fetch(url)
+    if (resp.ok) return true
+  } catch {
+    // sigue al respaldo
+  }
+  try {
+    const resp = await fetch(`https://r.jina.ai/${url}`)
+    return resp.ok
+  } catch {
+    return false
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -89,8 +111,7 @@ Deno.serve(async (req) => {
     }
 
     // Verificación real: la URL construida debe existir de verdad.
-    const resp = await fetch(candidata, { method: 'GET' }) // HEAD no siempre está soportado por el sitio
-    if (!resp.ok) {
+    if (!(await existeLaUrl(candidata))) {
       await admin.from('sentencias_cache').update({ texto_completo_no_disponible: true }).eq('id', sentencia_id)
       return new Response(
         JSON.stringify({ ok: false, motivo: 'url_construida_no_responde', url_intentada: candidata }),

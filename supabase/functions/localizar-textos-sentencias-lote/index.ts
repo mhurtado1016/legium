@@ -37,6 +37,23 @@ function construirUrlCandidata(
   return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
 }
 
+// Ver localizar-texto-sentencia/index.ts para la explicación completa
+// del problema de certificado TLS del sitio de la Corte y este respaldo.
+async function existeLaUrl(url: string): Promise<boolean> {
+  try {
+    const resp = await fetch(url)
+    if (resp.ok) return true
+  } catch {
+    // sigue al respaldo
+  }
+  try {
+    const resp = await fetch(`https://r.jina.ai/${url}`)
+    return resp.ok
+  } catch {
+    return false
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -69,21 +86,15 @@ Deno.serve(async (req) => {
       continue
     }
 
-    try {
-      const resp = await fetch(candidata)
-      if (resp.ok) {
-        await admin
-          .from('sentencias_cache')
-          .update({ texto_completo_url: candidata, texto_completo_no_disponible: false })
-          .eq('id', s.id)
-        resueltas++
-      } else {
-        await admin.from('sentencias_cache').update({ texto_completo_no_disponible: true }).eq('id', s.id)
-        noDisponibles++
-      }
-    } catch {
-      // Error de red puntual: se deja pendiente para el siguiente lote
-      // (no se marca como no_disponible por una falla transitoria).
+    if (await existeLaUrl(candidata)) {
+      await admin
+        .from('sentencias_cache')
+        .update({ texto_completo_url: candidata, texto_completo_no_disponible: false })
+        .eq('id', s.id)
+      resueltas++
+    } else {
+      await admin.from('sentencias_cache').update({ texto_completo_no_disponible: true }).eq('id', s.id)
+      noDisponibles++
     }
   }
 

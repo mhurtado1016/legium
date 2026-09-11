@@ -200,6 +200,20 @@ servidor y el frontend lo muestra con `srcDoc` en un iframe
 embeber la página ajena. Si aun así falla, siempre queda el enlace
 "Abrir en una pestaña nueva" como respaldo.
 
+**Sobre el certificado TLS del sitio de la Corte**: el servidor de
+`corteconstitucional.gov.co` a veces no envía la cadena completa de
+certificados (le falta el intermedio); los navegadores lo toleran
+completándola por su cuenta, pero el cliente HTTP de Deno no, y falla
+con `invalid peer certificate: UnknownIssuer`. Como no se pudo obtener
+el certificado real para "pinnearlo" correctamente, `generar-resumen-ia`,
+`localizar-texto-sentencia`, `localizar-textos-sentencias-lote` y
+`obtener-texto-sentencia` reintentan a través de `r.jina.ai` (un
+servicio de lectura público) cuando la conexión directa falla. Es una
+solución pragmática, no la ideal: agrega una dependencia de un tercero.
+Si en algún momento se consigue el certificado intermedio real, se
+puede pasar a `Deno.createHttpClient({ caCerts: [...] })` y quitar este
+respaldo.
+
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
 de tareas de desarrollo, y el resto de "pendientes de definir" en cada

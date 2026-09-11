@@ -58,6 +58,25 @@ function construirUrlCandidata(
   return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
 }
 
+// El sitio de la Corte a veces no envía la cadena completa de
+// certificados TLS (le falta el intermedio), lo que hace que el cliente
+// HTTP de Deno rechace la conexión con "UnknownIssuer" aunque un
+// navegador normal sí la acepte (los navegadores completan la cadena
+// automáticamente; Deno no). Como respaldo, si la descarga directa
+// falla por error de red/certificado, se reintenta a través de un
+// servicio de lectura público que sabe manejar esta clase de sitios.
+// No es tan robusto como que el sitio arregle su certificado, pero no
+// depende de nada de nuestro lado para funcionar.
+async function descargarConRespaldo(url: string): Promise<Response> {
+  try {
+    const resp = await fetch(url)
+    if (resp.ok) return resp
+    throw new Error(`respuesta ${resp.status}`)
+  } catch {
+    return await fetch(`https://r.jina.ai/${url}`)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -97,7 +116,19 @@ Deno.serve(async (req) => {
 
     // Extracción de texto (simplificada: asume HTML/texto plano; PDFs
     // requieren una librería de extracción adicional, pendiente).
-    const docResp = await fetch(url)
+    let docResp: Response
+    try {
+      docResp = await descargarConRespaldo(url)
+    } catch {
+      await admin
+        .from('sentencias_cache')
+        .update({ texto_completo_no_disponible: true })
+        .eq('id', sentencia_id)
+      return new Response(
+        JSON.stringify({ ok: false, motivo: 'no_se_pudo_descargar_el_texto' }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      )
+    }
     if (!docResp.ok) {
       await admin
         .from('sentencias_cache')
@@ -124,7 +155,7 @@ Texto de la providencia:
 
     const geminiResp = await fetch(`${GEMINI_URL}?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { responseMimeType: 'application/json' },

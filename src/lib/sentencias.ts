@@ -98,7 +98,7 @@ export async function obtenerHtmlTextoCompleto(url: string) {
     body: { url },
   })
   if (error) throw new Error(await mensajeErrorFuncion(error))
-  return data as { html: string }
+  return data as { html: string; esRespaldo?: boolean }
 }
 
 export async function verificarResumen(sentenciaId: string, firmaId: string, usuarioId: string) {
