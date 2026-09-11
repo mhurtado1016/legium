@@ -14,6 +14,12 @@
 import https from 'node:https'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
+// Fuerza el runtime Node.js de Vercel (no el runtime "Edge", que no
+// soporta el módulo `node:https` y causaría un error en cada invocación).
+export const config = {
+  runtime: 'nodejs',
+}
+
 // Cadena TLS que falta en el servidor: GoDaddy TLS Intermediate CA DV -
 // R1v1 -> GoDaddy TLS Root CA - R1 (cross-signed) -> Go Daddy Root
 // Certificate Authority - G2. Obtenida de

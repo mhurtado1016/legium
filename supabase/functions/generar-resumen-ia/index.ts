@@ -70,9 +70,11 @@ const PROXY_CORTE_URL = 'https://legium.vercel.app/api/proxy-corte'
 
 async function fetchCorteConstitucional(url: string): Promise<{ ok: boolean; status: number; text: string }> {
   const resp = await fetch(`${PROXY_CORTE_URL}?url=${encodeURIComponent(url)}`)
-  if (!resp.ok) throw new Error(`Proxy respondió ${resp.status}`)
-  const data = await resp.json()
-  if (data.error) throw new Error(data.error)
+  const data = await resp.json().catch(() => null)
+  if (!resp.ok) {
+    throw new Error(`Proxy respondió ${resp.status}${data?.error ? `: ${data.error}` : ''}`)
+  }
+  if (data?.error) throw new Error(data.error)
   return { ok: data.status >= 200 && data.status < 300, status: data.status, text: data.body }
 }
 
