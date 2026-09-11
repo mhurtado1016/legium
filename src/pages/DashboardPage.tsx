@@ -139,7 +139,7 @@ export function DashboardPage() {
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
                 placeholder="Número de sentencia, texto libre…"
-                className="flex-1 border border-line bg-paper-raised px-3 py-2"
+                className="flex-1 border border-line bg-paper-raised px-3 py-2 text-base"
               />
               <button
                 type="submit"
@@ -165,7 +165,7 @@ export function DashboardPage() {
                   <select
                     value={sentenciaTipo}
                     onChange={(e) => setSentenciaTipo(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   >
                     <option value="">Todos</option>
                     <option value="C">C — Constitucionalidad</option>
@@ -178,7 +178,7 @@ export function DashboardPage() {
                   <select
                     value={expedienteTipo}
                     onChange={(e) => setExpedienteTipo(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   >
                     <option value="">Todos</option>
                     <option value="D">D — Demanda de inconstitucionalidad</option>
@@ -196,7 +196,7 @@ export function DashboardPage() {
                     value={magistrado}
                     onChange={(e) => setMagistrado(e.target.value)}
                     placeholder="Nombre del magistrado"
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
                 <div>
@@ -206,7 +206,7 @@ export function DashboardPage() {
                     value={sala}
                     onChange={(e) => setSala(e.target.value)}
                     placeholder="Ej. Sala Plena, Sala Novena…"
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
                 <div>
@@ -215,7 +215,7 @@ export function DashboardPage() {
                     type="date"
                     value={fechaDesde}
                     onChange={(e) => setFechaDesde(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
                 <div>
@@ -224,7 +224,7 @@ export function DashboardPage() {
                     type="date"
                     value={fechaHasta}
                     onChange={(e) => setFechaHasta(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
                   />
                 </div>
                 <p className="sm:col-span-2 text-slate">
