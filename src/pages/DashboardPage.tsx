@@ -1,5 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  Scale,
+  Calendar,
+  User,
+  Sparkles,
+  AlertCircle,
+  ChevronRight,
+  Loader2,
+  FolderOpen,
+  Clock3,
+  ShieldCheck,
+} from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -248,63 +260,105 @@ export function DashboardPage() {
             </p>
           )}
 
-          <ul className="divide-y divide-line border-t border-b border-line">
+          <ul className="space-y-3">
             {resultados.map((s) => (
-              <li key={s.id} className="py-4">
-                <p className="font-medium">
-                  {s.sentencia} · {s.sala ?? 'Sala no especificada'}
-                </p>
-                <p className="text-sm text-slate">
-                  {s.fecha_sentencia ? new Date(s.fecha_sentencia).toLocaleDateString('es-CO') : '—'}
-                  {s.magistrado_a ? ` · ${s.magistrado_a}` : ''}
-                </p>
+              <li key={s.id}>
+                <div className="card p-5 hover:shadow-[var(--shadow-raised)] transition-shadow">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="shrink-0 rounded-full bg-paper p-2.5 text-ink">
+                        <Scale size={18} strokeWidth={1.75} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-ink">
+                          {s.sentencia}{' '}
+                          <span className="text-slate font-normal">
+                            · {s.sala ?? 'Sala no especificada'}
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate mt-1.5">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Calendar size={14} strokeWidth={1.75} />
+                            {s.fecha_sentencia
+                              ? new Date(s.fecha_sentencia).toLocaleDateString('es-CO')
+                              : '—'}
+                          </span>
+                          {s.magistrado_a && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <User size={14} strokeWidth={1.75} />
+                              {s.magistrado_a}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                {s.resumen_ia && (
-                  <div className="text-sm mt-2 space-y-1">
-                    <p>{s.resumen_ia}</p>
-                    {s.resumen_ia_verificado ? (
-                      <p className="text-slate">Resumen IA · verificado</p>
-                    ) : (
-                      <p className="text-seal">
-                        Resumen IA · pendiente de verificación{' '}
+                    <Link
+                      to={`/sentencias/${encodeURIComponent(s.sentencia)}`}
+                      className="shrink-0 inline-flex items-center gap-1 text-sm link"
+                    >
+                      Ver detalle <ChevronRight size={14} strokeWidth={1.75} />
+                    </Link>
+                  </div>
+
+                  {s.resumen_ia && (
+                    <div className="mt-4 pt-4 border-t border-line text-sm space-y-2">
+                      <p className="text-ink">{s.resumen_ia}</p>
+                      {s.resumen_ia_verificado ? (
+                        <p className="inline-flex items-center gap-1.5 text-slate">
+                          <ShieldCheck size={14} strokeWidth={1.75} />
+                          Resumen IA · verificado
+                        </p>
+                      ) : (
+                        <p className="inline-flex items-center gap-1.5 text-seal flex-wrap">
+                          <Sparkles size={14} strokeWidth={1.75} />
+                          Resumen IA · pendiente de verificación —{' '}
+                          <button
+                            onClick={() => handleVerificar(s.id)}
+                            className="underline underline-offset-4"
+                          >
+                            marcar como verificado
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {!s.resumen_ia && (
+                    <div className="mt-4 pt-4 border-t border-line text-sm">
+                      {errorGeneracion[s.id] ? (
+                        <p className="inline-flex items-center gap-1.5 text-seal">
+                          <AlertCircle size={14} strokeWidth={1.75} />
+                          {errorGeneracion[s.id]}
+                        </p>
+                      ) : s.texto_completo_no_disponible ? (
+                        <p className="inline-flex items-center gap-1.5 text-seal">
+                          <AlertCircle size={14} strokeWidth={1.75} />
+                          No se pudo generar el análisis: no se encontró el texto completo en el
+                          sitio oficial.
+                        </p>
+                      ) : (
                         <button
-                          onClick={() => handleVerificar(s.id)}
-                          className="underline underline-offset-4"
+                          onClick={() => handleGenerarAnalisis(s.id)}
+                          disabled={generando[s.id]}
+                          className="inline-flex items-center gap-1.5 link disabled:opacity-50"
                         >
-                          marcar como verificado
+                          {generando[s.id] ? (
+                            <>
+                              <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
+                              Generando…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={14} strokeWidth={1.75} />
+                              Generar análisis con IA
+                            </>
+                          )}
                         </button>
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {!s.resumen_ia && (
-                  <div className="text-sm mt-2">
-                    {errorGeneracion[s.id] ? (
-                      <p className="text-seal">{errorGeneracion[s.id]}</p>
-                    ) : s.texto_completo_no_disponible ? (
-                      <p className="text-seal">
-                        No se pudo generar el análisis: no se encontró el texto completo en el sitio
-                        oficial.
-                      </p>
-                    ) : (
-                      <button
-                        onClick={() => handleGenerarAnalisis(s.id)}
-                        disabled={generando[s.id]}
-                        className="link disabled:opacity-50"
-                      >
-                        {generando[s.id] ? 'Generando…' : 'Generar análisis con IA'}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                <Link
-                  to={`/sentencias/${encodeURIComponent(s.sentencia)}`}
-                  className="link text-sm mt-2 inline-block"
-                >
-                  ver detalle
-                </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
               </li>
             ))}
 
@@ -319,18 +373,24 @@ export function DashboardPage() {
           </ul>
         </section>
 
-        <aside>
+        <aside className="space-y-4">
           <h2 className="font-display text-lg mb-2">Su actividad</h2>
 
-          <div className="border-t border-line pt-3 mb-6">
-            <p className="text-sm text-slate mb-1">Verificaciones pendientes</p>
-            <p className="text-2xl">
+          <div className="card p-4">
+            <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-1">
+              <ShieldCheck size={14} strokeWidth={1.75} />
+              Verificaciones pendientes
+            </p>
+            <p className="text-2xl font-display">
               {verificacionesPendientes === null ? '—' : verificacionesPendientes}
             </p>
           </div>
 
-          <div className="border-t border-line pt-3 mb-6">
-            <p className="text-sm text-slate mb-2">Plazos próximos</p>
+          <div className="card p-4">
+            <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-2">
+              <Clock3 size={14} strokeWidth={1.75} />
+              Plazos próximos
+            </p>
             <ul className="text-sm space-y-1">
               {plazosProximos.map((p) => {
                 const dias = diasRestantes(p.fecha_vencimiento)
@@ -347,8 +407,11 @@ export function DashboardPage() {
             </ul>
           </div>
 
-          <div className="border-t border-line pt-3">
-            <p className="text-sm text-slate mb-2">Casos abiertos</p>
+          <div className="card p-4">
+            <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-2">
+              <FolderOpen size={14} strokeWidth={1.75} />
+              Casos abiertos
+            </p>
             <ul className="text-sm space-y-1">
               {casosAbiertos.map((c) => (
                 <li key={c.id}>

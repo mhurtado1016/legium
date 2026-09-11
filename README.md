@@ -266,7 +266,9 @@ Evolucionó del estilo completamente plano de la versión inicial (sección
 13.1 de la especificación) a uno con más profundidad — radios sutiles,
 sombras suaves en tarjetas y botones, hover states — manteniendo la
 misma paleta sobria (ink/paper/seal/slate) y la pareja tipográfica
-serif + sans.
+serif + sans. Los resultados del buscador (`DashboardPage`) usan
+`lucide-react` para íconos (calendario, magistrado, sala, IA, alertas)
+sobre tarjetas individuales por resultado, en vez de una lista plana.
 
 ## Estructura
 
