@@ -50,7 +50,7 @@ export function ReportesPage() {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value as Periodo)}
-            className="border border-line bg-paper-raised px-2 py-1 text-sm"
+            className="field field-sm"
           >
             {PERIODOS.map((p) => (
               <option key={p.value} value={p.value}>
@@ -128,7 +128,7 @@ export function ReportesPage() {
           <h2 className="font-display text-base mb-2">Horas por usuario</h2>
           <table className="w-full text-sm border-t border-line">
             <thead>
-              <tr className="text-left text-slate border-b border-line">
+              <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
                 <th className="py-2">Usuario</th>
                 <th className="py-2">Horas registradas</th>
                 <th className="py-2">Horas facturadas</th>

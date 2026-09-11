@@ -40,7 +40,7 @@ export function PlazosPage() {
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value as EstadoPlazo | '')}
-            className="border border-line bg-paper-raised px-2 py-1 text-sm"
+            className="field field-sm"
           >
             <option value="">Todos los estados</option>
             {ESTADOS.map((e) => (
@@ -53,7 +53,7 @@ export function PlazosPage() {
 
         <table className="w-full text-sm border-t border-line">
           <thead>
-            <tr className="text-left text-slate border-b border-line">
+            <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
               <th className="py-2">Vence en</th>
               <th className="py-2">Título</th>
               <th className="py-2">Caso</th>
@@ -81,7 +81,7 @@ export function PlazosPage() {
                     {p.estado !== 'cumplido' && (
                       <button
                         onClick={() => handleCumplido(p.id)}
-                        className="text-slate hover:text-ink underline underline-offset-4"
+                        className="link"
                       >
                         marcar cumplido
                       </button>

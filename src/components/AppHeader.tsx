@@ -32,9 +32,9 @@ export function AppHeader({ left }: { left?: ReactNode }) {
   }, [])
 
   return (
-    <header className="flex items-center justify-between border-b border-line px-6 py-4">
+    <header className="sticky top-0 z-20 flex items-center justify-between bg-paper/90 backdrop-blur-sm px-6 py-4 border-b border-line/70">
       {left ?? (
-        <Link to="/" className="font-display text-xl">
+        <Link to="/" className="font-display text-xl tracking-tight">
           Legium
         </Link>
       )}
@@ -44,7 +44,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
           onClick={() => setAbierto((v) => !v)}
           aria-label="Abrir menú"
           aria-expanded={abierto}
-          className="flex flex-col gap-1.5 p-2 -m-2"
+          className="flex flex-col gap-1.5 p-2 -m-2 rounded-md hover:bg-paper-raised transition-colors"
         >
           <span className="block w-5 h-px bg-ink" />
           <span className="block w-5 h-px bg-ink" />
@@ -52,27 +52,31 @@ export function AppHeader({ left }: { left?: ReactNode }) {
         </button>
 
         {abierto && (
-          <div className="absolute right-0 top-full mt-2 w-48 bg-paper-raised border border-line z-10">
-            <nav className="flex flex-col divide-y divide-line text-sm">
-              {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setAbierto(false)}
-                  className={
-                    'px-4 py-2 hover:bg-paper ' +
-                    (pathname === item.to ? 'text-ink' : 'text-slate')
-                  }
-                >
-                  {item.label}
-                </Link>
-              ))}
+          <div className="card absolute right-0 top-full mt-2 w-52 overflow-hidden py-1 z-10">
+            <nav className="flex flex-col text-sm">
+              {NAV_ITEMS.map((item) => {
+                const activo = pathname === item.to
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setAbierto(false)}
+                    className={
+                      'px-4 py-2.5 mx-1 rounded-md transition-colors hover:bg-paper ' +
+                      (activo ? 'text-ink font-medium bg-paper' : 'text-slate')
+                    }
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+              <div className="my-1 border-t border-line" />
               <button
                 onClick={() => {
                   setAbierto(false)
                   signOut()
                 }}
-                className="px-4 py-2 text-left text-slate hover:bg-paper hover:text-ink"
+                className="px-4 py-2.5 mx-1 rounded-md text-left text-slate hover:bg-paper hover:text-ink transition-colors"
               >
                 Cerrar sesión
               </button>

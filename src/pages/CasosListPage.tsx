@@ -52,7 +52,7 @@ export function CasosListPage() {
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value as EstadoCaso | '')}
-              className="border border-line bg-paper-raised px-2 py-1 text-sm"
+              className="field field-sm"
             >
               <option value="">Todos los estados</option>
               {ESTADOS.map((e) => (
@@ -63,7 +63,7 @@ export function CasosListPage() {
             </select>
             <button
               onClick={() => setMostrarForm((v) => !v)}
-              className="bg-ink text-paper-raised px-4 py-1.5 text-sm hover:bg-ink/90"
+              className="btn-primary btn-sm"
             >
               + Nuevo caso
             </button>
@@ -84,7 +84,7 @@ export function CasosListPage() {
 
         <table className="w-full text-sm border-t border-line">
           <thead>
-            <tr className="text-left text-slate border-b border-line">
+            <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
               <th className="py-2">Título</th>
               <th className="py-2">Cliente</th>
               <th className="py-2">Tipo</th>
@@ -168,13 +168,13 @@ function NuevoCasoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-line p-4 mb-6 space-y-3 max-w-lg">
+    <form onSubmit={handleSubmit} className="card p-4 mb-6 space-y-3 max-w-lg">
       <div>
         <label className="block text-sm text-slate mb-1">Cliente existente</label>
         <select
           value={clienteId}
           onChange={(e) => setClienteId(e.target.value)}
-          className="w-full border border-line bg-paper-raised px-2 py-1.5"
+          className="w-full field field-sm"
         >
           <option value="">— o crear uno nuevo abajo —</option>
           {clientes.map((c) => (
@@ -190,7 +190,7 @@ function NuevoCasoForm({
           <input
             value={nuevoClienteNombre}
             onChange={(e) => setNuevoClienteNombre(e.target.value)}
-            className="w-full border border-line bg-paper-raised px-2 py-1.5"
+            className="w-full field field-sm"
           />
         </div>
       )}
@@ -199,7 +199,7 @@ function NuevoCasoForm({
         <select
           value={tipo}
           onChange={(e) => setTipo(e.target.value as TipoCaso)}
-          className="w-full border border-line bg-paper-raised px-2 py-1.5"
+          className="w-full field field-sm"
         >
           <option value="litigio">Litigio</option>
           <option value="consultoria">Consultoría</option>
@@ -211,13 +211,13 @@ function NuevoCasoForm({
           value={titulo}
           required
           onChange={(e) => setTitulo(e.target.value)}
-          className="w-full border border-line bg-paper-raised px-2 py-1.5"
+          className="w-full field field-sm"
         />
       </div>
       <button
         type="submit"
         disabled={guardando}
-        className="bg-ink text-paper-raised px-4 py-1.5 text-sm hover:bg-ink/90 disabled:opacity-60"
+        className="btn-primary btn-sm"
       >
         {guardando ? 'Guardando…' : 'Crear caso'}
       </button>

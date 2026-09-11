@@ -139,12 +139,12 @@ export function DashboardPage() {
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
                 placeholder="Número de sentencia, tipo de proceso o palabra clave del análisis…"
-                className="flex-1 border border-line bg-paper-raised px-3 py-2 text-base"
+                className="flex-1 field"
               />
               <button
                 type="submit"
                 disabled={buscando}
-                className="bg-ink text-paper-raised px-5 py-2 hover:bg-ink/90 disabled:opacity-60"
+                className="btn-primary"
               >
                 {buscando ? 'Buscando…' : 'Ir'}
               </button>
@@ -153,19 +153,19 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={() => setFiltrosAbiertos((v) => !v)}
-              className="text-sm text-slate hover:text-ink underline underline-offset-4 mb-4"
+              className="link text-sm mb-4"
             >
               {filtrosAbiertos ? 'Ocultar filtros' : 'Más filtros'}
             </button>
 
             {filtrosAbiertos && (
-              <div className="border border-line p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="card p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <label className="block text-slate mb-1">Tipo de sentencia</label>
                   <select
                     value={sentenciaTipo}
                     onChange={(e) => setSentenciaTipo(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full field"
                   >
                     <option value="">Todos</option>
                     <option value="C">C — Constitucionalidad</option>
@@ -178,7 +178,7 @@ export function DashboardPage() {
                   <select
                     value={expedienteTipo}
                     onChange={(e) => setExpedienteTipo(e.target.value)}
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full field"
                   >
                     <option value="">Todos</option>
                     <option value="D">D — Demanda de inconstitucionalidad</option>
@@ -196,7 +196,7 @@ export function DashboardPage() {
                     value={magistrado}
                     onChange={(e) => setMagistrado(e.target.value)}
                     placeholder="Nombre del magistrado"
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full field"
                   />
                 </div>
                 <div>
@@ -206,7 +206,7 @@ export function DashboardPage() {
                     value={sala}
                     onChange={(e) => setSala(e.target.value)}
                     placeholder="Ej. Sala Plena, Sala Novena…"
-                    className="w-full border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full field"
                   />
                 </div>
                 <div className="min-w-0">
@@ -215,7 +215,7 @@ export function DashboardPage() {
                     type="date"
                     value={fechaDesde}
                     onChange={(e) => setFechaDesde(e.target.value)}
-                    className="w-full min-w-0 border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full min-w-0 field"
                   />
                 </div>
                 <div className="min-w-0">
@@ -224,7 +224,7 @@ export function DashboardPage() {
                     type="date"
                     value={fechaHasta}
                     onChange={(e) => setFechaHasta(e.target.value)}
-                    className="w-full min-w-0 border border-line bg-paper-raised px-2 py-1.5 text-base"
+                    className="w-full min-w-0 field"
                   />
                 </div>
                 <p className="sm:col-span-2 text-slate">
@@ -291,7 +291,7 @@ export function DashboardPage() {
                       <button
                         onClick={() => handleGenerarAnalisis(s.id)}
                         disabled={generando[s.id]}
-                        className="text-slate hover:text-ink underline underline-offset-4 disabled:opacity-60"
+                        className="link disabled:opacity-50"
                       >
                         {generando[s.id] ? 'Generando…' : 'Generar análisis con IA'}
                       </button>
@@ -301,7 +301,7 @@ export function DashboardPage() {
 
                 <Link
                   to={`/sentencias/${encodeURIComponent(s.sentencia)}`}
-                  className="text-sm text-slate hover:text-ink underline underline-offset-4 mt-2 inline-block"
+                  className="link text-sm mt-2 inline-block"
                 >
                   ver detalle
                 </Link>

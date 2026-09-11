@@ -152,7 +152,7 @@ export function SentenciaDetailPage() {
             <button
               onClick={handleGenerarAnalisis}
               disabled={generando}
-              className="bg-ink text-paper-raised px-4 py-1.5 text-sm hover:bg-ink/90 disabled:opacity-60"
+              className="btn-primary btn-sm"
             >
               {generando ? 'Generando…' : 'Generar análisis con IA'}
             </button>
@@ -209,7 +209,7 @@ export function SentenciaDetailPage() {
                 href={sentencia.texto_completo_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-slate hover:text-ink underline underline-offset-4 mt-4 inline-block"
+                className="link text-sm mt-4 inline-block"
               >
                 Ver en el sitio oficial
               </a>

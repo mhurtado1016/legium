@@ -49,7 +49,7 @@ export function CuentasCobroPage() {
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value as EstadoCuentaCobro | '')}
-            className="border border-line bg-paper-raised px-2 py-1 text-sm"
+            className="field field-sm"
           >
             <option value="">Todos los estados</option>
             {ESTADOS.map((e) => (
@@ -62,7 +62,7 @@ export function CuentasCobroPage() {
 
         <table className="w-full text-sm border-t border-line">
           <thead>
-            <tr className="text-left text-slate border-b border-line">
+            <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
               <th className="py-2">Número</th>
               <th className="py-2">Caso</th>
               <th className="py-2">Cliente</th>
@@ -86,7 +86,7 @@ export function CuentasCobroPage() {
                   <select
                     value={c.estado}
                     onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
-                    className="border border-line bg-paper-raised px-1 py-0.5"
+                    className="field field-sm"
                   >
                     {ESTADOS.map((e) => (
                       <option key={e} value={e}>

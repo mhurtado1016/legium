@@ -38,76 +38,66 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-display text-ink text-center mb-8">Legium</h1>
+        <h1 className="text-3xl font-display text-ink text-center mb-8 tracking-tight">Legium</h1>
 
-        {mode === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Field label="Correo" type="email" value={email} onChange={setEmail} required />
-            <Field
-              label="Contraseña"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              required
-            />
+        <div className="card p-8">
+          {mode === 'login' && (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <Field label="Correo" type="email" value={email} onChange={setEmail} required />
+              <Field
+                label="Contraseña"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                required
+              />
 
-            {error && <p className="text-sm text-seal">{error}</p>}
+              {error && <p className="text-sm text-seal">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-ink text-paper-raised py-2 rounded-none hover:bg-ink/90 transition-colors disabled:opacity-60"
-            >
-              {submitting ? 'Ingresando…' : 'Ingresar'}
-            </button>
+              <button type="submit" disabled={submitting} className="w-full btn-primary">
+                {submitting ? 'Ingresando…' : 'Ingresar'}
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setMode('recuperar')}
-              className="w-full text-center text-sm text-slate hover:text-ink underline underline-offset-4"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </form>
-        )}
+              <button
+                type="button"
+                onClick={() => setMode('recuperar')}
+                className="w-full text-center link text-sm"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </form>
+          )}
 
-        {mode === 'recuperar' && (
-          <form onSubmit={handleRecover} className="space-y-4">
-            <p className="text-sm text-slate">
-              Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
-            </p>
-            <Field label="Correo" type="email" value={email} onChange={setEmail} required />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-ink text-paper-raised py-2 hover:bg-ink/90 transition-colors disabled:opacity-60"
-            >
-              {submitting ? 'Enviando…' : 'Enviar enlace de recuperación'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className="w-full text-center text-sm text-slate hover:text-ink underline underline-offset-4"
-            >
-              Volver a ingresar
-            </button>
-          </form>
-        )}
+          {mode === 'recuperar' && (
+            <form onSubmit={handleRecover} className="space-y-4">
+              <p className="text-sm text-slate">
+                Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
+              </p>
+              <Field label="Correo" type="email" value={email} onChange={setEmail} required />
+              <button type="submit" disabled={submitting} className="w-full btn-primary">
+                {submitting ? 'Enviando…' : 'Enviar enlace de recuperación'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="w-full text-center link text-sm"
+              >
+                Volver a ingresar
+              </button>
+            </form>
+          )}
 
-        {mode === 'recuperar-enviado' && (
-          <div className="space-y-4 text-center">
-            <p className="text-sm text-ink">
-              Si el correo existe en Legium, se envió un enlace de recuperación.
-            </p>
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className="text-sm text-slate hover:text-ink underline underline-offset-4"
-            >
-              Volver a ingresar
-            </button>
-          </div>
-        )}
+          {mode === 'recuperar-enviado' && (
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-ink">
+                Si el correo existe en Legium, se envió un enlace de recuperación.
+              </p>
+              <button type="button" onClick={() => setMode('login')} className="link text-sm">
+                Volver a ingresar
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -134,7 +124,7 @@ function Field({
         value={value}
         required={required}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-line bg-paper-raised px-3 py-2 text-ink focus-visible:outline-2 focus-visible:outline-seal"
+        className="w-full field"
       />
     </label>
   )

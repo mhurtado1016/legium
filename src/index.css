@@ -1,21 +1,31 @@
 @import "tailwindcss";
 
 /*
-  Tokens de diseño de Legium — ver especificación técnica, sección 13.1.
-  Un solo acento de color (--seal), reservado para lo que requiere
-  atención real (plazos por vencer, acciones primarias, estados
-  pendientes) y nunca como decoración.
+  Tokens de diseño de Legium — evolución "moderna y profesional" del
+  sistema original (sección 13.1 de la especificación): se conserva el
+  mismo espíritu sobrio/editorial (serif + sans, un solo acento de
+  color), pero con más profundidad — radios sutiles, sombras suaves en
+  superficies elevadas, y una jerarquía tipográfica más marcada — en
+  vez del estilo completamente plano de la primera versión.
 */
 @theme {
-  --color-ink: #1c2430;
-  --color-paper: #f7f6f2;
+  --color-ink: #161d27;
+  --color-ink-soft: #2b3542;
+  --color-paper: #f7f6f3;
   --color-paper-raised: #ffffff;
   --color-seal: #7a2a2e;
+  --color-seal-soft: #f3e6e6;
   --color-slate: #5b6472;
-  --color-line: #dcd8cf;
+  --color-line: #e4e1d8;
 
   --font-display: "Source Serif 4", Georgia, serif;
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+
+  --radius-field: 0.5rem;
+  --radius-card: 0.75rem;
+
+  --shadow-card: 0 1px 2px rgba(22, 29, 39, 0.04), 0 4px 12px rgba(22, 29, 39, 0.06);
+  --shadow-raised: 0 1px 3px rgba(22, 29, 39, 0.08), 0 8px 24px rgba(22, 29, 39, 0.10);
 }
 
 @layer base {
@@ -27,16 +37,99 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   /* Foco de teclado visible en --seal, nunca eliminado sin reemplazo (sección 13.8) */
   :focus-visible {
     outline: 2px solid var(--color-seal);
     outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Filas de tabla con retroalimentación visual sutil al pasar el mouse,
+     aplicado globalmente para no repetir la clase en cada pantalla. */
+  table tbody tr {
+    transition: background-color 150ms;
+  }
+  table tbody tr:hover {
+    background-color: var(--color-paper);
+  }
+}
+
+/*
+  Componentes reutilizables: en vez de repetir cadenas largas de
+  utilidades en cada pantalla, se centralizan aquí — más fácil de
+  mantener consistente y de ajustar en un solo lugar.
+*/
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
+      px-4 py-2 text-sm font-medium transition-all duration-150
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
+      px-4 py-2 text-sm font-medium transition-all duration-150
+      disabled:opacity-50 disabled:cursor-not-allowed
+      bg-ink text-paper-raised shadow-[var(--shadow-card)]
+      hover:bg-[var(--color-ink-soft)] active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
+      px-4 py-2 text-sm font-medium transition-all duration-150
+      disabled:opacity-50 disabled:cursor-not-allowed
+      border border-line bg-paper-raised text-ink
+      hover:border-ink/30 hover:bg-paper active:scale-[0.98];
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  .link {
+    @apply text-slate hover:text-ink underline decoration-line underline-offset-4
+      transition-colors;
+  }
+
+  .field {
+    @apply w-full rounded-[var(--radius-field)] border border-line bg-paper-raised
+      px-3 py-2 text-base text-ink shadow-[0_1px_2px_rgba(22,29,39,0.03)]
+      transition-colors placeholder:text-slate/60
+      hover:border-ink/20 focus:border-ink/30;
+  }
+  .field-sm {
+    @apply text-sm px-2.5 py-1.5;
+  }
+
+  .card {
+    @apply rounded-[var(--radius-card)] border border-line bg-paper-raised
+      shadow-[var(--shadow-card)];
+  }
+
+  .badge-alert {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-[var(--color-seal-soft)]
+      px-2.5 py-0.5 text-xs font-medium text-seal;
+  }
+
+  .table-modern {
+    @apply w-full text-sm border-separate border-spacing-0;
+  }
+  .table-modern thead th {
+    @apply text-left text-xs font-medium uppercase tracking-wide text-slate
+      pb-2 border-b border-line;
+  }
+  .table-modern tbody td {
+    @apply py-3 border-b border-line;
+  }
+  .table-modern tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .table-modern tbody tr {
+    @apply transition-colors hover:bg-paper;
   }
 }

@@ -143,7 +143,7 @@ export function CasoDetailPage() {
               <select
                 value={caso.estado}
                 onChange={(e) => handleCambiarEstado(e.target.value as EstadoCaso)}
-                className="border border-line bg-paper-raised px-1 py-0.5"
+                className="field field-sm"
               >
                 {ESTADOS.map((e) => (
                   <option key={e} value={e}>
@@ -169,9 +169,9 @@ export function CasoDetailPage() {
                 value={nuevaNota}
                 onChange={(e) => setNuevaNota(e.target.value)}
                 placeholder="Agregar nota…"
-                className="flex-1 border border-line bg-paper-raised px-2 py-1 text-sm"
+                className="flex-1 field field-sm"
               />
-              <button className="bg-ink text-paper-raised px-3 py-1 text-sm hover:bg-ink/90">
+              <button className="btn-primary btn-sm">
                 Agregar
               </button>
             </form>
@@ -233,7 +233,7 @@ export function CasoDetailPage() {
                         await marcarCumplido(p.id)
                         cargar()
                       }}
-                      className="text-slate hover:text-ink underline underline-offset-4"
+                      className="link"
                     >
                       marcar cumplido
                     </button>
@@ -337,7 +337,7 @@ function NuevoPlazoForm({
         <input
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          className="border border-line bg-paper-raised px-2 py-1"
+          className="field field-sm"
         />
       </div>
       <div>
@@ -346,7 +346,7 @@ function NuevoPlazoForm({
           type="date"
           value={fecha}
           onChange={(e) => setFecha(e.target.value)}
-          className="border border-line bg-paper-raised px-2 py-1"
+          className="field field-sm"
         />
       </div>
       <label className="flex items-center gap-1">
@@ -364,7 +364,7 @@ function NuevoPlazoForm({
       <button
         type="submit"
         disabled={guardando}
-        className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+        className="btn-primary btn-sm"
       >
         {guardando ? 'Guardando…' : 'Agregar plazo'}
       </button>
@@ -465,7 +465,7 @@ function DocumentosSeccion({
   return (
     <div>
       {plantillas.length > 0 && (
-        <form onSubmit={handleGenerarDesdePlantilla} className="border border-line p-3 mb-4 space-y-2 text-sm">
+        <form onSubmit={handleGenerarDesdePlantilla} className="card p-4 mb-4 space-y-2 text-sm">
           <p className="text-slate">Generar desde plantilla</p>
           <div className="flex flex-wrap items-end gap-3">
             <select
@@ -474,7 +474,7 @@ function DocumentosSeccion({
                 setPlantillaId(e.target.value)
                 setVariablesManuales({})
               }}
-              className="border border-line bg-paper-raised px-2 py-1"
+              className="field field-sm"
             >
               <option value="">— elegir plantilla —</option>
               {plantillas.map((p) => (
@@ -487,7 +487,7 @@ function DocumentosSeccion({
               <button
                 type="submit"
                 disabled={generando}
-                className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+                className="btn-primary btn-sm"
               >
                 {generando ? 'Generando…' : 'Generar documento'}
               </button>
@@ -501,7 +501,7 @@ function DocumentosSeccion({
                 onChange={(e) =>
                   setVariablesManuales((prev) => ({ ...prev, [v.clave]: e.target.value }))
                 }
-                className="w-full max-w-sm border border-line bg-paper-raised px-2 py-1"
+                className="w-full max-w-sm field field-sm"
               />
             </div>
           ))}
@@ -514,7 +514,7 @@ function DocumentosSeccion({
           <select
             value={categoriaId}
             onChange={(e) => setCategoriaId(e.target.value)}
-            className="border border-line bg-paper-raised px-2 py-1"
+            className="field field-sm"
           >
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
@@ -534,7 +534,7 @@ function DocumentosSeccion({
         <button
           type="submit"
           disabled={subiendo || !archivo}
-          className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+          className="btn-primary btn-sm"
         >
           {subiendo ? 'Subiendo…' : '+ Subir documento'}
         </button>
@@ -547,12 +547,12 @@ function DocumentosSeccion({
         placeholder="Buscar por nombre…"
         value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
-        className="border border-line bg-paper-raised px-2 py-1 text-sm mb-3 w-full max-w-xs"
+        className="field field-sm mb-3 w-full max-w-xs"
       />
 
       <table className="w-full text-sm border-t border-line">
         <thead>
-          <tr className="text-left text-slate border-b border-line">
+          <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
             <th className="py-2">Nombre</th>
             <th className="py-2">Categoría</th>
             <th className="py-2">Versión</th>
@@ -586,7 +586,7 @@ function DocumentosSeccion({
                 <td className="py-2">
                   <button
                     onClick={() => handleVerHistorial(d.id)}
-                    className="text-slate hover:text-ink underline underline-offset-4"
+                    className="link"
                   >
                     historial
                   </button>
@@ -690,9 +690,9 @@ function FacturacionSeccion({
             placeholder="Monto acordado"
             value={montoFijo}
             onChange={(e) => setMontoFijo(e.target.value)}
-            className="border border-line bg-paper-raised px-2 py-1 w-40"
+            className="field field-sm w-40"
           />
-          <button className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90">Guardar</button>
+          <button className="btn-primary btn-sm">Guardar</button>
         </form>
         {honorarioFijo && (
           <p className="text-slate mt-1">
@@ -710,15 +710,15 @@ function FacturacionSeccion({
             placeholder="Horas"
             value={horas}
             onChange={(e) => setHoras(e.target.value)}
-            className="border border-line bg-paper-raised px-2 py-1 w-24"
+            className="field field-sm w-24"
           />
           <input
             placeholder="Descripción"
             value={descripcionHoras}
             onChange={(e) => setDescripcionHoras(e.target.value)}
-            className="border border-line bg-paper-raised px-2 py-1 flex-1"
+            className="flex-1 field field-sm"
           />
-          <button className="bg-ink text-paper-raised px-3 py-1.5 hover:bg-ink/90">Registrar</button>
+          <button className="btn-primary btn-sm">Registrar</button>
         </form>
         <ul className="text-slate divide-y divide-line mt-2">
           {registrosTiempo.map((r) => (
@@ -737,7 +737,7 @@ function FacturacionSeccion({
         <button
           onClick={handleGenerarCuenta}
           disabled={generando || (horasPendientes.length === 0 && !honorarioFijo)}
-          className="bg-ink text-paper-raised px-4 py-1.5 hover:bg-ink/90 disabled:opacity-60"
+          className="btn-primary btn-sm"
         >
           {generando ? 'Generando…' : 'Generar cuenta de cobro'}
         </button>

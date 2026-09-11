@@ -256,6 +256,18 @@ publicadas, no de documentación oficial del sitio. Si en el futuro deja
 de encontrar sentencias que sí existen, revisar primero
 `localizar-texto-sentencia/index.ts`.
 
+## Diseño
+
+`src/index.css` define el sistema de diseño: tokens de color/tipografía
+y un set de clases reutilizables (`.btn-primary`, `.btn-secondary`,
+`.field`, `.card`, `.link`, `.badge-alert`) usadas en toda la app en vez
+de repetir cadenas largas de utilidades de Tailwind en cada pantalla.
+Evolucionó del estilo completamente plano de la versión inicial (sección
+13.1 de la especificación) a uno con más profundidad — radios sutiles,
+sombras suaves en tarjetas y botones, hover states — manteniendo la
+misma paleta sobria (ink/paper/seal/slate) y la pareja tipográfica
+serif + sans.
+
 ## Estructura
 
 ```
