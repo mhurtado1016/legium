@@ -120,9 +120,26 @@ LPAvTK33sefOT6jEm0pUBsV/fdUID+Ic/n4XuKxe9tQWskMJDE32p2u0mYRlynqI
 -----END CERTIFICATE-----`,
 ]
 
-const agenteCorteConstitucional = new https.Agent({
-  ca: CADENA_CORTE_CONSTITUCIONAL,
-})
+let agenteCorteConstitucional: https.Agent | null = null
+let errorInicializacionAgente: string | null = null
+
+// La creación del agente se envuelve en try/catch y se difiere hasta el
+// primer uso (no al cargar el módulo): si algo del bundling de Vercel
+// alterara el certificado, un fallo aquí en el nivel superior del
+// archivo tumbaría la función ANTES de que nuestro propio manejo de
+// errores pudiera reportarlo — resultando en el "500 sin detalle" que
+// se estaba viendo.
+function obtenerAgente(): https.Agent {
+  if (agenteCorteConstitucional) return agenteCorteConstitucional
+  if (errorInicializacionAgente) throw new Error(errorInicializacionAgente)
+  try {
+    agenteCorteConstitucional = new https.Agent({ ca: CADENA_CORTE_CONSTITUCIONAL })
+    return agenteCorteConstitucional
+  } catch (err) {
+    errorInicializacionAgente = `No se pudo crear el agente TLS: ${String(err)}`
+    throw new Error(errorInicializacionAgente)
+  }
+}
 
 const HEADERS_NAVEGADOR = {
   'User-Agent':
@@ -132,13 +149,21 @@ const HEADERS_NAVEGADOR = {
 
 function fetchViaHttps(url: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, { agent: agenteCorteConstitucional, headers: HEADERS_NAVEGADOR }, (res) => {
+    const req = https.get(
+      url,
+      { agent: obtenerAgente(), headers: HEADERS_NAVEGADOR, timeout: 20_000 },
+      (res) => {
         let data = ''
         res.on('data', (chunk) => (data += chunk))
         res.on('end', () => resolve({ status: res.statusCode ?? 0, body: data }))
-      })
-      .on('error', reject)
+        res.on('error', reject)
+      },
+    )
+    req.on('error', reject)
+    req.on('timeout', () => {
+      req.destroy()
+      reject(new Error('Tiempo de espera agotado al conectar con el sitio de la Corte'))
+    })
   })
 }
 
@@ -160,6 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { status, body } = await fetchViaHttps(url)
     res.status(200).json({ status, body })
   } catch (err) {
-    res.status(500).json({ error: String(err) })
+    console.error('proxy-corte error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
 }
