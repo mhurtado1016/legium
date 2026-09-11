@@ -201,18 +201,29 @@ embeber la página ajena. Si aun así falla, siempre queda el enlace
 "Abrir en una pestaña nueva" como respaldo.
 
 **Sobre el certificado TLS del sitio de la Corte**: el servidor de
-`corteconstitucional.gov.co` a veces no envía la cadena completa de
-certificados (le falta el intermedio); los navegadores lo toleran
-completándola por su cuenta, pero el cliente HTTP de Deno no, y falla
-con `invalid peer certificate: UnknownIssuer`. Como no se pudo obtener
-el certificado real para "pinnearlo" correctamente, `generar-resumen-ia`,
-`localizar-texto-sentencia`, `localizar-textos-sentencias-lote` y
-`obtener-texto-sentencia` reintentan a través de `r.jina.ai` (un
-servicio de lectura público) cuando la conexión directa falla. Es una
-solución pragmática, no la ideal: agrega una dependencia de un tercero.
-Si en algún momento se consigue el certificado intermedio real, se
-puede pasar a `Deno.createHttpClient({ caCerts: [...] })` y quitar este
-respaldo.
+`corteconstitucional.gov.co` usa un certificado emitido por GoDaddy bajo
+su nueva jerarquía de raíz "R1" (migración de 2026), pero no envía la
+cadena completa — le falta el certificado que conecta esa raíz nueva
+con la raíz vieja ("G2") que sí es universalmente confiable. Los
+navegadores lo tienen resuelto porque ya confían directamente en la
+raíz R1 o completan la cadena por su cuenta; Deno no, y falla con
+`invalid peer certificate: UnknownIssuer`.
+
+Solución implementada: `generar-resumen-ia`, `localizar-texto-sentencia`,
+`localizar-textos-sentencias-lote` y `obtener-texto-sentencia` incluyen
+la cadena completa (Intermedio DV R1v1 → Raíz R1 cross-signed → Raíz G2,
+obtenida de `certs.godaddy.com/repository/gd_bundle_dv-r1-g2.crt.pem`)
+como constantes, usadas vía `Deno.createHttpClient({ caCerts: [...] })`
+para las peticiones a ese dominio específico. Verificado con
+`openssl verify` antes de integrarlo. No depende de ningún servicio de
+terceros.
+
+Si GoDaddy rota estos certificados en el futuro (tienen vigencia hasta
+2027 para el intermedio, más allá para las raíces), este error volverá
+a aparecer y habrá que repetir el proceso: bajar el bundle actualizado
+de `certs.godaddy.com/repository/gd_bundle_dv-r1-g2.crt.pem` y
+reemplazar la constante `CADENA_CORTE_CONSTITUCIONAL` en las cuatro
+funciones.
 
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista

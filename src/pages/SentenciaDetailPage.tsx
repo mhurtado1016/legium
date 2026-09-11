@@ -21,7 +21,6 @@ export function SentenciaDetailPage() {
   const { usuario } = useUsuario()
   const [sentencia, setSentencia] = useState<Sentencia | null>(null)
   const [htmlTexto, setHtmlTexto] = useState<string | null>(null)
-  const [textoEsRespaldo, setTextoEsRespaldo] = useState(false)
   const [cargandoTexto, setCargandoTexto] = useState(false)
   const [errorTexto, setErrorTexto] = useState<string | null>(null)
   const [generando, setGenerando] = useState(false)
@@ -49,10 +48,7 @@ export function SentenciaDetailPage() {
     setCargandoTexto(true)
     setErrorTexto(null)
     obtenerHtmlTextoCompleto(sentencia.texto_completo_url)
-      .then((r) => {
-        setHtmlTexto(r.html)
-        setTextoEsRespaldo(Boolean(r.esRespaldo))
-      })
+      .then((r) => setHtmlTexto(r.html))
       .catch((err) => setErrorTexto(err instanceof Error ? err.message : JSON.stringify(err)))
       .finally(() => setCargandoTexto(false))
   }, [sentencia?.texto_completo_url])
@@ -198,12 +194,6 @@ export function SentenciaDetailPage() {
             <>
               {cargandoTexto && <p className="text-sm text-slate">Cargando…</p>}
               {errorTexto && <p className="text-sm text-seal mb-2">{errorTexto}</p>}
-              {textoEsRespaldo && (
-                <p className="text-sm text-slate mb-2">
-                  El sitio oficial no respondió directamente; este contenido viene de un servicio de
-                  lectura externo y puede no conservar el formato original.
-                </p>
-              )}
               {htmlTexto && (
                 <iframe
                   srcDoc={htmlTexto}
