@@ -57,7 +57,12 @@ Supabase), y toda llamada falla con un error genérico de red.
 Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
 
 - `buscar-sentencias`: búsqueda en cache con fallback a la API en vivo de
-  datos.gov.co (sección 4.2/4.4). Requiere `SUPABASE_SERVICE_ROLE_KEY`.
+  datos.gov.co (sección 4.2/4.4). Filtros: número de sentencia, tipo de
+  sentencia (C/T/SU), tipo de proceso/expediente (D/T/RE/LAT/TI/OP),
+  magistrado(a) ponente, sala, rango de fechas y texto libre (número o
+  descripción del proceso). El dataset público no incluye las partes del
+  proceso (demandante/demandado); el magistrado ponente es el único dato
+  de persona disponible. Requiere `SUPABASE_SERVICE_ROLE_KEY`.
 - `localizar-texto-sentencia`: construye y verifica la URL de una
   providencia en el sitio oficial de la Corte a partir del patrón
   `relatoria/{año}/{tipo}-{numero}-{añoYY}.htm` (sección 4.3.1). Se

@@ -20,9 +20,12 @@ const MIN_RESULTADOS_CACHE = 1 // debajo de esto, se intenta la API en vivo
 interface Criterios {
   sentencia?: string
   sentencia_tipo?: string
+  expediente_tipo?: string
   magistrado_a?: string
   sala?: string
   texto?: string
+  fecha_desde?: string // YYYY-MM-DD
+  fecha_hasta?: string // YYYY-MM-DD
   limit?: number
 }
 
@@ -44,8 +47,11 @@ Deno.serve(async (req) => {
     let query = supabase.from('sentencias_cache').select('*').limit(limit)
     if (criterios.sentencia) query = query.eq('sentencia', criterios.sentencia)
     if (criterios.sentencia_tipo) query = query.eq('sentencia_tipo', criterios.sentencia_tipo)
+    if (criterios.expediente_tipo) query = query.eq('expediente_tipo', criterios.expediente_tipo)
     if (criterios.magistrado_a) query = query.ilike('magistrado_a', `%${criterios.magistrado_a}%`)
     if (criterios.sala) query = query.ilike('sala', `%${criterios.sala}%`)
+    if (criterios.fecha_desde) query = query.gte('fecha_sentencia', criterios.fecha_desde)
+    if (criterios.fecha_hasta) query = query.lte('fecha_sentencia', criterios.fecha_hasta)
     if (criterios.texto) {
       const patron = `%${criterios.texto}%`
       // Coincidencia parcial del número/citación, no búsqueda de texto
@@ -65,19 +71,24 @@ Deno.serve(async (req) => {
       const params = new URLSearchParams({ $limit: String(limit) })
       if (criterios.sentencia) params.set('sentencia', criterios.sentencia)
       if (criterios.sentencia_tipo) params.set('sentencia_tipo', criterios.sentencia_tipo)
+      if (criterios.expediente_tipo) params.set('expediente_tipo', criterios.expediente_tipo)
       if (criterios.magistrado_a) params.set('magistrado_a', criterios.magistrado_a)
       if (criterios.sala) params.set('sala', criterios.sala)
+
+      const condicionesWhere: string[] = []
       if (criterios.texto) {
         // Se restringe la búsqueda de texto en la API en vivo a los mismos
         // campos que en el cache (sentencia, proceso), en vez de usar el
         // $q genérico de Socrata, que busca en TODOS los campos y puede
         // devolver resultados sin relación real con lo buscado.
         const escapado = criterios.texto.replace(/'/g, "''")
-        params.set(
-          '$where',
-          `upper(sentencia) like upper('%${escapado}%') OR upper(proceso) like upper('%${escapado}%')`,
+        condicionesWhere.push(
+          `(upper(sentencia) like upper('%${escapado}%') OR upper(proceso) like upper('%${escapado}%'))`,
         )
       }
+      if (criterios.fecha_desde) condicionesWhere.push(`fecha_sentencia >= '${criterios.fecha_desde}'`)
+      if (criterios.fecha_hasta) condicionesWhere.push(`fecha_sentencia <= '${criterios.fecha_hasta}'`)
+      if (condicionesWhere.length > 0) params.set('$where', condicionesWhere.join(' AND '))
 
       const resp = await fetch(`${DATOS_GOV_URL}?${params.toString()}`)
       if (resp.ok) {

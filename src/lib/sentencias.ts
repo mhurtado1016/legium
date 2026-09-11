@@ -45,9 +45,12 @@ export interface Sentencia {
 export interface CriteriosBusqueda {
   sentencia?: string
   sentencia_tipo?: string
+  expediente_tipo?: string
   magistrado_a?: string
   sala?: string
   texto?: string
+  fecha_desde?: string
+  fecha_hasta?: string
 }
 
 // Invoca la Edge Function buscar-sentencias (sección 4.2/4.4): cache

@@ -23,6 +23,13 @@ export function DashboardPage() {
   const { usuario } = useUsuario()
 
   const [texto, setTexto] = useState('')
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
+  const [sentenciaTipo, setSentenciaTipo] = useState('')
+  const [expedienteTipo, setExpedienteTipo] = useState('')
+  const [magistrado, setMagistrado] = useState('')
+  const [sala, setSala] = useState('')
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [fechaHasta, setFechaHasta] = useState('')
   const [resultados, setResultados] = useState<Sentencia[]>([])
   const [buscando, setBuscando] = useState(false)
   const [buscado, setBuscado] = useState(false)
@@ -48,7 +55,15 @@ export function DashboardPage() {
     setError(null)
     setBuscando(true)
     try {
-      const { resultados } = await buscarSentencias({ texto })
+      const { resultados } = await buscarSentencias({
+        texto: texto || undefined,
+        sentencia_tipo: sentenciaTipo || undefined,
+        expediente_tipo: expedienteTipo || undefined,
+        magistrado_a: magistrado || undefined,
+        sala: sala || undefined,
+        fecha_desde: fechaDesde || undefined,
+        fecha_hasta: fechaHasta || undefined,
+      })
       setResultados(resultados)
       setBuscado(true)
     } catch (err) {
@@ -117,21 +132,108 @@ export function DashboardPage() {
       <main className="px-6 py-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
         <section>
           <h2 className="font-display text-lg mb-2">Buscar jurisprudencia</h2>
-          <form onSubmit={handleBuscar} className="flex gap-2 mb-6">
-            <input
-              type="text"
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              placeholder="Número, magistrado, sala, texto libre…"
-              className="flex-1 border border-line bg-paper-raised px-3 py-2"
-            />
+          <form onSubmit={handleBuscar}>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Número de sentencia, texto libre…"
+                className="flex-1 border border-line bg-paper-raised px-3 py-2"
+              />
+              <button
+                type="submit"
+                disabled={buscando}
+                className="bg-ink text-paper-raised px-5 py-2 hover:bg-ink/90 disabled:opacity-60"
+              >
+                {buscando ? 'Buscando…' : 'Ir'}
+              </button>
+            </div>
+
             <button
-              type="submit"
-              disabled={buscando}
-              className="bg-ink text-paper-raised px-5 py-2 hover:bg-ink/90 disabled:opacity-60"
+              type="button"
+              onClick={() => setFiltrosAbiertos((v) => !v)}
+              className="text-sm text-slate hover:text-ink underline underline-offset-4 mb-4"
             >
-              {buscando ? 'Buscando…' : 'Ir'}
+              {filtrosAbiertos ? 'Ocultar filtros' : 'Más filtros'}
             </button>
+
+            {filtrosAbiertos && (
+              <div className="border border-line p-4 mb-4 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <label className="block text-slate mb-1">Tipo de sentencia</label>
+                  <select
+                    value={sentenciaTipo}
+                    onChange={(e) => setSentenciaTipo(e.target.value)}
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                  >
+                    <option value="">Todos</option>
+                    <option value="C">C — Constitucionalidad</option>
+                    <option value="T">T — Tutela</option>
+                    <option value="SU">SU — Unificación</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate mb-1">Tipo de proceso (expediente)</label>
+                  <select
+                    value={expedienteTipo}
+                    onChange={(e) => setExpedienteTipo(e.target.value)}
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                  >
+                    <option value="">Todos</option>
+                    <option value="D">D — Demanda de inconstitucionalidad</option>
+                    <option value="T">T — Tutela</option>
+                    <option value="RE">RE — Revisión</option>
+                    <option value="LAT">LAT — Ley aprobatoria de tratado</option>
+                    <option value="TI">TI — Impedimento</option>
+                    <option value="OP">OP — Objeciones presidenciales</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate mb-1">Magistrado(a) ponente</label>
+                  <input
+                    type="text"
+                    value={magistrado}
+                    onChange={(e) => setMagistrado(e.target.value)}
+                    placeholder="Nombre del magistrado"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate mb-1">Sala</label>
+                  <input
+                    type="text"
+                    value={sala}
+                    onChange={(e) => setSala(e.target.value)}
+                    placeholder="Ej. Sala Plena, Sala Novena…"
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate mb-1">Fecha desde</label>
+                  <input
+                    type="date"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate mb-1">Fecha hasta</label>
+                  <input
+                    type="date"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    className="w-full border border-line bg-paper-raised px-2 py-1.5"
+                  />
+                </div>
+                <p className="col-span-2 text-slate">
+                  Nota: el dataset público de la Corte no incluye las partes del proceso
+                  (demandante/demandado); el magistrado(a) ponente es el único dato de persona
+                  disponible.
+                </p>
+              </div>
+            )}
           </form>
 
           {error && <p className="text-sm text-seal mb-4">{error}</p>}
