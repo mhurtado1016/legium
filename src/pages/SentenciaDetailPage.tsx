@@ -6,7 +6,7 @@ import {
   generarAnalisisIA,
   localizarTexto,
   obtenerHtmlTextoCompleto,
-  obtenerSentencia,
+  obtenerSentenciaPorNumero,
   verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
@@ -17,7 +17,7 @@ import {
  * en el sitio oficial, cuando está disponible.
  */
 export function SentenciaDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { numero } = useParams<{ numero: string }>()
   const { usuario } = useUsuario()
   const [sentencia, setSentencia] = useState<Sentencia | null>(null)
   const [htmlTexto, setHtmlTexto] = useState<string | null>(null)
@@ -28,10 +28,10 @@ export function SentenciaDetailPage() {
   const [errorCarga, setErrorCarga] = useState<string | null>(null)
 
   async function cargar() {
-    if (!id) return
+    if (!numero) return
     setErrorCarga(null)
     try {
-      const s = await obtenerSentencia(id)
+      const s = await obtenerSentenciaPorNumero(decodeURIComponent(numero))
       setSentencia(s)
     } catch (err) {
       setErrorCarga(err instanceof Error ? err.message : JSON.stringify(err))
@@ -41,7 +41,7 @@ export function SentenciaDetailPage() {
   useEffect(() => {
     cargar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [numero])
 
   useEffect(() => {
     if (!sentencia?.texto_completo_url) return
@@ -54,11 +54,11 @@ export function SentenciaDetailPage() {
   }, [sentencia?.texto_completo_url])
 
   async function handleGenerarAnalisis() {
-    if (!id) return
+    if (!sentencia) return
     setError(null)
     setGenerando(true)
     try {
-      const r = await generarAnalisisIA(id)
+      const r = await generarAnalisisIA(sentencia.id)
       if (!r.ok) {
         setError(
           r.motivo === 'texto_completo_no_disponible' || r.motivo === 'url_construida_no_responde'
@@ -75,10 +75,10 @@ export function SentenciaDetailPage() {
   }
 
   async function handleLocalizarTexto() {
-    if (!id) return
+    if (!sentencia) return
     setError(null)
     try {
-      await localizarTexto(id)
+      await localizarTexto(sentencia.id)
       await cargar()
     } catch (err) {
       setError(err instanceof Error ? err.message : JSON.stringify(err))
@@ -86,8 +86,8 @@ export function SentenciaDetailPage() {
   }
 
   async function handleVerificar() {
-    if (!id || !usuario || !sentencia) return
-    await verificarResumen(id, usuario.firma_id, usuario.id)
+    if (!usuario || !sentencia) return
+    await verificarResumen(sentencia.id, usuario.firma_id, usuario.id)
     setSentencia({ ...sentencia, resumen_ia_verificado: true })
   }
 

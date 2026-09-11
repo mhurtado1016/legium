@@ -239,7 +239,7 @@ src/
   pages/
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias (sección 13.3)
-    SentenciaDetailPage.tsx ficha de sentencia: metadatos, análisis IA y visor del texto completo
+    SentenciaDetailPage.tsx ficha de sentencia (ruta por número, ej. /sentencias/T-760%2F98, no por id — evita depender de que un id capturado antes siga siendo válido)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
     CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)

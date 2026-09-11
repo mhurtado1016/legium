@@ -47,7 +47,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/sentencias/:id"
+        path="/sentencias/:numero"
         element={
           <ProtectedRoute>
             <SentenciaDetailPage />

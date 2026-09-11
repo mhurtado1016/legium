@@ -196,7 +196,7 @@ export function DashboardPage() {
                 )}
 
                 <Link
-                  to={`/sentencias/${s.id}`}
+                  to={`/sentencias/${encodeURIComponent(s.sentencia)}`}
                   className="text-sm text-slate hover:text-ink underline underline-offset-4 mt-2 inline-block"
                 >
                   ver detalle

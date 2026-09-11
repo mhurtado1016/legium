@@ -60,10 +60,16 @@ export async function buscarSentencias(criterios: CriteriosBusqueda) {
   return data as { resultados: Sentencia[]; fuente: 'cache' | 'api_en_vivo' }
 }
 
-export async function obtenerSentencia(id: string) {
-  const { data, error } = await supabase.from('sentencias_cache').select('*').eq('id', id).single()
-  if (error) throw error
-  return data as Sentencia
+// Busca por el número/citación de la sentencia (ej. "T-760/98"), no por
+// el id interno — reutiliza buscar-sentencias, que ya resuelve contra el
+// cache y, si no está ahí, contra la API en vivo, guardando el
+// resultado y devolviéndolo YA CON su id real. Esto evita depender de
+// que un id capturado en un momento anterior siga siendo válido.
+export async function obtenerSentenciaPorNumero(numero: string) {
+  const { resultados } = await buscarSentencias({ sentencia: numero })
+  const encontrada = resultados.find((r) => r.sentencia === numero) ?? resultados[0]
+  if (!encontrada) throw new Error(`No se encontró la sentencia ${numero}.`)
+  return encontrada
 }
 
 // Invoca localizar-texto-sentencia (sección 4.3.1).
