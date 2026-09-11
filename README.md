@@ -210,32 +210,32 @@ embeber la página ajena. Si aun así falla, siempre queda el enlace
 su nueva jerarquía de raíz "R1" (migración de 2026), pero no envía la
 cadena completa — le falta el certificado que conecta esa raíz nueva
 con la raíz vieja ("G2") que sí es universalmente confiable. Los
-navegadores lo tienen resuelto porque ya confían directamente en la
-raíz R1 o completan la cadena por su cuenta; Deno no, y falla con
-`invalid peer certificate: UnknownIssuer`.
+navegadores lo toleran (AIA chasing o confianza directa en R1); los
+clientes HTTP estrictos no.
 
-Se intentó primero pinnear el certificado directamente en las Edge
-Functions con `Deno.createHttpClient({ caCerts: [...] })`, pero
-`caCerts` [no funciona de forma confiable en el runtime de Supabase
-Edge Functions](https://github.com/orgs/supabase/discussions/36035)
-(usa una versión de Deno más antigua que la vainilla). **Solución
-final**: `api/proxy-corte.ts`, una función serverless de **Vercel**
-(runtime Node.js) que sí maneja certificados personalizados de forma
-confiable vía `https.Agent({ ca: [...] })`. Las cuatro Edge Functions
-que necesitan hablar con el sitio de la Corte (`generar-resumen-ia`,
-`localizar-texto-sentencia`, `localizar-textos-sentencias-lote`,
-`obtener-texto-sentencia`) le piden el contenido a este endpoint en vez
-de conectarse directamente. Sigue siendo infraestructura 100% propia
-(Vercel, donde ya vive el frontend), sin depender de ningún servicio de
-terceros.
+Se intentaron dos soluciones "correctas" antes de llegar a la actual:
 
-La cadena de certificados (Intermedio DV R1v1 → Raíz R1 cross-signed →
-Raíz G2, obtenida de
-`certs.godaddy.com/repository/gd_bundle_dv-r1-g2.crt.pem` y verificada
-con `openssl verify`) vive embebida en `api/proxy-corte.ts`. Si GoDaddy
-la rota en el futuro (vigencia del intermedio hasta 2027), hay que
-repetir el proceso y reemplazarla ahí — es el único lugar donde vive
-ahora.
+1. Pinnear el certificado en Deno (`Deno.createHttpClient({ caCerts })`)
+   dentro de las propias Edge Functions — `caCerts` [no funciona de
+   forma confiable en el runtime de Supabase Edge
+   Functions](https://github.com/orgs/supabase/discussions/36035).
+2. Mover la conexión a una función serverless de **Vercel** (Node.js) y
+   pinnear ahí el mismo certificado vía `https.Agent({ ca: [...] })` —
+   el certificado se verificó independientemente con `openssl verify`
+   (dio `OK`), pero el motor TLS de ese entorno de Vercel lo rechazó
+   igual con `UNABLE_TO_VERIFY_LEAF_SIGNATURE`.
+
+**Decisión final (aprobada explícitamente por el usuario)**:
+`api/proxy-corte.ts` desactiva la verificación de certificado
+(`rejectUnauthorized: false`) **únicamente** para conexiones al dominio
+`corteconstitucional.gov.co` (validado antes de conectar). El contenido
+que se trae es información pública (texto de sentencias), no datos de
+usuarios ni credenciales, y esto no afecta ninguna otra conexión de la
+app. Las cuatro Edge Functions que necesitan el texto de una sentencia
+(`generar-resumen-ia`, `localizar-texto-sentencia`,
+`localizar-textos-sentencias-lote`, `obtener-texto-sentencia`) le piden
+el contenido a este endpoint en vez de conectarse directamente. Sigue
+siendo infraestructura 100% propia, sin depender de ningún tercero.
 
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
