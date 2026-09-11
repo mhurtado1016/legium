@@ -29,8 +29,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Fuerza el runtime Node.js de Vercel (no el runtime "Edge", que no
 // soporta el módulo `node:https` y causaría un error en cada invocación).
+// maxDuration en 60s: el sitio de la Corte es lento, y el límite por
+// defecto de Vercel (10s en el plan Hobby) se estaba superando antes de
+// que la función terminara de descargar y procesar la página — eso
+// hace que la plataforma mate la función SIN darle oportunidad de
+// responder con un error propio, lo que se ve como un "500 sin ningún
+// detalle" en el cliente.
 export const config = {
   runtime: 'nodejs',
+  maxDuration: 60,
 }
 
 const agenteSinVerificacion = new https.Agent({
