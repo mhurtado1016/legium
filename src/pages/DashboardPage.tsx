@@ -156,12 +156,13 @@ export function DashboardPage() {
     try {
       const r = await generarAnalisisIA(sentenciaId)
       if (!r.ok) {
+        const base =
+          r.motivo === 'texto_completo_no_disponible' || r.motivo === 'url_construida_no_responde'
+            ? 'No se pudo generar el análisis: no se encontró el texto completo en el sitio oficial.'
+            : `No se pudo generar el análisis (${r.motivo ?? 'motivo desconocido'}).`
         setErrorGeneracion((prev) => ({
           ...prev,
-          [sentenciaId]:
-            r.motivo === 'texto_completo_no_disponible' || r.motivo === 'url_construida_no_responde'
-              ? 'No se pudo generar el análisis: no se encontró el texto completo en el sitio oficial.'
-              : 'No se pudo generar el análisis.',
+          [sentenciaId]: r.detalle ? `${base} ${r.detalle}` : base,
         }))
       } else {
         setResultados((prev) =>

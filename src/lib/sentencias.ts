@@ -91,7 +91,7 @@ export async function generarAnalisisIA(sentenciaId: string) {
     body: { sentencia_id: sentenciaId },
   })
   if (error) throw new Error(await mensajeErrorFuncion(error))
-  return data as { ok: boolean; motivo?: string; analisis?: Record<string, string> }
+  return data as { ok: boolean; motivo?: string; detalle?: string; analisis?: Record<string, string> }
 }
 // Obtiene el texto completo con su formato original (negrita, cursiva,
 // listas, tablas) — el proxy en Vercel lo sanitiza (sin scripts ni
