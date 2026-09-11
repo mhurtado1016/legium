@@ -138,7 +138,7 @@ export function DashboardPage() {
                 type="text"
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
-                placeholder="Número de sentencia o tipo de proceso…"
+                placeholder="Número de sentencia, tipo de proceso o palabra clave del análisis…"
                 className="flex-1 border border-line bg-paper-raised px-3 py-2 text-base"
               />
               <button
@@ -229,8 +229,10 @@ export function DashboardPage() {
                 </div>
                 <p className="sm:col-span-2 text-slate">
                   Nota: el dataset público de la Corte no incluye las partes del proceso
-                  (demandante/demandado); el magistrado(a) ponente es el único dato de persona
-                  disponible.
+                  (demandante/demandado) ni tema/descriptor; el magistrado(a) ponente es el único
+                  dato de persona disponible, y la búsqueda por palabra clave del cuadro principal
+                  solo encuentra coincidencias en sentencias que ya tengan un análisis generado por
+                  IA.
                 </p>
               </div>
             )}

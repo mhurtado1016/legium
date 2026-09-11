@@ -54,10 +54,22 @@ Deno.serve(async (req) => {
     if (criterios.fecha_hasta) query = query.lte('fecha_sentencia', criterios.fecha_hasta)
     if (criterios.texto) {
       const patron = `%${criterios.texto}%`
-      // Coincidencia parcial del número/citación, no búsqueda de texto
-      // libre lingüística — un usuario que escribe "760" espera
-      // encontrar "T-760/08", no cualquier sentencia relacionada por tema.
-      query = query.or(`sentencia.ilike.${patron},proceso.ilike.${patron}`)
+      // Coincidencia parcial: número/citación y proceso (igual que
+      // antes), más el contenido del análisis generado por IA cuando
+      // existe (resumen, hechos, problema jurídico, consideraciones,
+      // decisión) — es lo único con contenido temático real, ya que el
+      // dataset público de datos.gov.co no trae tema ni descriptor.
+      query = query.or(
+        [
+          `sentencia.ilike.${patron}`,
+          `proceso.ilike.${patron}`,
+          `resumen_ia.ilike.${patron}`,
+          `hechos_ia.ilike.${patron}`,
+          `problema_juridico_ia.ilike.${patron}`,
+          `consideraciones_ia.ilike.${patron}`,
+          `decision_ia.ilike.${patron}`,
+        ].join(','),
+      )
     }
 
     const { data: cacheResults, error: cacheError } = await query
