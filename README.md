@@ -77,7 +77,12 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   magistrado(a) ponente, sala, rango de fechas y texto libre (número o
   descripción del proceso). El dataset público no incluye las partes del
   proceso (demandante/demandado); el magistrado ponente es el único dato
-  de persona disponible. Requiere `SUPABASE_SERVICE_ROLE_KEY`.
+  de persona disponible. Además, antes de responder, resuelve en
+  paralelo el `texto_completo_url` de cada resultado que aún no lo
+  tenga (mismo patrón que `localizar-texto-sentencia`, vía el proxy de
+  Vercel) — el enlace "Ver en el sitio oficial" aparece sin que el
+  usuario tenga que pedir el análisis IA primero. Requiere
+  `SUPABASE_SERVICE_ROLE_KEY`.
 - `localizar-texto-sentencia`: construye y verifica la URL de una
   providencia en el sitio oficial de la Corte a partir del patrón
   `relatoria/{año}/{tipo}-{numero}-{añoYY}.htm` (sección 4.3.1). Se

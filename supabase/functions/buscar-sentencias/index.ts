@@ -17,6 +17,43 @@ const corsHeaders = {
 const DATOS_GOV_URL = 'https://www.datos.gov.co/resource/v2k4-2t8s.json'
 const MIN_RESULTADOS_CACHE = 1 // debajo de esto, se intenta la API en vivo
 
+// Mismo patrón que localizar-texto-sentencia/index.ts: se resuelve la URL
+// del texto completo para cada resultado ANTES de responder, en vez de
+// esperar a que el usuario pida el análisis IA. La verificación real pasa
+// por el proxy de Vercel (api/proxy-corte.ts), no por un fetch directo
+// desde Deno — el sitio de la Corte tiene un certificado TLS incompleto
+// que Deno rechaza (ver notas en esa función y en el README).
+const PROXY_CORTE_URL = 'https://legium.vercel.app/api/proxy-corte'
+
+function construirUrlCandidata(
+  sentenciaTipo: string,
+  sentencia: string,
+  fechaSentencia: string,
+): string | null {
+  const match = sentencia.match(/^([A-Z]+)-?(\d+)\/(\d{2})$/i)
+  if (!match) return null
+  const [, , numero, anioYY] = match
+
+  const anioCompleto = new Date(fechaSentencia).getFullYear()
+  if (!anioCompleto) return null
+
+  const tipo = sentenciaTipo.toUpperCase()
+  const slug =
+    tipo === 'SU' ? `SU${numero}-${anioYY}` : `${tipo.toLowerCase()}-${numero}-${anioYY}`
+
+  return `https://www.corteconstitucional.gov.co/relatoria/${anioCompleto}/${slug}.htm`
+}
+
+async function existeLaUrl(url: string): Promise<boolean> {
+  try {
+    const resp = await fetch(`${PROXY_CORTE_URL}?url=${encodeURIComponent(url)}`)
+    const data = await resp.json().catch(() => null)
+    return resp.ok && data?.status >= 200 && data?.status < 300
+  } catch {
+    return false
+  }
+}
+
 interface Criterios {
   sentencia?: string
   sentencia_tipo?: string
@@ -42,6 +79,11 @@ Deno.serve(async (req) => {
 
     const criterios: Criterios = await req.json()
     const limit = Math.min(criterios.limit ?? 25, 100)
+
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
 
     // 1. Buscar en cache local
     let query = supabase.from('sentencias_cache').select('*').limit(limit)
@@ -133,10 +175,6 @@ Deno.serve(async (req) => {
           }))
 
         if (filas.length > 0) {
-          const admin = createClient(
-            Deno.env.get('SUPABASE_URL')!,
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-          )
           // Se guarda en el cache y se devuelven las filas YA GUARDADAS
           // (con su `id` generado por la base de datos) — los datos
           // crudos de la API no traen `id`, y el frontend lo necesita
@@ -151,7 +189,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Registrar la búsqueda en el historial del tenant
+    // 3. Resolver el texto completo de cada resultado que aún no lo tenga,
+    // en paralelo, antes de responder — así no hace falta ninguna acción
+    // extra del usuario para ver el enlace al sitio oficial.
+    const pendientesDeLocalizar = resultados.filter(
+      (r) => !r.texto_completo_url && !r.texto_completo_no_disponible && r.sentencia_tipo && r.fecha_sentencia,
+    )
+    if (pendientesDeLocalizar.length > 0) {
+      await Promise.allSettled(
+        pendientesDeLocalizar.map(async (r) => {
+          const candidata = construirUrlCandidata(r.sentencia_tipo, r.sentencia, r.fecha_sentencia)
+          if (!candidata) return
+
+          const existe = await existeLaUrl(candidata)
+          if (existe) {
+            r.texto_completo_url = candidata
+            await admin
+              .from('sentencias_cache')
+              .update({ texto_completo_url: candidata, texto_completo_no_disponible: false })
+              .eq('id', r.id)
+          } else {
+            r.texto_completo_no_disponible = true
+            await admin
+              .from('sentencias_cache')
+              .update({ texto_completo_no_disponible: true })
+              .eq('id', r.id)
+          }
+        }),
+      )
+    }
+
+    // 4. Registrar la búsqueda en el historial del tenant
     const { data: userData } = await supabase.auth.getUser()
     if (userData?.user) {
       const { data: usuario } = await supabase
