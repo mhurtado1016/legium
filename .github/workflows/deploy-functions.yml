@@ -18,7 +18,14 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Versión fijada en vez de "latest": con "latest" la Action
+          # consulta la API de GitHub para resolver la versión más
+          # reciente, y esa consulta sin autenticar tiene un límite bajo
+          # de peticiones por hora que se agota fácil en runners
+          # compartidos ("rate limit exceeded"). Fijar una versión evita
+          # esa consulta por completo. Subir el número de vez en cuando
+          # si se necesita una versión más nueva del CLI.
+          version: 2.116.0
 
       - name: Deploy de todas las funciones
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
