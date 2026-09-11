@@ -138,7 +138,7 @@ export function DashboardPage() {
                 type="text"
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
-                placeholder="Número de sentencia, texto libre…"
+                placeholder="Número de sentencia o tipo de proceso…"
                 className="flex-1 border border-line bg-paper-raised px-3 py-2 text-base"
               />
               <button
