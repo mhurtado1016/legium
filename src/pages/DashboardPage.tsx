@@ -64,6 +64,7 @@ export function DashboardPage() {
   const [cargandoTextoId, setCargandoTextoId] = useState<string | null>(null)
   const [errorTextoPorId, setErrorTextoPorId] = useState<Record<string, string>>({})
   const [textoVisiblePorId, setTextoVisiblePorId] = useState<Record<string, boolean>>({})
+  const [analisisVisiblePorId, setAnalisisVisiblePorId] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
@@ -226,6 +227,7 @@ export function DashboardPage() {
               : s,
           ),
         )
+        setAnalisisVisiblePorId((prev) => ({ ...prev, [sentenciaId]: true }))
       }
     } catch (err) {
       setErrorGeneracion((prev) => ({
@@ -493,7 +495,28 @@ export function DashboardPage() {
 
                         <div>
                           <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-                            <h3 className="font-display text-base">Análisis</h3>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAnalisisVisiblePorId((prev) => ({
+                                  ...prev,
+                                  [s.id]: !(prev[s.id] ?? true),
+                                }))
+                              }
+                              className="flex items-center gap-1.5 hover:text-ink transition-colors"
+                            >
+                              <h3 className="font-display text-base">Análisis</h3>
+                              {s.resumen_ia && (
+                                <ChevronDown
+                                  size={16}
+                                  strokeWidth={1.75}
+                                  className={
+                                    'text-slate transition-transform ' +
+                                    (analisisVisiblePorId[s.id] ?? true ? 'rotate-180' : '')
+                                  }
+                                />
+                              )}
+                            </button>
                             <button
                               onClick={() => handleGenerarAnalisis(s.id)}
                               disabled={generando[s.id]}
@@ -520,8 +543,8 @@ export function DashboardPage() {
                             <div className="text-slate space-y-2 mb-3">
                               <p className="inline-flex items-center gap-1.5 text-seal">
                                 <AlertCircle size={14} strokeWidth={1.75} />
-                                No se pudo localizar el texto completo en el sitio oficial la última
-                                vez. El botón de arriba lo vuelve a intentar.
+                                No se pudo localizar la sentencia completa en el sitio oficial la
+                                última vez. El botón de arriba lo vuelve a intentar.
                               </p>
                               <button onClick={() => handleLocalizarTexto(s.id)} className="link">
                                 Reintentar solo la localización
@@ -536,27 +559,28 @@ export function DashboardPage() {
                             </p>
                           )}
 
-                          {s.resumen_ia && (
+                          {s.resumen_ia && (analisisVisiblePorId[s.id] ?? true) && (
                             <div className="space-y-4">
-                              <p>
-                                {s.resumen_ia_verificado ? (
-                                  <span className="inline-flex items-center gap-1.5 text-slate">
+                              <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={s.resumen_ia_verificado}
+                                  onChange={() => !s.resumen_ia_verificado && handleVerificar(s.id)}
+                                  disabled={s.resumen_ia_verificado}
+                                />
+                                <span
+                                  className={
+                                    s.resumen_ia_verificado
+                                      ? 'inline-flex items-center gap-1.5 text-slate'
+                                      : 'text-slate'
+                                  }
+                                >
+                                  {s.resumen_ia_verificado && (
                                     <ShieldCheck size={14} strokeWidth={1.75} />
-                                    Verificado por el despacho
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex flex-wrap items-center gap-1.5 text-seal">
-                                    <Sparkles size={14} strokeWidth={1.75} />
-                                    Generado por IA · pendiente de verificación —{' '}
-                                    <button
-                                      onClick={() => handleVerificar(s.id)}
-                                      className="underline underline-offset-4"
-                                    >
-                                      marcar como verificado
-                                    </button>
-                                  </span>
-                                )}
-                              </p>
+                                  )}
+                                  Verificado por el despacho
+                                </span>
+                              </label>
                               <Seccion titulo="Resumen" texto={s.resumen_ia} />
                               <Seccion titulo="Hechos" texto={s.hechos_ia} />
                               <Seccion titulo="Problema jurídico" texto={s.problema_juridico_ia} />
@@ -567,27 +591,26 @@ export function DashboardPage() {
                         </div>
 
                         <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-display text-base">Texto completo</h3>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTextoVisiblePorId((prev) => ({ ...prev, [s.id]: !prev[s.id] }))
+                            }
+                            disabled={!htmlPorId[s.id]}
+                            className="flex items-center gap-1.5 hover:text-ink transition-colors mb-2 disabled:cursor-default disabled:hover:text-ink"
+                          >
+                            <h3 className="font-display text-base">Sentencia completa</h3>
                             {htmlPorId[s.id] && (
-                              <button
-                                onClick={() =>
-                                  setTextoVisiblePorId((prev) => ({ ...prev, [s.id]: !prev[s.id] }))
+                              <ChevronDown
+                                size={16}
+                                strokeWidth={1.75}
+                                className={
+                                  'text-slate transition-transform ' +
+                                  (textoVisiblePorId[s.id] ? 'rotate-180' : '')
                                 }
-                                className="link text-sm inline-flex items-center gap-1"
-                              >
-                                {textoVisiblePorId[s.id] ? 'Colapsar' : 'Mostrar'}
-                                <ChevronDown
-                                  size={14}
-                                  strokeWidth={1.75}
-                                  className={
-                                    'transition-transform ' +
-                                    (textoVisiblePorId[s.id] ? 'rotate-180' : '')
-                                  }
-                                />
-                              </button>
+                              />
                             )}
-                          </div>
+                          </button>
                           {s.texto_completo_url ? (
                             <>
                               {cargandoTextoId === s.id && <p className="text-slate">Cargando…</p>}
@@ -613,7 +636,7 @@ export function DashboardPage() {
                             <p className="text-slate">
                               {s.texto_completo_no_disponible
                                 ? 'No disponible.'
-                                : 'Aún no se ha localizado el texto completo de esta sentencia.'}
+                                : 'Aún no se ha localizado la sentencia completa.'}
                             </p>
                           )}
                         </div>
