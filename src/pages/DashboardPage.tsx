@@ -99,9 +99,15 @@ export function DashboardPage() {
     }
   }
 
+  const [errorFavoritoPorId, setErrorFavoritoPorId] = useState<Record<string, string>>({})
+
   async function handleToggleFavorita(sentenciaId: string) {
     if (!usuario) return
     const esFavorita = favoritasIds.has(sentenciaId)
+    setErrorFavoritoPorId((prev) => {
+      const { [sentenciaId]: _omitida, ...resto } = prev
+      return resto
+    })
     // Optimista: se actualiza la UI de inmediato, sin esperar la respuesta.
     setFavoritasIds((prev) => {
       const next = new Set(prev)
@@ -114,13 +120,17 @@ export function DashboardPage() {
       } else {
         await marcarFavorita(sentenciaId, usuario.firma_id, usuario.id)
       }
-    } catch {
-      // revertir si falló
+    } catch (err) {
+      // revertir si falló, y mostrar por qué
       setFavoritasIds((prev) => {
         const next = new Set(prev)
         esFavorita ? next.add(sentenciaId) : next.delete(sentenciaId)
         return next
       })
+      setErrorFavoritoPorId((prev) => ({
+        ...prev,
+        [sentenciaId]: err instanceof Error ? err.message : JSON.stringify(err),
+      }))
     }
   }
 
@@ -416,6 +426,7 @@ export function DashboardPage() {
 
                         <div className="flex items-center gap-1 shrink-0">
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleToggleFavorita(s.id)
@@ -439,6 +450,10 @@ export function DashboardPage() {
                           />
                         </div>
                       </div>
+
+                      {errorFavoritoPorId[s.id] && (
+                        <p className="mt-2 text-sm text-seal">{errorFavoritoPorId[s.id]}</p>
+                      )}
 
                       {s.resumen_ia && !expandido && (
                         <p className="mt-3 pt-3 border-t border-line text-sm text-ink line-clamp-2">
@@ -477,90 +492,71 @@ export function DashboardPage() {
                         </table>
 
                         <div>
-                          <h3 className="font-display text-base mb-2">Análisis</h3>
-
-                          {!s.resumen_ia && !s.texto_completo_no_disponible && (
+                          <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                            <h3 className="font-display text-base">Análisis</h3>
                             <button
                               onClick={() => handleGenerarAnalisis(s.id)}
                               disabled={generando[s.id]}
-                              className="inline-flex items-center gap-1.5 btn-primary btn-sm"
+                              className={
+                                'inline-flex items-center gap-1.5 disabled:opacity-50 ' +
+                                (s.resumen_ia ? 'link text-sm' : 'btn-primary btn-sm')
+                              }
                             >
                               {generando[s.id] ? (
                                 <>
                                   <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
-                                  Generando…
+                                  {s.resumen_ia ? 'Regenerando…' : 'Generando…'}
                                 </>
                               ) : (
                                 <>
                                   <Sparkles size={14} strokeWidth={1.75} />
-                                  Generar análisis con IA
+                                  {s.resumen_ia ? 'Regenerar análisis' : 'Generar análisis con IA'}
                                 </>
                               )}
                             </button>
-                          )}
+                          </div>
 
                           {s.texto_completo_no_disponible && !s.texto_completo_url && (
-                            <div className="text-slate space-y-2">
+                            <div className="text-slate space-y-2 mb-3">
                               <p className="inline-flex items-center gap-1.5 text-seal">
                                 <AlertCircle size={14} strokeWidth={1.75} />
-                                No se pudo localizar el texto completo en el sitio oficial.
+                                No se pudo localizar el texto completo en el sitio oficial la última
+                                vez. El botón de arriba lo vuelve a intentar.
                               </p>
-                              <button
-                                onClick={() => handleLocalizarTexto(s.id)}
-                                className="link"
-                              >
-                                Reintentar localización
+                              <button onClick={() => handleLocalizarTexto(s.id)} className="link">
+                                Reintentar solo la localización
                               </button>
                             </div>
                           )}
 
                           {errorGeneracion[s.id] && (
-                            <p className="inline-flex items-center gap-1.5 text-seal mt-2">
+                            <p className="inline-flex items-center gap-1.5 text-seal mb-3">
                               <AlertCircle size={14} strokeWidth={1.75} />
                               {errorGeneracion[s.id]}
                             </p>
                           )}
 
                           {s.resumen_ia && (
-                            <div className="space-y-4 mt-3">
-                              <div className="flex items-center justify-between flex-wrap gap-2">
-                                <p>
-                                  {s.resumen_ia_verificado ? (
-                                    <span className="inline-flex items-center gap-1.5 text-slate">
-                                      <ShieldCheck size={14} strokeWidth={1.75} />
-                                      Verificado por el despacho
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex flex-wrap items-center gap-1.5 text-seal">
-                                      <Sparkles size={14} strokeWidth={1.75} />
-                                      Generado por IA · pendiente de verificación —{' '}
-                                      <button
-                                        onClick={() => handleVerificar(s.id)}
-                                        className="underline underline-offset-4"
-                                      >
-                                        marcar como verificado
-                                      </button>
-                                    </span>
-                                  )}
-                                </p>
-                                <button
-                                  onClick={() => handleGenerarAnalisis(s.id)}
-                                  disabled={generando[s.id]}
-                                  className="inline-flex items-center gap-1.5 link text-sm disabled:opacity-50"
-                                >
-                                  {generando[s.id] ? (
-                                    <>
-                                      <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
-                                      Regenerando…
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Sparkles size={14} strokeWidth={1.75} />
-                                      Regenerar análisis
-                                    </>
-                                  )}
-                                </button>
-                              </div>
+                            <div className="space-y-4">
+                              <p>
+                                {s.resumen_ia_verificado ? (
+                                  <span className="inline-flex items-center gap-1.5 text-slate">
+                                    <ShieldCheck size={14} strokeWidth={1.75} />
+                                    Verificado por el despacho
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex flex-wrap items-center gap-1.5 text-seal">
+                                    <Sparkles size={14} strokeWidth={1.75} />
+                                    Generado por IA · pendiente de verificación —{' '}
+                                    <button
+                                      onClick={() => handleVerificar(s.id)}
+                                      className="underline underline-offset-4"
+                                    >
+                                      marcar como verificado
+                                    </button>
+                                  </span>
+                                )}
+                              </p>
                               <Seccion titulo="Resumen" texto={s.resumen_ia} />
                               <Seccion titulo="Hechos" texto={s.hechos_ia} />
                               <Seccion titulo="Problema jurídico" texto={s.problema_juridico_ia} />
