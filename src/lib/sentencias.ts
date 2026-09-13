@@ -39,6 +39,9 @@ export interface Sentencia {
   problema_juridico_ia: string | null
   consideraciones_ia: string | null
   decision_ia: string | null
+  demandante_ia: string | null
+  demandado_ia: string | null
+  motivo_ia: string | null
   resumen_ia_verificado: boolean
 }
 

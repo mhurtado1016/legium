@@ -30,6 +30,9 @@ interface Body {
 }
 
 interface AnalisisIA {
+  demandante: string
+  demandado: string
+  motivo: string
   resumen: string
   hechos: string
   problema_juridico: string
@@ -187,7 +190,9 @@ Deno.serve(async (req) => {
 Reglas estrictas:
 - No uses conocimiento general ni infieras nada que no esté en el texto.
 - Si un campo no puede extraerse claramente del texto, responde exactamente "no identificado en el texto" para ese campo.
-- Responde ÚNICAMENTE con un objeto JSON con las claves: resumen, hechos, problema_juridico, consideraciones_relevantes, decision.
+- Para demandante/demandado: en una acción de tutela usa el accionante como "demandante" y el accionado como "demandado"; en una demanda de inconstitucionalidad, usa el demandante y, si no hay contraparte procesal individualizada, responde "no identificado en el texto" para "demandado".
+- "motivo" es una frase corta (una oración) que resuma por qué se presentó la acción, no el análisis completo.
+- Responde ÚNICAMENTE con un objeto JSON con las claves: demandante, demandado, motivo, resumen, hechos, problema_juridico, consideraciones_relevantes, decision.
 
 Texto de la providencia:
 """${textoCompleto}"""`
@@ -219,12 +224,14 @@ Texto de la providencia:
       .update({
         texto_completo_url: url,
         texto_completo_no_disponible: false,
+        demandante_ia: analisis.demandante,
+        demandado_ia: analisis.demandado,
+        motivo_ia: analisis.motivo,
         resumen_ia: analisis.resumen,
         hechos_ia: analisis.hechos,
         problema_juridico_ia: analisis.problema_juridico,
         consideraciones_ia: analisis.consideraciones_relevantes,
         decision_ia: analisis.decision,
-        resumen_ia_verificado: false,
         resumen_ia_generado_en: new Date().toISOString(),
       })
       .eq('id', sentencia_id)

@@ -311,6 +311,17 @@ tarjeta del buscador, y filtro "Solo favoritas" en el panel de filtros
 que se aplica del lado del cliente sobre los resultados ya traídos (no
 modifica la Edge Function `buscar-sentencias`).
 
+**Decisión posterior: se quitó la verificación humana del análisis IA**
+(cambio explícito del usuario sobre la sección 4.3.3 de la especificación
+original, que exigía verificación humana antes de mostrar un resumen
+como definitivo). Ya no hay badge de "pendiente de verificación" ni
+checkbox de verificar — el resumen se muestra directamente. La columna
+`resumen_ia_verificado` y la tabla `verificaciones_resumen` siguen
+existiendo en el esquema (no se borraron), simplemente no se usan desde
+la UI. El análisis ahora también identifica `demandante_ia`,
+`demandado_ia` y `motivo_ia` (columnas agregadas en la migración 0014),
+mostrados antes del resumen.
+
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
 de tareas de desarrollo, y el resto de "pendientes de definir" en cada

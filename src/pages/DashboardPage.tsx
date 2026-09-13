@@ -10,21 +10,18 @@ import {
   Loader2,
   FolderOpen,
   Clock3,
-  ShieldCheck,
   Star,
 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
   buscarSentencias,
-  contarVerificacionesPendientes,
   generarAnalisisIA,
   listarSentenciasFavoritasIds,
   localizarTexto,
   marcarFavorita,
   obtenerTextoCompleto,
   quitarFavorita,
-  verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
 import { diasRestantes, listarPlazos, type Plazo } from '../lib/plazos'
@@ -54,7 +51,6 @@ export function DashboardPage() {
   const [buscando, setBuscando] = useState(false)
   const [buscado, setBuscado] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [verificacionesPendientes, setVerificacionesPendientes] = useState<number | null>(null)
   const [plazosProximos, setPlazosProximos] = useState<Plazo[]>([])
   const [casosAbiertos, setCasosAbiertos] = useState<Caso[]>([])
   const [generando, setGenerando] = useState<Record<string, boolean>>({})
@@ -67,7 +63,6 @@ export function DashboardPage() {
   const [analisisVisiblePorId, setAnalisisVisiblePorId] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
     listarSentenciasFavoritasIds().then(setFavoritasIds).catch(() => {})
     listarPlazos({ estado: 'pendiente' })
       .then((p) => setPlazosProximos(p.slice(0, 5)))
@@ -185,15 +180,6 @@ export function DashboardPage() {
     }
   }
 
-  async function handleVerificar(sentenciaId: string) {
-    if (!usuario) return
-    await verificarResumen(sentenciaId, usuario.firma_id, usuario.id)
-    setResultados((prev) =>
-      prev.map((s) => (s.id === sentenciaId ? { ...s, resumen_ia_verificado: true } : s)),
-    )
-    setVerificacionesPendientes((prev) => (prev !== null ? Math.max(prev - 1, 0) : prev))
-  }
-
   async function handleGenerarAnalisis(sentenciaId: string) {
     setGenerando((prev) => ({ ...prev, [sentenciaId]: true }))
     setErrorGeneracion((prev) => {
@@ -217,12 +203,14 @@ export function DashboardPage() {
             s.id === sentenciaId
               ? {
                   ...s,
+                  demandante_ia: r.analisis?.demandante ?? s.demandante_ia,
+                  demandado_ia: r.analisis?.demandado ?? s.demandado_ia,
+                  motivo_ia: r.analisis?.motivo ?? s.motivo_ia,
                   resumen_ia: r.analisis?.resumen ?? s.resumen_ia,
                   hechos_ia: r.analisis?.hechos ?? s.hechos_ia,
                   problema_juridico_ia: r.analisis?.problema_juridico ?? s.problema_juridico_ia,
                   consideraciones_ia: r.analisis?.consideraciones_relevantes ?? s.consideraciones_ia,
                   decision_ia: r.analisis?.decision ?? s.decision_ia,
-                  resumen_ia_verificado: false,
                 }
               : s,
           ),
@@ -561,26 +549,14 @@ export function DashboardPage() {
 
                           {s.resumen_ia && (analisisVisiblePorId[s.id] ?? true) && (
                             <div className="space-y-4">
-                              <label className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={s.resumen_ia_verificado}
-                                  onChange={() => !s.resumen_ia_verificado && handleVerificar(s.id)}
-                                  disabled={s.resumen_ia_verificado}
-                                />
-                                <span
-                                  className={
-                                    s.resumen_ia_verificado
-                                      ? 'inline-flex items-center gap-1.5 text-slate'
-                                      : 'text-slate'
-                                  }
-                                >
-                                  {s.resumen_ia_verificado && (
-                                    <ShieldCheck size={14} strokeWidth={1.75} />
-                                  )}
-                                  Verificado por el despacho
-                                </span>
-                              </label>
+                              {(s.demandante_ia || s.demandado_ia) && (
+                                <p className="text-slate">
+                                  {s.demandante_ia && <>Demandante: {s.demandante_ia}</>}
+                                  {s.demandante_ia && s.demandado_ia && ' · '}
+                                  {s.demandado_ia && <>Demandado: {s.demandado_ia}</>}
+                                </p>
+                              )}
+                              {s.motivo_ia && <p className="text-ink">{s.motivo_ia}</p>}
                               <Seccion titulo="Resumen" texto={s.resumen_ia} />
                               <Seccion titulo="Hechos" texto={s.hechos_ia} />
                               <Seccion titulo="Problema jurídico" texto={s.problema_juridico_ia} />
@@ -660,16 +636,6 @@ export function DashboardPage() {
 
         <aside className="space-y-4">
           <h2 className="font-display text-lg mb-2">Su actividad</h2>
-
-          <div className="card p-4">
-            <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-1">
-              <ShieldCheck size={14} strokeWidth={1.75} />
-              Verificaciones pendientes
-            </p>
-            <p className="text-2xl font-display">
-              {verificacionesPendientes === null ? '—' : verificacionesPendientes}
-            </p>
-          </div>
 
           <div className="card p-4">
             <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-2">
