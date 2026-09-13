@@ -156,19 +156,33 @@ Reglas estrictas:
 Texto de la providencia:
 """${textoCompleto}"""`
 
-    const geminiResp = await fetch(`${GEMINI_URL}?key=${Deno.env.get('GEMINI_API_KEY')}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-    })
-    if (!geminiResp.ok) {
-      const cuerpoError = await geminiResp.json().catch(() => null)
+    // Gemini a veces responde 503 por saturación temporal del modelo
+    // ("high demand"), no por un problema de la petición en sí — se
+    // reintenta un par de veces con espera antes de darlo por fallido.
+    const INTENTOS_GEMINI = 3
+    let geminiResp: Response | null = null
+    let ultimoError = ''
+    for (let intento = 1; intento <= INTENTOS_GEMINI; intento++) {
+      geminiResp = await fetch(`${GEMINI_URL}?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json' },
+        }),
+      })
+      if (geminiResp.ok) break
+
+      const cuerpoError = await geminiResp.clone().json().catch(() => null)
       const detalle = cuerpoError?.error?.message
-      throw new Error(`Gemini respondió ${geminiResp.status}${detalle ? `: ${detalle}` : ''}`)
+      ultimoError = `Gemini respondió ${geminiResp.status}${detalle ? `: ${detalle}` : ''}`
+
+      const esSaturacionTemporal = geminiResp.status === 503 || geminiResp.status === 429
+      if (!esSaturacionTemporal || intento === INTENTOS_GEMINI) break
+
+      await new Promise((resolve) => setTimeout(resolve, 1500 * intento)) // espera creciente: 1.5s, 3s
     }
+    if (!geminiResp || !geminiResp.ok) throw new Error(ultimoError)
 
     const geminiData = await geminiResp.json()
     const jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text

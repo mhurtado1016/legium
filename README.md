@@ -97,8 +97,14 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   `sentencias_cache` (sección 4.2, punto 1). Configurar como cron job
   desde el dashboard de Supabase (Edge Functions → Schedules).
 - `generar-resumen-ia`: extrae el texto completo y genera el análisis
-  estructurado con Gemini (sección 4.3). Requiere el secreto
-  `GEMINI_API_KEY` (`supabase secrets set GEMINI_API_KEY=...`).
+  estructurado con Gemini (sección 4.3), modelo `gemini-3.8-flash`
+  (`gemini-2.0-flash` fue apagado el 1 de junio de 2026 — si Google
+  vuelve a retirar el modelo vigente, esto fallará con
+  "Gemini respondió 400: ..." y hay que actualizar `GEMINI_MODEL` en el
+  código). Reintenta hasta 3 veces con espera creciente si Gemini
+  responde 503/429 (saturación temporal del modelo, no un error de la
+  petición). Requiere el secreto `GEMINI_API_KEY`
+  (`supabase secrets set GEMINI_API_KEY=...`).
 
 - `enviar-notificaciones-plazos`: despacha notificaciones de plazos por
   email (Resend) y push (Web Push), y marca las de canal `app` como
