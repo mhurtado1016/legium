@@ -448,25 +448,44 @@ export function DashboardPage() {
 
                           {s.resumen_ia && (
                             <div className="space-y-4 mt-3">
-                              <p>
-                                {s.resumen_ia_verificado ? (
-                                  <span className="inline-flex items-center gap-1.5 text-slate">
-                                    <ShieldCheck size={14} strokeWidth={1.75} />
-                                    Verificado por el despacho
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex flex-wrap items-center gap-1.5 text-seal">
-                                    <Sparkles size={14} strokeWidth={1.75} />
-                                    Generado por IA · pendiente de verificación —{' '}
-                                    <button
-                                      onClick={() => handleVerificar(s.id)}
-                                      className="underline underline-offset-4"
-                                    >
-                                      marcar como verificado
-                                    </button>
-                                  </span>
-                                )}
-                              </p>
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <p>
+                                  {s.resumen_ia_verificado ? (
+                                    <span className="inline-flex items-center gap-1.5 text-slate">
+                                      <ShieldCheck size={14} strokeWidth={1.75} />
+                                      Verificado por el despacho
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex flex-wrap items-center gap-1.5 text-seal">
+                                      <Sparkles size={14} strokeWidth={1.75} />
+                                      Generado por IA · pendiente de verificación —{' '}
+                                      <button
+                                        onClick={() => handleVerificar(s.id)}
+                                        className="underline underline-offset-4"
+                                      >
+                                        marcar como verificado
+                                      </button>
+                                    </span>
+                                  )}
+                                </p>
+                                <button
+                                  onClick={() => handleGenerarAnalisis(s.id)}
+                                  disabled={generando[s.id]}
+                                  className="inline-flex items-center gap-1.5 link text-sm disabled:opacity-50"
+                                >
+                                  {generando[s.id] ? (
+                                    <>
+                                      <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
+                                      Regenerando…
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles size={14} strokeWidth={1.75} />
+                                      Regenerar análisis
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                               <Seccion titulo="Resumen" texto={s.resumen_ia} />
                               <Seccion titulo="Hechos" texto={s.hechos_ia} />
                               <Seccion titulo="Problema jurídico" texto={s.problema_juridico_ia} />
