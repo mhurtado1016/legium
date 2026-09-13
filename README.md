@@ -304,6 +304,13 @@ app. Las cuatro Edge Functions que necesitan el texto de una sentencia
 el contenido a este endpoint en vez de conectarse directamente. Sigue
 siendo infraestructura 100% propia, sin depender de ningún tercero.
 
+**Sentencias favoritas**: tabla `sentencia_favoritos` (migración 0012),
+compartida por todo el despacho (no por usuario individual) — mismo
+criterio que el resto de datos del tenant. Botón de estrella en cada
+tarjeta del buscador, y filtro "Solo favoritas" en el panel de filtros
+que se aplica del lado del cliente sobre los resultados ya traídos (no
+modifica la Edge Function `buscar-sentencias`).
+
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
 de tareas de desarrollo, y el resto de "pendientes de definir" en cada
@@ -347,7 +354,7 @@ src/
     supabase.ts       cliente de Supabase
     AuthContext.tsx   sesión, login, logout, recuperación de contraseña
     useUsuario.ts      datos de `usuarios` para el usuario autenticado
-    sentencias.ts      búsqueda y verificación de sentencias (Módulo 1)
+    sentencias.ts      búsqueda, verificación y favoritos de sentencias (Módulo 1)
     casos.ts           casos, clientes, actividad y vínculo con sentencias (Módulo 2)
     plazos.ts          plazos, notificaciones y suscripción push (Módulo 3)
     documentos.ts      documentos, versiones y subida a Storage (Módulo 4)

@@ -132,3 +132,26 @@ export async function contarVerificacionesPendientes() {
   if (error) throw error
   return count ?? 0
 }
+
+// Favoritas: compartidas por todo el despacho (mismo criterio que el
+// resto de datos del tenant), no por usuario individual.
+export async function listarSentenciasFavoritasIds() {
+  const { data, error } = await supabase.from('sentencia_favoritos').select('sentencia_id')
+  if (error) throw error
+  return new Set((data ?? []).map((f) => f.sentencia_id))
+}
+
+export async function marcarFavorita(sentenciaId: string, firmaId: string, usuarioId: string) {
+  const { error } = await supabase
+    .from('sentencia_favoritos')
+    .insert({ firma_id: firmaId, usuario_id: usuarioId, sentencia_id: sentenciaId })
+  if (error) throw error
+}
+
+export async function quitarFavorita(sentenciaId: string) {
+  const { error } = await supabase
+    .from('sentencia_favoritos')
+    .delete()
+    .eq('sentencia_id', sentenciaId)
+  if (error) throw error
+}

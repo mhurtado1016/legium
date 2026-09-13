@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Clock3,
   ShieldCheck,
+  Star,
 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
@@ -18,8 +19,11 @@ import {
   buscarSentencias,
   contarVerificacionesPendientes,
   generarAnalisisIA,
+  listarSentenciasFavoritasIds,
   localizarTexto,
+  marcarFavorita,
   obtenerTextoCompleto,
+  quitarFavorita,
   verificarResumen,
   type Sentencia,
 } from '../lib/sentencias'
@@ -44,6 +48,8 @@ export function DashboardPage() {
   const [sala, setSala] = useState('')
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
+  const [soloFavoritas, setSoloFavoritas] = useState(false)
+  const [favoritasIds, setFavoritasIds] = useState<Set<string>>(new Set())
   const [resultados, setResultados] = useState<Sentencia[]>([])
   const [buscando, setBuscando] = useState(false)
   const [buscado, setBuscado] = useState(false)
@@ -61,6 +67,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
+    listarSentenciasFavoritasIds().then(setFavoritasIds).catch(() => {})
     listarPlazos({ estado: 'pendiente' })
       .then((p) => setPlazosProximos(p.slice(0, 5)))
       .catch(() => {})
@@ -89,6 +96,31 @@ export function DashboardPage() {
       setError(err instanceof Error ? err.message : JSON.stringify(err))
     } finally {
       setBuscando(false)
+    }
+  }
+
+  async function handleToggleFavorita(sentenciaId: string) {
+    if (!usuario) return
+    const esFavorita = favoritasIds.has(sentenciaId)
+    // Optimista: se actualiza la UI de inmediato, sin esperar la respuesta.
+    setFavoritasIds((prev) => {
+      const next = new Set(prev)
+      esFavorita ? next.delete(sentenciaId) : next.add(sentenciaId)
+      return next
+    })
+    try {
+      if (esFavorita) {
+        await quitarFavorita(sentenciaId)
+      } else {
+        await marcarFavorita(sentenciaId, usuario.firma_id, usuario.id)
+      }
+    } catch {
+      // revertir si falló
+      setFavoritasIds((prev) => {
+        const next = new Set(prev)
+        esFavorita ? next.add(sentenciaId) : next.delete(sentenciaId)
+        return next
+      })
     }
   }
 
@@ -195,6 +227,10 @@ export function DashboardPage() {
     }
   }
 
+  const resultadosFiltrados = soloFavoritas
+    ? resultados.filter((s) => favoritasIds.has(s.id))
+    : resultados
+
   return (
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
@@ -297,6 +333,18 @@ export function DashboardPage() {
                     className="w-full min-w-0 field"
                   />
                 </div>
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    id="solo-favoritas"
+                    checked={soloFavoritas}
+                    onChange={(e) => setSoloFavoritas(e.target.checked)}
+                  />
+                  <label htmlFor="solo-favoritas" className="inline-flex items-center gap-1.5">
+                    <Star size={14} strokeWidth={1.75} />
+                    Solo favoritas
+                  </label>
+                </div>
                 <p className="sm:col-span-2 text-slate">
                   Nota: el dataset público de la Corte no incluye las partes del proceso
                   (demandante/demandado) ni tema/descriptor; el magistrado(a) ponente es el único
@@ -312,21 +360,32 @@ export function DashboardPage() {
 
           {buscado && (
             <p className="text-sm text-slate mb-2">
-              {resultados.length === 1
+              {resultadosFiltrados.length === 1
                 ? '1 resultado encontrado'
-                : `${resultados.length} resultados encontrados`}
+                : `${resultadosFiltrados.length} resultados encontrados`}
+              {soloFavoritas && resultadosFiltrados.length !== resultados.length
+                ? ` (de ${resultados.length} en total, filtrando solo favoritas)`
+                : ''}
             </p>
           )}
 
           <ul className="space-y-3">
-            {resultados.map((s) => {
+            {resultadosFiltrados.map((s) => {
               const expandido = expandidoId === s.id
               return (
                 <li key={s.id}>
                   <div className="card overflow-hidden hover:shadow-[var(--shadow-raised)] transition-shadow">
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleExpandir(s)}
-                      className="w-full text-left p-5 hover:bg-paper transition-colors"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleExpandir(s)
+                        }
+                      }}
+                      className="w-full text-left p-5 hover:bg-paper transition-colors cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -355,14 +414,30 @@ export function DashboardPage() {
                           </div>
                         </div>
 
-                        <ChevronDown
-                          size={18}
-                          strokeWidth={1.75}
-                          className={
-                            'shrink-0 mt-1 text-slate transition-transform ' +
-                            (expandido ? 'rotate-180' : '')
-                          }
-                        />
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleFavorita(s.id)
+                            }}
+                            aria-label={favoritasIds.has(s.id) ? 'Quitar de favoritas' : 'Marcar como favorita'}
+                            className="p-1 -m-1 text-slate hover:text-ink transition-colors"
+                          >
+                            <Star
+                              size={18}
+                              strokeWidth={1.75}
+                              className={favoritasIds.has(s.id) ? 'fill-seal text-seal' : ''}
+                            />
+                          </button>
+                          <ChevronDown
+                            size={18}
+                            strokeWidth={1.75}
+                            className={
+                              'shrink-0 mt-1 text-slate transition-transform ' +
+                              (expandido ? 'rotate-180' : '')
+                            }
+                          />
+                        </div>
                       </div>
 
                       {s.resumen_ia && !expandido && (
@@ -370,7 +445,7 @@ export function DashboardPage() {
                           {s.resumen_ia}
                         </p>
                       )}
-                    </button>
+                    </div>
 
                     {expandido && (
                       <div className="border-t border-line p-5 space-y-5 text-sm">
@@ -553,7 +628,7 @@ export function DashboardPage() {
               )
             })}
 
-            {buscado && resultados.length === 0 && (
+            {buscado && resultadosFiltrados.length === 0 && (
               <li className="py-4 text-sm text-slate">Sin resultados para esta búsqueda.</li>
             )}
             {!buscado && !buscando && (
