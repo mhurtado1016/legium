@@ -235,6 +235,17 @@ de gobierno colombianos usan ISO-8859-1/Windows-1252 en vez de UTF-8;
 asumir UTF-8 a ciegas produce símbolos corruptos en tildes y la ñ).
 Queda un enlace "Ver en el sitio oficial" como respaldo.
 
+**Sobre la versión de Node.js requerida**: `package.json` fija
+`"engines": { "node": "24.x" }`, necesario porque `sanitize-html`
+(desde que su dependencia `htmlparser2` pasó a ser puramente ESM)
+requiere Node.js ≥22.12 para poder hacer `require()` de un módulo ESM
+sin flags — con una versión de Node más vieja, `api/proxy-corte.ts`
+crashea en cada invocación con `ERR_REQUIRE_ESM` (se ve como un "500
+sin ningún detalle" desde el cliente, porque el crash ocurre antes de
+que la función pueda responder con su propio manejo de errores). Este
+campo tiene prioridad sobre lo que esté configurado en Project Settings
+→ General → Node.js Version del panel de Vercel.
+
 **Sobre el certificado TLS del sitio de la Corte**: el servidor de
 `corteconstitucional.gov.co` usa un certificado emitido por GoDaddy bajo
 su nueva jerarquía de raíz "R1" (migración de 2026), pero no envía la
