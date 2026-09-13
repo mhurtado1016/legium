@@ -20,8 +20,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GEMINI_MODEL = 'gemini-3.8-flash' // gemini-2.0-flash fue apagado el 1 de junio de 2026
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const GEMINI_MODEL_PRINCIPAL = 'gemini-3.8-flash' // gemini-2.0-flash fue apagado el 1 de junio de 2026
+const GEMINI_MODEL_RESPALDO = 'gemini-3.6-flash' // generación anterior, estable, menos demandada
+const GEMINI_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 interface Body {
   sentencia_id: string
@@ -76,6 +77,41 @@ async function fetchCorteConstitucional(url: string): Promise<{ ok: boolean; sta
   }
   if (data?.error) throw new Error(data.error)
   return { ok: data.status >= 200 && data.status < 300, status: data.status, text: data.texto }
+}
+
+// Llama a Gemini con reintentos y espera creciente si responde 503/429
+// (saturación temporal del modelo, no un problema de la petición en sí).
+async function llamarGemini(
+  modelo: string,
+  prompt: string,
+  intentos: number,
+): Promise<{ resp: Response; ultimoError: string }> {
+  const url = `${GEMINI_URL_BASE}/${modelo}:generateContent`
+  let resp: Response | null = null
+  let ultimoError = ''
+
+  for (let intento = 1; intento <= intentos; intento++) {
+    resp = await fetch(`${url}?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json' },
+      }),
+    })
+    if (resp.ok) break
+
+    const cuerpoError = await resp.clone().json().catch(() => null)
+    const detalle = cuerpoError?.error?.message
+    ultimoError = `Gemini (${modelo}) respondió ${resp.status}${detalle ? `: ${detalle}` : ''}`
+
+    const esSaturacionTemporal = resp.status === 503 || resp.status === 429
+    if (!esSaturacionTemporal || intento === intentos) break
+
+    await new Promise((resolve) => setTimeout(resolve, 1500 * intento)) // espera creciente: 1.5s, 3s
+  }
+
+  return { resp: resp!, ultimoError }
 }
 
 Deno.serve(async (req) => {
@@ -156,33 +192,20 @@ Reglas estrictas:
 Texto de la providencia:
 """${textoCompleto}"""`
 
-    // Gemini a veces responde 503 por saturación temporal del modelo
-    // ("high demand"), no por un problema de la petición en sí — se
-    // reintenta un par de veces con espera antes de darlo por fallido.
-    const INTENTOS_GEMINI = 3
-    let geminiResp: Response | null = null
-    let ultimoError = ''
-    for (let intento = 1; intento <= INTENTOS_GEMINI; intento++) {
-      geminiResp = await fetch(`${GEMINI_URL}?key=${Deno.env.get('GEMINI_API_KEY')}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json' },
-        }),
-      })
-      if (geminiResp.ok) break
+    let { resp: geminiResp, ultimoError } = await llamarGemini(GEMINI_MODEL_PRINCIPAL, prompt, 3)
 
-      const cuerpoError = await geminiResp.clone().json().catch(() => null)
-      const detalle = cuerpoError?.error?.message
-      ultimoError = `Gemini respondió ${geminiResp.status}${detalle ? `: ${detalle}` : ''}`
-
-      const esSaturacionTemporal = geminiResp.status === 503 || geminiResp.status === 429
-      if (!esSaturacionTemporal || intento === INTENTOS_GEMINI) break
-
-      await new Promise((resolve) => setTimeout(resolve, 1500 * intento)) // espera creciente: 1.5s, 3s
+    if (!geminiResp.ok) {
+      const eraSaturacionTemporal = geminiResp.status === 503 || geminiResp.status === 429
+      if (eraSaturacionTemporal) {
+        // El modelo principal sigue saturado tras los reintentos: se
+        // prueba con un modelo de generación anterior, normalmente con
+        // menos demanda (no se reintenta el mismo modelo indefinidamente).
+        const resultado = await llamarGemini(GEMINI_MODEL_RESPALDO, prompt, 2)
+        geminiResp = resultado.resp
+        ultimoError = resultado.ultimoError
+      }
     }
-    if (!geminiResp || !geminiResp.ok) throw new Error(ultimoError)
+    if (!geminiResp.ok) throw new Error(ultimoError)
 
     const geminiData = await geminiResp.json()
     const jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text

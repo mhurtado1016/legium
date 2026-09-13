@@ -57,6 +57,7 @@ export function DashboardPage() {
   const [htmlPorId, setHtmlPorId] = useState<Record<string, string>>({})
   const [cargandoTextoId, setCargandoTextoId] = useState<string | null>(null)
   const [errorTextoPorId, setErrorTextoPorId] = useState<Record<string, string>>({})
+  const [textoVisiblePorId, setTextoVisiblePorId] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     contarVerificacionesPendientes().then(setVerificacionesPendientes).catch(() => {})
@@ -98,7 +99,10 @@ export function DashboardPage() {
     if (!yaAbierto && s.texto_completo_url && !htmlPorId[s.id]) {
       setCargandoTextoId(s.id)
       obtenerTextoCompleto(s.texto_completo_url)
-        .then((r) => setHtmlPorId((prev) => ({ ...prev, [s.id]: r.html })))
+        .then((r) => {
+          setHtmlPorId((prev) => ({ ...prev, [s.id]: r.html }))
+          setTextoVisiblePorId((prev) => ({ ...prev, [s.id]: true }))
+        })
         .catch((err) =>
           setErrorTextoPorId((prev) => ({
             ...prev,
@@ -473,14 +477,34 @@ export function DashboardPage() {
                         </div>
 
                         <div>
-                          <h3 className="font-display text-base mb-2">Texto completo</h3>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-display text-base">Texto completo</h3>
+                            {htmlPorId[s.id] && (
+                              <button
+                                onClick={() =>
+                                  setTextoVisiblePorId((prev) => ({ ...prev, [s.id]: !prev[s.id] }))
+                                }
+                                className="link text-sm inline-flex items-center gap-1"
+                              >
+                                {textoVisiblePorId[s.id] ? 'Colapsar' : 'Mostrar'}
+                                <ChevronDown
+                                  size={14}
+                                  strokeWidth={1.75}
+                                  className={
+                                    'transition-transform ' +
+                                    (textoVisiblePorId[s.id] ? 'rotate-180' : '')
+                                  }
+                                />
+                              </button>
+                            )}
+                          </div>
                           {s.texto_completo_url ? (
                             <>
                               {cargandoTextoId === s.id && <p className="text-slate">Cargando…</p>}
                               {errorTextoPorId[s.id] && (
                                 <p className="text-seal mb-2">{errorTextoPorId[s.id]}</p>
                               )}
-                              {htmlPorId[s.id] && (
+                              {htmlPorId[s.id] && textoVisiblePorId[s.id] && (
                                 <div
                                   className="texto-oficial max-h-96 overflow-y-auto pr-2"
                                   dangerouslySetInnerHTML={{ __html: htmlPorId[s.id] }}
