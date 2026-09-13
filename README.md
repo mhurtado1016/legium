@@ -235,16 +235,34 @@ de gobierno colombianos usan ISO-8859-1/Windows-1252 en vez de UTF-8;
 asumir UTF-8 a ciegas produce símbolos corruptos en tildes y la ñ).
 Queda un enlace "Ver en el sitio oficial" como respaldo.
 
-**Sobre la versión de Node.js requerida**: `package.json` fija
-`"engines": { "node": "24.x" }`, necesario porque `sanitize-html`
-(desde que su dependencia `htmlparser2` pasó a ser puramente ESM)
-requiere Node.js ≥22.12 para poder hacer `require()` de un módulo ESM
-sin flags — con una versión de Node más vieja, `api/proxy-corte.ts`
-crashea en cada invocación con `ERR_REQUIRE_ESM` (se ve como un "500
-sin ningún detalle" desde el cliente, porque el crash ocurre antes de
-que la función pueda responder con su propio manejo de errores). Este
-campo tiene prioridad sobre lo que esté configurado en Project Settings
-→ General → Node.js Version del panel de Vercel.
+**Sobre la versión de Node.js / htmlparser2**: `sanitize-html` depende
+de `htmlparser2`, que desde su versión 11 dejó de tener build
+CommonJS (quedó puramente ESM). Fijar `"engines": { "node": "24.x" }`
+en `package.json` **no fue suficiente** — el runtime de Vercel no
+resuelve el `require()` síncrono de un módulo ESM aunque se le pida
+una versión de Node que en teoría lo soporta, y la función seguía
+crasheando con `ERR_REQUIRE_ESM` en cada invocación (se ve como un
+"500 sin ningún detalle" desde el cliente, porque el crash ocurre
+antes de que la función pueda responder con su propio manejo de
+errores). La solución real: forzar `htmlparser2` a la **10.1.0** —la
+última versión con build CommonJS real, vía `exports.require` en su
+`package.json`— con `overrides` en el `package.json` del proyecto:
+
+```json
+"overrides": {
+  "sanitize-html": { "htmlparser2": "10.1.0" }
+}
+```
+
+Nota de seguridad honesta: `sanitize-html` subió a `htmlparser2` 12.x
+específicamente para corregir un bypass de XSS en elementos de texto
+crudo (`textarea`/`xmp`) anidados dentro de `svg`/`math`. Al forzar la
+10.1.0 se pierde esa corrección puntual. El riesgo aquí es bajo (el
+HTML sanitizado viene de un dominio fijo y conocido —
+`corteconstitucional.gov.co`—, no de contenido arbitrario subido por
+usuarios), pero si en el futuro Vercel soporta el `require()` síncrono
+de ESM correctamente, vale la pena quitar este `overrides` y volver a
+la versión más reciente de `htmlparser2`.
 
 **Sobre el certificado TLS del sitio de la Corte**: el servidor de
 `corteconstitucional.gov.co` usa un certificado emitido por GoDaddy bajo
