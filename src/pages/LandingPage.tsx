@@ -18,8 +18,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
-  BookOpen,
-  Handshake,
   ChevronLeft,
   ChevronRight,
   ImagePlus,
@@ -115,17 +113,12 @@ const TECNOLOGIA = [
   },
 ]
 
-// TODO: reemplazar por fotografía real del despacho/equipo — no había
-// ninguna disponible ni licencia para usar fotos de stock de terceros,
-// así que el carrusel del hero usa fondos degradados con un ícono como
-// marcador de posición en lugar de fotos genéricas que podrían pasar
-// por auténticas sin serlo.
-const HERO_SLIDES = [
-  { icon: Landmark, from: 'from-ink', to: 'to-ink-soft' },
-  { icon: Users, from: 'from-seal', to: 'to-ink' },
-  { icon: BookOpen, from: 'from-ink-soft', to: 'to-slate' },
-  { icon: Handshake, from: 'from-slate', to: 'to-ink' },
-]
+// Ilustraciones propias en SVG (no fotos de stock de terceros ni fotos
+// genéricas que podrían pasar por el despacho real sin serlo). Cada una
+// es una composición de líneas/formas con la paleta de la marca —
+// columnas de un templo de justicia, balanza, estantería y un documento
+// firmado — pensadas específicamente como fondo del carrusel del hero.
+const HERO_SLIDES = [ColumnasSVG, BalanzaSVG, EstanteriaSVG, DocumentoSVG]
 
 // TODO: reemplazar por los datos reales de contacto del despacho.
 const CONTACTO = {
@@ -170,8 +163,8 @@ function SiteHeader({
   return (
     <header className="sticky top-0 z-30 bg-paper/90 backdrop-blur-sm border-b border-line/70">
       <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-        <a href="#top" className="font-display text-xl tracking-tight">
-          Legium
+        <a href="#top" className="flex items-center">
+          <img src="/logo.svg" alt="Legium" className="h-12 w-auto" />
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-slate">
@@ -266,9 +259,8 @@ function Hero() {
 
 // Carrusel de fondo del hero. Autoavanza cada 6s (en pausa con el mouse
 // encima o si el visitante prefiere menos movimiento), con flechas y
-// puntos para navegación manual. Las "fotos" son degradados con un
-// ícono — ver el comentario en HERO_SLIDES sobre por qué no son fotos
-// reales todavía.
+// puntos para navegación manual. Cada slide es una ilustración SVG
+// propia — ver el comentario en HERO_SLIDES.
 function HeroCarousel() {
   const [indice, setIndice] = useState(0)
   const [pausado, setPausado] = useState(false)
@@ -293,18 +285,14 @@ function HeroCarousel() {
       onMouseEnter={() => setPausado(true)}
       onMouseLeave={() => setPausado(false)}
     >
-      {HERO_SLIDES.map((slide, i) => (
+      {HERO_SLIDES.map((Slide, i) => (
         <div
           key={i}
           aria-hidden={i !== indice}
-          className={`absolute inset-0 overflow-hidden bg-gradient-to-br ${slide.from} ${slide.to}
-            transition-opacity duration-1000 ease-in-out ${i === indice ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 overflow-hidden transition-opacity duration-1000 ease-in-out
+            ${i === indice ? 'opacity-100' : 'opacity-0'}`}
         >
-          <slide.icon
-            size={340}
-            strokeWidth={0.75}
-            className="absolute -right-12 -bottom-12 text-paper/10"
-          />
+          <Slide />
         </div>
       ))}
       <div className="absolute inset-0 bg-ink/60" />
@@ -343,6 +331,117 @@ function HeroCarousel() {
         ))}
       </div>
     </div>
+  )
+}
+
+// Las cuatro ilustraciones del carrusel. Mismo esquema: un <rect> de
+// fondo con degradado de marca (colores tomados directo de index.css,
+// ya que un <linearGradient> de SVG no puede referenciar clases de
+// Tailwind) y encima formas simples en blanco muy transparente — el
+// mismo lenguaje de "línea fina, bajo contraste" que ya usan los íconos
+// del resto del sitio, evitando cualquier parecido con una foto real.
+function ColumnasSVG() {
+  return (
+    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      <defs>
+        <linearGradient id="grad-columnas" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#161d27" />
+          <stop offset="100%" stopColor="#2b3542" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="450" fill="url(#grad-columnas)" />
+      <polygon points="250,140 550,140 400,64" fill="none" stroke="#f7f6f3" strokeOpacity="0.16" strokeWidth="2" />
+      <rect x="228" y="140" width="344" height="14" fill="#f7f6f3" fillOpacity="0.12" />
+      {[260, 320, 380, 440, 500].map((x) => (
+        <rect key={x} x={x} y="154" width="20" height="212" fill="#f7f6f3" fillOpacity="0.1" />
+      ))}
+      <rect x="228" y="366" width="344" height="14" fill="#f7f6f3" fillOpacity="0.12" />
+    </svg>
+  )
+}
+
+function BalanzaSVG() {
+  return (
+    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      <defs>
+        <linearGradient id="grad-balanza" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#7a2a2e" />
+          <stop offset="100%" stopColor="#161d27" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="450" fill="url(#grad-balanza)" />
+      <g fill="none" stroke="#f7f6f3" strokeOpacity="0.18" strokeWidth="3">
+        <line x1="400" y1="80" x2="400" y2="360" />
+        <line x1="300" y1="380" x2="500" y2="380" />
+        <line x1="220" y1="120" x2="580" y2="120" />
+        <line x1="220" y1="120" x2="180" y2="216" />
+        <line x1="220" y1="120" x2="260" y2="216" />
+        <line x1="580" y1="120" x2="540" y2="216" />
+        <line x1="580" y1="120" x2="620" y2="216" />
+        <path d="M172,216 a48,26 0 0 0 96,0" />
+        <path d="M532,216 a48,26 0 0 0 96,0" />
+      </g>
+    </svg>
+  )
+}
+
+function EstanteriaSVG() {
+  const anchos = [18, 26, 16, 30, 20, 24, 16, 34, 18, 22, 28, 16, 24, 20, 30, 18]
+  return (
+    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      <defs>
+        <linearGradient id="grad-estanteria" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2b3542" />
+          <stop offset="100%" stopColor="#5b6472" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="450" fill="url(#grad-estanteria)" />
+      {[70, 190, 310].map((yBase, fila) => (
+        <g key={fila}>
+          {anchos.map((w, i) => {
+            const h = 70 + ((i + fila * 5) % 5) * 10
+            const x = 40 + i * 46
+            return (
+              <rect
+                key={i}
+                x={x}
+                y={yBase + (90 - h)}
+                width={w}
+                height={h}
+                fill="#f7f6f3"
+                fillOpacity={0.06 + (i % 3) * 0.03}
+              />
+            )
+          })}
+          <rect x="30" y={yBase + 92} width="740" height="5" fill="#f7f6f3" fillOpacity="0.14" />
+        </g>
+      ))}
+    </svg>
+  )
+}
+
+function DocumentoSVG() {
+  return (
+    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      <defs>
+        <linearGradient id="grad-documento" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#5b6472" />
+          <stop offset="100%" stopColor="#161d27" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="450" fill="url(#grad-documento)" />
+      <rect x="480" y="55" width="240" height="320" rx="6" fill="#f7f6f3" fillOpacity="0.08" />
+      {[100, 142, 184, 226, 268].map((y, i) => (
+        <rect key={y} x="510" y={y} width={i === 4 ? 110 : 180} height="10" fill="#f7f6f3" fillOpacity="0.16" />
+      ))}
+      <path
+        d="M505,330 q18,-28 36,0 t36,0 t36,0 t36,0"
+        fill="none"
+        stroke="#f7f6f3"
+        strokeOpacity="0.22"
+        strokeWidth="3"
+      />
+    </svg>
   )
 }
 
@@ -616,8 +715,8 @@ function SiteFooter() {
     <footer className="border-t border-line/70">
       <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <p className="font-display text-lg tracking-tight">Legium</p>
-          <p className="text-sm text-slate mt-1">Claridad jurídica para decisiones que importan.</p>
+          <img src="/logo.svg" alt="Legium" className="h-11 w-auto mb-2" />
+          <p className="text-sm text-slate">Claridad jurídica para decisiones que importan.</p>
         </div>
         <div className="flex items-center gap-6 text-sm text-slate">
           <a href="#servicios" className="hover:text-ink transition-colors">
