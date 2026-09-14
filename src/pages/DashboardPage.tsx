@@ -647,7 +647,7 @@ export function DashboardPage() {
                 const dias = diasRestantes(p.fecha_vencimiento)
                 return (
                   <li key={p.id}>
-                    <Link to={`/casos/${p.caso_id}`} className="hover:underline">
+                    <Link to={`/app/casos/${p.caso_id}`} className="hover:underline">
                       {p.titulo}
                     </Link>{' '}
                     <span className="text-slate">— {dias <= 0 ? 'hoy o vencido' : `${dias} días`}</span>
@@ -666,7 +666,7 @@ export function DashboardPage() {
             <ul className="text-sm space-y-1">
               {casosAbiertos.map((c) => (
                 <li key={c.id}>
-                  <Link to={`/casos/${c.id}`} className="hover:underline">
+                  <Link to={`/app/casos/${c.id}`} className="hover:underline">
                     {c.titulo}
                   </Link>{' '}
                   <span className="text-slate">— {c.estado}</span>

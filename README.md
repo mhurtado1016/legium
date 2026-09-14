@@ -205,7 +205,7 @@ Implementado:
 - Bucket privado `facturas` para los PDF generados.
 - Sección de facturación en la ficha de caso: registrar horas, definir
   honorario fijo, y generar la cuenta de cobro con un botón.
-- Pantalla de listado de cuentas de cobro (`/facturacion`) con cambio de
+- Pantalla de listado de cuentas de cobro (`/app/facturacion`) con cambio de
   estado (pendiente/pagada/vencida/anulada) y descarga del PDF.
 - Sin integración DIAN: el PDF incluye un aviso de que es un documento
   interno de cobro, no factura electrónica.
@@ -217,7 +217,7 @@ Implementado:
 - Vistas `rpt_cartera`, `rpt_horas_por_usuario`, `rpt_casos_por_estado`,
   `rpt_plazos_por_estado` (`security_invoker = true`, heredan el
   aislamiento por `firma_id` de las tablas base sin duplicar RLS).
-- Pantalla `/reportes`: cartera (pendiente/vencida/cobrado, con "cobrado"
+- Pantalla `/app/reportes`: cartera (pendiente/vencida/cobrado, con "cobrado"
   filtrable por período), casos por estado, plazos por estado, y horas
   por usuario — todo visible para cualquier usuario del tenant.
 - Filtro de período (mes/trimestre/año/todo el tiempo) implementado en
@@ -225,6 +225,23 @@ Implementado:
   totales actuales, no dependen del período (igual que en la
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
+
+**Landing público — servicios jurídicos**
+- La ruta `/` ya no es el dashboard: es un landing público (sin sesión)
+  para ofertar los servicios jurídicos del despacho — `LandingPage.tsx`,
+  inspirado en la estructura de lexia.co (hero, metodología, áreas de
+  práctica, diferenciador tecnológico, contacto).
+- Toda la app interna (antes en "/", "/casos", "/plazos", etc.) se movió
+  bajo el prefijo `/app` (`/app`, `/app/casos`, `/app/plazos`,
+  `/app/facturacion`, `/app/reportes`) para dejar la raíz del dominio
+  libre para el landing. El login redirige a `/app` al autenticarse.
+- El formulario de contacto guarda los mensajes en `contactos_landing`
+  (migración `0015_contactos_landing.sql`), sin `firma_id` a diferencia
+  del resto del esquema: el landing representa a un único despacho, no
+  un dato aislado por tenant. Insert público (`anon`); lectura solo para
+  usuarios autenticados de la app.
+- Datos de contacto (correo, teléfono, ciudad) en `LandingPage.tsx` son
+  marcadores de posición — reemplazar por los reales del despacho.
 
 **Sobre el texto completo**: se muestra con su formato original
 (negrita, cursiva, listas, tablas) dentro del panel expandido de cada
@@ -373,6 +390,7 @@ src/
     facturacion.ts     horas, honorarios fijos y cuentas de cobro (Módulo 6)
     reportes.ts        cartera, casos, plazos y horas por usuario (Módulo 7)
   pages/
+    LandingPage.tsx    landing público de servicios jurídicos, en "/" (sin sesión)
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
     DashboardPage.tsx  dashboard + buscador de sentencias, con detalle expandible en la misma tarjeta (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)

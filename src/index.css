@@ -7,6 +7,11 @@
   color), pero con más profundidad — radios sutiles, sombras suaves en
   superficies elevadas, y una jerarquía tipográfica más marcada — en
   vez del estilo completamente plano de la primera versión.
+
+  Tipografía: por pedido explícito, toda la página (encabezados y texto)
+  usa Segoe UI en vez del par serif/sans original — se dejó el mismo
+  nombre de variable (--font-display) para no tocar cada selector que
+  ya lo usa, aunque hoy apunte a la misma fuente que --font-sans.
 */
 @theme {
   --color-ink: #161d27;
@@ -18,8 +23,8 @@
   --color-slate: #5b6472;
   --color-line: #e4e1d8;
 
-  --font-display: "Source Serif 4", Georgia, serif;
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "Segoe UI", system-ui, -apple-system, "Segoe UI Emoji", sans-serif;
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Segoe UI Emoji", sans-serif;
 
   --radius-field: 0.5rem;
   --radius-card: 0.75rem;
@@ -31,6 +36,7 @@
 @layer base {
   html {
     font-feature-settings: "tnum" 1; /* cifras tabulares para tablas y fechas */
+    scroll-behavior: smooth; /* navegación por anclas del landing público (LandingPage) */
   }
 
   body {

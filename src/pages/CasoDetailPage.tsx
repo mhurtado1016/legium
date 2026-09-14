@@ -114,7 +114,7 @@ export function CasoDetailPage() {
       <AppHeader
         left={
           <div className="flex items-center gap-4">
-            <Link to="/casos" className="text-sm text-slate hover:text-ink">
+            <Link to="/app/casos" className="text-sm text-slate hover:text-ink">
               ← Casos
             </Link>
             <h1 className="font-display text-lg">{caso.titulo}</h1>

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CasosListPage } from './pages/CasosListPage'
@@ -17,18 +18,22 @@ function ProtectedRoute({ children }: { children: React.ReactElement }) {
 }
 
 // Guardia inversa: si ya hay sesión activa, no tiene sentido mostrar el
-// login — se redirige directo al dashboard.
+// login — se redirige directo a la app interna.
 function PublicOnlyRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
 
   if (loading) return null
-  if (session) return <Navigate to="/" replace />
+  if (session) return <Navigate to="/app" replace />
   return children
 }
 
 function AppRoutes() {
   return (
     <Routes>
+      {/* Landing público: lo primero que ve cualquier visitante del
+          dominio (sección "ofertar servicios jurídicos"). La app interna
+          de gestión de casos vive bajo /app y requiere sesión. */}
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
         element={
@@ -38,7 +43,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/"
+        path="/app"
         element={
           <ProtectedRoute>
             <DashboardPage />
@@ -46,7 +51,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/casos"
+        path="/app/casos"
         element={
           <ProtectedRoute>
             <CasosListPage />
@@ -54,7 +59,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/casos/:id"
+        path="/app/casos/:id"
         element={
           <ProtectedRoute>
             <CasoDetailPage />
@@ -62,7 +67,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/plazos"
+        path="/app/plazos"
         element={
           <ProtectedRoute>
             <PlazosPage />
@@ -70,7 +75,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/facturacion"
+        path="/app/facturacion"
         element={
           <ProtectedRoute>
             <CuentasCobroPage />
@@ -78,7 +83,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/reportes"
+        path="/app/reportes"
         element={
           <ProtectedRoute>
             <ReportesPage />

@@ -95,7 +95,7 @@ export function CasosListPage() {
             {casos.map((c) => (
               <tr key={c.id}>
                 <td className="py-2">
-                  <Link to={`/casos/${c.id}`} className="hover:underline">
+                  <Link to={`/app/casos/${c.id}`} className="hover:underline">
                     {c.titulo}
                   </Link>
                 </td>

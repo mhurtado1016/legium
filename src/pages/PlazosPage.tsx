@@ -72,7 +72,7 @@ export function PlazosPage() {
                   </td>
                   <td className="py-2">{p.titulo}</td>
                   <td className="py-2">
-                    <Link to={`/casos/${p.caso_id}`} className="hover:underline">
+                    <Link to={`/app/casos/${p.caso_id}`} className="hover:underline">
                       {p.casos?.titulo ?? '—'}
                     </Link>
                   </td>

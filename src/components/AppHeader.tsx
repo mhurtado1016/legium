@@ -3,11 +3,11 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Buscador' },
-  { to: '/casos', label: 'Casos' },
-  { to: '/plazos', label: 'Plazos' },
-  { to: '/facturacion', label: 'Facturación' },
-  { to: '/reportes', label: 'Reportes' },
+  { to: '/app', label: 'Buscador' },
+  { to: '/app/casos', label: 'Casos' },
+  { to: '/app/plazos', label: 'Plazos' },
+  { to: '/app/facturacion', label: 'Facturación' },
+  { to: '/app/reportes', label: 'Reportes' },
 ]
 
 /**
@@ -34,7 +34,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between bg-paper/90 backdrop-blur-sm px-6 py-4 border-b border-line/70">
       {left ?? (
-        <Link to="/" className="font-display text-xl tracking-tight">
+        <Link to="/app" className="font-display text-xl tracking-tight">
           Legium
         </Link>
       )}
