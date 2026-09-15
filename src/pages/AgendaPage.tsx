@@ -433,11 +433,27 @@ function ConfiguracionSeccion() {
 
 const DURACIONES_MINUTOS = [15, 30, 45, 60, 90, 120]
 
-interface FilaHorario {
-  dia: number
-  activo: boolean
+// Un "grupo" es el equivalente visual de "lunes, martes y miércoles
+// atiendo de 8 a 6, jueves y viernes de 9 a 1": un mismo horario
+// compartido por varios días. Cada día solo puede estar en un grupo a
+// la vez; el que no aparece en ninguno queda sin atención ese día.
+interface GrupoHorario {
+  dias: number[]
   horaInicio: string
   horaFin: string
+}
+
+function agruparHorarios(horarios: HorarioDia[]): GrupoHorario[] {
+  const grupos: GrupoHorario[] = []
+  for (const h of horarios) {
+    if (!h.activo || !h.hora_inicio || !h.hora_fin) continue
+    const horaInicio = h.hora_inicio.slice(0, 5)
+    const horaFin = h.hora_fin.slice(0, 5)
+    const existente = grupos.find((g) => g.horaInicio === horaInicio && g.horaFin === horaFin)
+    if (existente) existente.dias.push(h.dia)
+    else grupos.push({ dias: [h.dia], horaInicio, horaFin })
+  }
+  return grupos
 }
 
 function ConfiguracionForm({
@@ -451,76 +467,120 @@ function ConfiguracionForm({
   guardando: boolean
   onGuardar: (duracion: number, horarios: HorarioDia[]) => void
 }) {
-  const [filas, setFilas] = useState<FilaHorario[]>(() =>
-    DIAS_SEMANA.map((d) => {
-      const h = horarios.find((x) => x.dia === d.valor)
-      return {
-        dia: d.valor,
-        activo: h?.activo ?? false,
-        horaInicio: (h?.hora_inicio ?? '08:00:00').slice(0, 5),
-        horaFin: (h?.hora_fin ?? '18:00:00').slice(0, 5),
-      }
-    }),
-  )
+  const [grupos, setGrupos] = useState<GrupoHorario[]>(() => {
+    const iniciales = agruparHorarios(horarios)
+    return iniciales.length > 0 ? iniciales : [{ dias: [], horaInicio: '08:00', horaFin: '18:00' }]
+  })
   const [duracion, setDuracion] = useState(config.duracion_franja_minutos)
   const [error, setError] = useState('')
 
-  function actualizarFila(dia: number, cambios: Partial<FilaHorario>) {
-    setFilas((prev) => prev.map((f) => (f.dia === dia ? { ...f, ...cambios } : f)))
+  const diasAsignados = new Set(grupos.flatMap((g) => g.dias))
+  const diasSinHorario = DIAS_SEMANA.filter((d) => !diasAsignados.has(d.valor))
+
+  function toggleDiaEnGrupo(indice: number, dia: number) {
+    setGrupos((prev) =>
+      prev.map((g, i) => {
+        if (i === indice) {
+          return g.dias.includes(dia)
+            ? { ...g, dias: g.dias.filter((d) => d !== dia) }
+            : { ...g, dias: [...g.dias, dia].sort((a, b) => a - b) }
+        }
+        // Un día solo pertenece a un horario: al asignarlo a este grupo
+        // se le quita a cualquier otro que lo tuviera.
+        return g.dias.includes(dia) ? { ...g, dias: g.dias.filter((d) => d !== dia) } : g
+      }),
+    )
+  }
+
+  function agregarGrupo() {
+    setGrupos((prev) => [...prev, { dias: [], horaInicio: '08:00', horaFin: '18:00' }])
+  }
+
+  function eliminarGrupo(indice: number) {
+    setGrupos((prev) => prev.filter((_, i) => i !== indice))
+  }
+
+  function actualizarGrupo(indice: number, cambios: Partial<GrupoHorario>) {
+    setGrupos((prev) => prev.map((g, i) => (i === indice ? { ...g, ...cambios } : g)))
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const activasInvalidas = filas.filter((f) => f.activo && f.horaFin <= f.horaInicio)
-    if (activasInvalidas.length > 0) {
-      setError('La hora fin debe ser posterior a la hora inicio en cada día activo.')
+    const conDias = grupos.filter((g) => g.dias.length > 0)
+    if (conDias.some((g) => g.horaFin <= g.horaInicio)) {
+      setError('La hora fin debe ser posterior a la hora inicio en cada horario.')
       return
     }
     setError('')
-    onGuardar(
-      duracion,
-      filas.map((f) => ({
-        dia: f.dia,
-        activo: f.activo,
-        hora_inicio: f.activo ? `${f.horaInicio}:00` : null,
-        hora_fin: f.activo ? `${f.horaFin}:00` : null,
-      })),
-    )
+
+    const resultado: HorarioDia[] = DIAS_SEMANA.map((d) => ({
+      dia: d.valor,
+      activo: false,
+      hora_inicio: null,
+      hora_fin: null,
+    }))
+    for (const g of conDias) {
+      for (const dia of g.dias) {
+        const fila = resultado.find((r) => r.dia === dia)!
+        fila.activo = true
+        fila.hora_inicio = `${g.horaInicio}:00`
+        fila.hora_fin = `${g.horaFin}:00`
+      }
+    }
+    onGuardar(duracion, resultado)
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <span className="block text-sm text-slate mb-2">Horario por día</span>
-        {filas.map((f) => {
-          const label = DIAS_SEMANA.find((d) => d.valor === f.dia)!.label
-          return (
-            <div key={f.dia} className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => actualizarFila(f.dia, { activo: !f.activo })}
-                className={'btn-sm w-28 ' + (f.activo ? 'btn-primary' : 'btn-secondary')}
-              >
-                {label}
-              </button>
+        <span className="block text-sm text-slate mb-2">Horario de atención</span>
+        {grupos.map((g, i) => (
+          <div key={i} className="flex flex-wrap items-center gap-3 border border-line rounded-[var(--radius-field)] p-3">
+            <div className="flex flex-wrap gap-1.5">
+              {DIAS_SEMANA.map((d) => (
+                <button
+                  key={d.valor}
+                  type="button"
+                  onClick={() => toggleDiaEnGrupo(i, d.valor)}
+                  className={'btn-sm ' + (g.dias.includes(d.valor) ? 'btn-primary' : 'btn-secondary')}
+                >
+                  {d.label.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <input
                 type="time"
-                value={f.horaInicio}
-                disabled={!f.activo}
-                onChange={(e) => actualizarFila(f.dia, { horaInicio: e.target.value })}
-                className="field field-sm"
+                value={g.horaInicio}
+                onChange={(e) => actualizarGrupo(i, { horaInicio: e.target.value })}
+                className="field field-sm w-auto"
               />
               <span className="text-slate text-sm">a</span>
               <input
                 type="time"
-                value={f.horaFin}
-                disabled={!f.activo}
-                onChange={(e) => actualizarFila(f.dia, { horaFin: e.target.value })}
-                className="field field-sm"
+                value={g.horaFin}
+                onChange={(e) => actualizarGrupo(i, { horaFin: e.target.value })}
+                className="field field-sm w-auto"
               />
             </div>
-          )
-        })}
+            {grupos.length > 1 && (
+              <button
+                type="button"
+                onClick={() => eliminarGrupo(i)}
+                aria-label="Eliminar horario"
+                className="text-slate hover:text-seal transition-colors ml-auto"
+              >
+                <Trash2 size={16} strokeWidth={1.75} />
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={agregarGrupo} className="btn-secondary btn-sm">
+          + Agregar horario
+        </button>
+        {diasSinHorario.length > 0 && (
+          <p className="text-xs text-slate">Sin atención: {diasSinHorario.map((d) => d.label).join(', ')}</p>
+        )}
       </div>
 
       {error && <p className="text-sm text-seal">{error}</p>}
