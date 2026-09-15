@@ -19,7 +19,7 @@ import nodemailer from 'nodemailer'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { correoAvisoAdmin, correoConfirmacionCliente } from './_lib/plantillasCorreo'
+import { correoAvisoAdmin, correoConfirmacionCliente } from './_lib/plantillasCorreo.js'
 
 export const config = {
   runtime: 'nodejs',
