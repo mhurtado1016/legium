@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
 import { PlazosPage } from './pages/PlazosPage'
+import { AgendaPage } from './pages/AgendaPage'
 import { CuentasCobroPage } from './pages/CuentasCobroPage'
 import { ReportesPage } from './pages/ReportesPage'
 
@@ -71,6 +72,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PlazosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/agenda"
+        element={
+          <ProtectedRoute>
+            <AgendaPage />
           </ProtectedRoute>
         }
       />

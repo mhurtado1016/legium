@@ -178,4 +178,72 @@
   .texto-oficial blockquote {
     @apply border-l-2 border-line pl-3 italic text-slate mb-3;
   }
+
+  /* Selector de fecha de react-day-picker (Agenda de consultas). Los
+     colores de acento se pasan como estilo inline desde el componente
+     (SelectorFranja.tsx) porque la hoja de estilos del paquete no está
+     en un @layer de Tailwind y le ganaría a un override puesto aquí.
+     Todo lo demás sí puede ir en este @layer, pero como el paquete fija
+     casi todas estas propiedades con la misma especificidad (también
+     sin capa), cada override necesita !important para no perder la
+     cascada — ver nota de la regla de arriba. */
+  .rdp-selector {
+    font-family: var(--font-sans);
+    --rdp-day-width: 2.75rem;
+    --rdp-day-height: 2.75rem;
+    --rdp-day_button-width: 2.5rem;
+    --rdp-day_button-height: 2.5rem;
+    --rdp-nav_button-width: 2.25rem;
+    --rdp-nav_button-height: 2.25rem;
+  }
+
+  .rdp-selector .rdp-month_caption {
+    font-family: var(--font-display) !important;
+    font-size: 1.05rem !important;
+    text-transform: capitalize;
+  }
+
+  .rdp-selector .rdp-weekday {
+    text-transform: uppercase !important;
+    font-size: 0.65rem !important;
+    letter-spacing: 0.04em;
+    color: var(--color-slate) !important;
+  }
+
+  .rdp-selector .rdp-button_next,
+  .rdp-selector .rdp-button_previous {
+    border-radius: 9999px !important;
+    border: 1px solid var(--color-line) !important;
+    background: var(--color-paper-raised) !important;
+    transition: background-color 150ms, border-color 150ms;
+  }
+  .rdp-selector .rdp-button_next:hover:not(:disabled),
+  .rdp-selector .rdp-button_previous:hover:not(:disabled) {
+    background: var(--color-paper) !important;
+    border-color: color-mix(in srgb, var(--color-ink) 35%, transparent) !important;
+  }
+
+  .rdp-selector .rdp-day_button {
+    font-size: 0.875rem;
+    transition: background-color 150ms, color 150ms, transform 150ms;
+  }
+  .rdp-selector .rdp-day_button:hover:not(:disabled) {
+    transform: scale(1.08);
+  }
+
+  /* Día con disponibilidad: burbuja de acento en vez de solo negrita,
+     para que se distinga de un vistazo del resto del mes. */
+  .rdp-selector .rdp-disponible .rdp-day_button {
+    background: var(--color-seal-soft) !important;
+    font-weight: 600 !important;
+    color: var(--color-ink) !important;
+  }
+
+  .rdp-selector .rdp-selected .rdp-day_button {
+    box-shadow: var(--shadow-card);
+  }
+
+  .rdp-selector .rdp-today:not(.rdp-selected) .rdp-day_button {
+    border: 1.5px solid var(--color-seal) !important;
+  }
 }

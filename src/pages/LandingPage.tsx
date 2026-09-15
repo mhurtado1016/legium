@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { AgendarConsultaPublico } from '../components/AgendarConsultaPublico'
 import {
   Scale,
   Building2,
@@ -7,9 +8,6 @@ import {
   Landmark,
   Users,
   FileText,
-  Search,
-  Clock3,
-  ShieldCheck,
   Mail,
   Phone,
   MapPin,
@@ -27,7 +25,7 @@ const NAV_ITEMS = [
   { href: '#servicios', label: 'Áreas de práctica' },
   { href: '#metodologia', label: 'Cómo trabajamos' },
   { href: '#equipo', label: 'Equipo' },
-  { href: '#tecnologia', label: 'Tecnología' },
+  { href: '#agenda', label: 'Agenda tu consulta' },
   { href: '#contacto', label: 'Contacto' },
 ]
 
@@ -92,27 +90,6 @@ const METODOLOGIA = [
   },
 ]
 
-const TECNOLOGIA = [
-  {
-    icon: Search,
-    titulo: 'Investigación jurisprudencial asistida por IA',
-    descripcion:
-      'Analizamos sentencias de las altas cortes para construir argumentos con precedentes sólidos y actualizados.',
-  },
-  {
-    icon: Clock3,
-    titulo: 'Plazos bajo control',
-    descripcion:
-      'Cada término judicial y administrativo queda registrado y monitoreado: nada se vence por descuido.',
-  },
-  {
-    icon: ShieldCheck,
-    titulo: 'Documentos organizados y seguros',
-    descripcion:
-      'Expedientes, evidencia y versiones de documentos centralizados y disponibles para el equipo del caso.',
-  },
-]
-
 // Ilustraciones propias en SVG (no fotos de stock de terceros ni fotos
 // genéricas que podrían pasar por el despacho real sin serlo). Cada una
 // es una composición de líneas/formas con la paleta de la marca —
@@ -146,7 +123,7 @@ export function LandingPage() {
       <Metodologia />
       <AreasPractica />
       <Equipo />
-      <Tecnologia />
+      <Agenda />
       <Contacto />
       <SiteFooter />
     </div>
@@ -179,7 +156,7 @@ function SiteHeader({
           <Link to="/login" className="text-sm text-slate hover:text-ink transition-colors">
             Ingresar
           </Link>
-          <a href="#contacto" className="btn-primary btn-sm">
+          <a href="#agenda" className="btn-primary btn-sm">
             Agenda una consulta
           </a>
         </div>
@@ -214,7 +191,7 @@ function SiteHeader({
           >
             Ingresar
           </Link>
-          <a href="#contacto" onClick={() => setMenuAbierto(false)} className="btn-primary mt-2">
+          <a href="#agenda" onClick={() => setMenuAbierto(false)} className="btn-primary mt-2">
             Agenda una consulta
           </a>
         </nav>
@@ -244,7 +221,7 @@ function Hero() {
           cumplimiento riguroso de plazos y tecnología propia de investigación jurisprudencial.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-4">
-          <a href="#contacto" className="btn-primary pointer-events-auto">
+          <a href="#agenda" className="btn-primary pointer-events-auto">
             Agenda una consulta
             <ArrowRight size={16} strokeWidth={1.75} />
           </a>
@@ -546,24 +523,17 @@ function FotoGrupalEquipo() {
   )
 }
 
-function Tecnologia() {
+function Agenda() {
   return (
-    <section id="tecnologia" className="border-t border-line/70 bg-paper-raised">
+    <section id="agenda" className="border-t border-line/70">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <SectionHeading
-          eyebrow="Tecnología"
-          titulo="Un despacho que usa su propia tecnología"
-          descripcion="Construimos herramientas internas para llevar cada caso con más rigor — no son promesas de mercadeo, es lo que usamos todos los días."
+          eyebrow="Agenda tu consulta"
+          titulo="Reserva un horario con nosotros"
+          descripcion="Elige el día y la hora que más te convengan — presencial o virtual — y confirma tu cita en línea."
         />
-
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TECNOLOGIA.map((item) => (
-            <div key={item.titulo} className="p-6 rounded-[var(--radius-card)] border border-line">
-              <item.icon size={22} strokeWidth={1.75} className="text-ink mb-4" />
-              <h3 className="text-base font-semibold mb-2">{item.titulo}</h3>
-              <p className="text-sm text-slate leading-relaxed">{item.descripcion}</p>
-            </div>
-          ))}
+        <div className="mt-12">
+          <AgendarConsultaPublico />
         </div>
       </div>
     </section>

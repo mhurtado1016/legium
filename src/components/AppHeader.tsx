@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/app', label: 'Buscador' },
   { to: '/app/casos', label: 'Casos' },
   { to: '/app/plazos', label: 'Plazos' },
+  { to: '/app/agenda', label: 'Agenda' },
   { to: '/app/facturacion', label: 'Facturación' },
   { to: '/app/reportes', label: 'Reportes' },
 ]
