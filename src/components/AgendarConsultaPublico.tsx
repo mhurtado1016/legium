@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { SelectorFranja } from './SelectorFranja'
 import type { Franja, TipoSesion } from '../lib/agenda'
@@ -19,6 +19,16 @@ export function AgendarConsultaPublico() {
   const [enviando, setEnviando] = useState(false)
   const [reservada, setReservada] = useState<Franja | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const confirmacionRef = useRef<HTMLDivElement>(null)
+
+  // El formulario (calendario + campos) es mucho más alto que la
+  // tarjeta de confirmación que lo reemplaza — sin esto, el scroll se
+  // queda en la posición donde estaba el botón "Confirmar cita" (ya
+  // desaparecido), que ahora cae más abajo en la página, y el mensaje
+  // de confirmación queda fuera de vista.
+  useEffect(() => {
+    if (reservada) confirmacionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [reservada])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -53,7 +63,7 @@ export function AgendarConsultaPublico() {
 
   if (reservada) {
     return (
-      <div className="card p-8 flex items-start gap-3">
+      <div ref={confirmacionRef} className="card p-8 flex items-start gap-3">
         <CheckCircle2 size={22} className="text-seal shrink-0 mt-0.5" strokeWidth={1.75} />
         <div>
           <p className="font-medium text-ink">Consulta agendada</p>
