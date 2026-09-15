@@ -7,17 +7,20 @@ import { suscribirsePush } from '../lib/plazos'
 import {
   DIAS_SEMANA,
   actualizarConfiguracion,
+  actualizarHorarios,
   cancelarCita,
   crearBloqueo,
   eliminarBloqueo,
   listarBloqueos,
   listarCitas,
   obtenerConfiguracion,
+  obtenerHorarios,
   reservarCita,
   type Bloqueo,
   type Cita,
   type ConfiguracionAgenda,
   type Franja,
+  type HorarioDia,
   type TipoSesion,
 } from '../lib/agenda'
 
@@ -321,13 +324,15 @@ function ReservarManualSeccion({ onReservada }: { onReservada: () => void }) {
 function ConfiguracionSeccion() {
   const [abierto, setAbierto] = useState(false)
   const [config, setConfig] = useState<ConfiguracionAgenda | null>(null)
+  const [horarios, setHorarios] = useState<HorarioDia[] | null>(null)
   const [guardandoConfig, setGuardandoConfig] = useState(false)
   const [bloqueos, setBloqueos] = useState<Bloqueo[]>([])
   const [cargandoBloqueos, setCargandoBloqueos] = useState(true)
 
   async function cargar() {
-    const [c, b] = await Promise.all([obtenerConfiguracion(), listarBloqueos()])
+    const [c, h, b] = await Promise.all([obtenerConfiguracion(), obtenerHorarios(), listarBloqueos()])
     setConfig(c)
+    setHorarios(h)
     setBloqueos(b)
     setCargandoBloqueos(false)
   }
@@ -337,11 +342,15 @@ function ConfiguracionSeccion() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto])
 
-  async function handleGuardarConfig(cambios: Partial<ConfiguracionAgenda>) {
+  async function handleGuardarConfig(duracion: number, nuevosHorarios: HorarioDia[]) {
     setGuardandoConfig(true)
     try {
-      await actualizarConfiguracion(cambios)
-      setConfig((c) => (c ? { ...c, ...cambios } : c))
+      await Promise.all([
+        actualizarConfiguracion({ duracion_franja_minutos: duracion }),
+        actualizarHorarios(nuevosHorarios),
+      ])
+      setConfig({ duracion_franja_minutos: duracion })
+      setHorarios(nuevosHorarios)
     } finally {
       setGuardandoConfig(false)
     }
@@ -355,15 +364,20 @@ function ConfiguracionSeccion() {
   return (
     <section className="card p-4">
       <EncabezadoColapsable titulo="Configuración de disponibilidad" abierto={abierto} onToggle={() => setAbierto((v) => !v)} />
-      {abierto && !config && (
+      {abierto && (!config || !horarios) && (
         <p className="text-sm text-slate flex items-center gap-2 mt-4">
           <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
           Cargando…
         </p>
       )}
-      {abierto && config && (
+      {abierto && config && horarios && (
         <div className="mt-4 space-y-8">
-          <ConfiguracionForm config={config} guardando={guardandoConfig} onGuardar={handleGuardarConfig} />
+          <ConfiguracionForm
+            config={config}
+            horarios={horarios}
+            guardando={guardandoConfig}
+            onGuardar={handleGuardarConfig}
+          />
 
           <div>
             <h3 className="font-display text-sm mb-3">Bloqueos</h3>
@@ -419,66 +433,99 @@ function ConfiguracionSeccion() {
 
 const DURACIONES_MINUTOS = [15, 30, 45, 60, 90, 120]
 
+interface FilaHorario {
+  dia: number
+  activo: boolean
+  horaInicio: string
+  horaFin: string
+}
+
 function ConfiguracionForm({
   config,
+  horarios,
   guardando,
   onGuardar,
 }: {
   config: ConfiguracionAgenda
+  horarios: HorarioDia[]
   guardando: boolean
-  onGuardar: (cambios: Partial<ConfiguracionAgenda>) => void
+  onGuardar: (duracion: number, horarios: HorarioDia[]) => void
 }) {
-  const [diasHabiles, setDiasHabiles] = useState(config.dias_habiles)
-  const [horaInicio, setHoraInicio] = useState(config.hora_inicio.slice(0, 5))
-  const [horaFin, setHoraFin] = useState(config.hora_fin.slice(0, 5))
+  const [filas, setFilas] = useState<FilaHorario[]>(() =>
+    DIAS_SEMANA.map((d) => {
+      const h = horarios.find((x) => x.dia === d.valor)
+      return {
+        dia: d.valor,
+        activo: h?.activo ?? false,
+        horaInicio: (h?.hora_inicio ?? '08:00:00').slice(0, 5),
+        horaFin: (h?.hora_fin ?? '18:00:00').slice(0, 5),
+      }
+    }),
+  )
   const [duracion, setDuracion] = useState(config.duracion_franja_minutos)
+  const [error, setError] = useState('')
 
-  function toggleDia(valor: number) {
-    setDiasHabiles((prev) => (prev.includes(valor) ? prev.filter((d) => d !== valor) : [...prev, valor].sort()))
+  function actualizarFila(dia: number, cambios: Partial<FilaHorario>) {
+    setFilas((prev) => prev.map((f) => (f.dia === dia ? { ...f, ...cambios } : f)))
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    onGuardar({
-      dias_habiles: diasHabiles,
-      hora_inicio: `${horaInicio}:00`,
-      hora_fin: `${horaFin}:00`,
-      duracion_franja_minutos: duracion,
-    })
+    const activasInvalidas = filas.filter((f) => f.activo && f.horaFin <= f.horaInicio)
+    if (activasInvalidas.length > 0) {
+      setError('La hora fin debe ser posterior a la hora inicio en cada día activo.')
+      return
+    }
+    setError('')
+    onGuardar(
+      duracion,
+      filas.map((f) => ({
+        dia: f.dia,
+        activo: f.activo,
+        hora_inicio: f.activo ? `${f.horaInicio}:00` : null,
+        hora_fin: f.activo ? `${f.horaFin}:00` : null,
+      })),
+    )
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <span className="block text-sm text-slate mb-2">Días hábiles</span>
-        <div className="flex flex-wrap gap-2">
-          {DIAS_SEMANA.map((d) => (
-            <button
-              key={d.valor}
-              type="button"
-              onClick={() => toggleDia(d.valor)}
-              className={'btn-sm ' + (diasHabiles.includes(d.valor) ? 'btn-primary' : 'btn-secondary')}
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
+      <div className="space-y-2">
+        <span className="block text-sm text-slate mb-2">Horario por día</span>
+        {filas.map((f) => {
+          const label = DIAS_SEMANA.find((d) => d.valor === f.dia)!.label
+          return (
+            <div key={f.dia} className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => actualizarFila(f.dia, { activo: !f.activo })}
+                className={'btn-sm w-28 ' + (f.activo ? 'btn-primary' : 'btn-secondary')}
+              >
+                {label}
+              </button>
+              <input
+                type="time"
+                value={f.horaInicio}
+                disabled={!f.activo}
+                onChange={(e) => actualizarFila(f.dia, { horaInicio: e.target.value })}
+                className="field field-sm"
+              />
+              <span className="text-slate text-sm">a</span>
+              <input
+                type="time"
+                value={f.horaFin}
+                disabled={!f.activo}
+                onChange={(e) => actualizarFila(f.dia, { horaFin: e.target.value })}
+                className="field field-sm"
+              />
+            </div>
+          )
+        })}
       </div>
 
+      {error && <p className="text-sm text-seal">{error}</p>}
+
       <div className="flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="block text-sm text-slate mb-1">Hora inicio</span>
-          <input
-            type="time"
-            value={horaInicio}
-            onChange={(e) => setHoraInicio(e.target.value)}
-            className="field field-sm"
-          />
-        </label>
-        <label className="block">
-          <span className="block text-sm text-slate mb-1">Hora fin</span>
-          <input type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} className="field field-sm" />
-        </label>
         <label className="block">
           <span className="block text-sm text-slate mb-1">Duración de la franja</span>
           <select

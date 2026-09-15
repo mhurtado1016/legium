@@ -4,10 +4,18 @@ export type TipoSesion = 'presencial' | 'virtual'
 export type EstadoCita = 'confirmada' | 'cancelada'
 
 export interface ConfiguracionAgenda {
-  dias_habiles: number[] // 1=lunes … 7=domingo (ISO)
-  hora_inicio: string // "08:00:00"
-  hora_fin: string
   duracion_franja_minutos: number
+}
+
+// Una fila por día ISO (1=lunes … 7=domingo). `activo=false` significa
+// que ese día no se ofrece disponibilidad; hora_inicio/hora_fin pueden
+// quedar con el último valor usado aunque el día esté inactivo (no se
+// borran al desactivar), así se conservan al reactivarlo.
+export interface HorarioDia {
+  dia: number
+  activo: boolean
+  hora_inicio: string | null // "08:00:00"
+  hora_fin: string | null
 }
 
 export interface Bloqueo {
@@ -60,6 +68,17 @@ export async function actualizarConfiguracion(
   cambios: Partial<ConfiguracionAgenda>,
 ) {
   const { error } = await supabase.from('configuracion_agenda').update(cambios).eq('id', 1)
+  if (error) throw error
+}
+
+export async function obtenerHorarios(): Promise<HorarioDia[]> {
+  const { data, error } = await supabase.from('horarios_agenda').select('*').order('dia', { ascending: true })
+  if (error) throw error
+  return data as HorarioDia[]
+}
+
+export async function actualizarHorarios(horarios: HorarioDia[]) {
+  const { error } = await supabase.from('horarios_agenda').upsert(horarios, { onConflict: 'dia' })
   if (error) throw error
 }
 
@@ -175,16 +194,22 @@ export async function listarDisponibilidad(desde: Date, hasta: Date): Promise<Ma
 
   const [
     { data: config, error: errConfig },
+    { data: horarios, error: errHorarios },
     { data: bloqueos, error: errBloqueos },
     { data: ocupadas, error: errOcupadas },
   ] = await Promise.all([
     supabase.from('configuracion_agenda').select('*').eq('id', 1).single(),
+    supabase.from('horarios_agenda').select('*'),
     supabase.from('bloqueos_agenda_publico').select('*').lte('fecha_inicio', hastaStr).gte('fecha_fin', desdeStr),
     supabase.from('citas_agenda_ocupacion').select('*').gte('fecha', desdeStr).lte('fecha', hastaStr),
   ])
   if (errConfig) throw errConfig
+  if (errHorarios) throw errHorarios
   if (errBloqueos) throw errBloqueos
   if (errOcupadas) throw errOcupadas
+
+  const horarioPorDia = new Map<number, HorarioDia>()
+  for (const h of (horarios ?? []) as HorarioDia[]) horarioPorDia.set(h.dia, h)
 
   const horasOcupadasPorFecha = new Map<string, Set<string>>()
   for (const cita of ocupadas ?? []) {
@@ -197,13 +222,10 @@ export async function listarDisponibilidad(desde: Date, hasta: Date): Promise<Ma
 
   for (const fecha of rangoDeFechas(desde, hasta)) {
     const isoDow = diaIso(new Date(`${fecha}T00:00:00`))
-    if (!config!.dias_habiles.includes(isoDow)) continue
+    const horario = horarioPorDia.get(isoDow)
+    if (!horario?.activo || !horario.hora_inicio || !horario.hora_fin) continue
 
-    const franjasDelDia = generarFranjas(
-      config!.hora_inicio,
-      config!.hora_fin,
-      config!.duracion_franja_minutos,
-    )
+    const franjasDelDia = generarFranjas(horario.hora_inicio, horario.hora_fin, config!.duracion_franja_minutos)
     const disponibles: Franja[] = []
 
     for (const franja of franjasDelDia) {
