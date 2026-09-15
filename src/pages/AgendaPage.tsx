@@ -28,14 +28,18 @@ import {
  */
 export function AgendaPage() {
   const { usuario } = useUsuario()
+  // Incrementa para forzar la recarga de CitasSeccion desde afuera —
+  // necesario porque una reserva manual se crea en un componente
+  // hermano, no en CitasSeccion mismo.
+  const [refrescoCitas, setRefrescoCitas] = useState(0)
 
   return (
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
       <main className="px-6 py-6 max-w-4xl mx-auto space-y-8">
         <h1 className="font-display text-lg">Agenda</h1>
-        <CitasSeccion />
-        <ReservarManualSeccion />
+        <CitasSeccion refrescar={refrescoCitas} />
+        <ReservarManualSeccion onReservada={() => setRefrescoCitas((n) => n + 1)} />
         {usuario?.es_administrador && <ConfiguracionSeccion />}
       </main>
     </div>
@@ -68,7 +72,7 @@ const ESTADO_LABEL: Record<Cita['estado'], string> = {
   cancelada: 'Cancelada',
 }
 
-function CitasSeccion() {
+function CitasSeccion({ refrescar }: { refrescar: number }) {
   const [citas, setCitas] = useState<Cita[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -85,7 +89,8 @@ function CitasSeccion() {
 
   useEffect(() => {
     cargar()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refrescar])
 
   async function handleCancelar(id: string) {
     await cancelarCita(id)
@@ -146,7 +151,7 @@ function CitasSeccion() {
   )
 }
 
-function ReservarManualSeccion() {
+function ReservarManualSeccion({ onReservada }: { onReservada: () => void }) {
   const [abierto, setAbierto] = useState(false)
   const [franja, setFranja] = useState<Franja | null>(null)
   const [tipoSesion, setTipoSesion] = useState<TipoSesion>('presencial')
@@ -179,6 +184,7 @@ function ReservarManualSeccion() {
       setTelefono('')
       setNotas('')
       setAbierto(false)
+      onReservada()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo agendar la cita.')
     } finally {

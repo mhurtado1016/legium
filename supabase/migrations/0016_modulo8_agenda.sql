@@ -86,9 +86,13 @@ create policy "solo administradores eliminan bloqueos"
   to authenticated
   using (soy_administrador());
 
-create trigger trg_audit_bloqueos_agenda
-  after insert or delete on bloqueos_agenda
-  for each row execute function fn_audit_log();
+-- Sin trigger de auditoría: fn_audit_log() referencia old.firma_id /
+-- new.firma_id, y esa columna no existe en esta tabla (igual que en
+-- configuracion_agenda). El COALESCE no evita el error — Postgres
+-- resuelve esa referencia al planear el INSERT del propio trigger, sin
+-- importar si el runtime termina usándola o no — así que cualquier
+-- escritura autenticada (siempre, ya que crear/eliminar bloqueos es
+-- solo de administradores) fallaba con 42703 "record has no field".
 
 create index bloqueos_agenda_rango_idx on bloqueos_agenda (fecha_inicio, fecha_fin);
 
@@ -138,9 +142,8 @@ create policy "el equipo del despacho actualiza las citas"
   to authenticated
   using (true);
 
-create trigger trg_audit_citas_agenda
-  after insert or update on citas_agenda
-  for each row execute function fn_audit_log();
+-- Sin trigger de auditoría, por la misma razón que en bloqueos_agenda:
+-- esta tabla tampoco tiene columna firma_id.
 
 create index citas_agenda_fecha_idx on citas_agenda (fecha, hora_inicio);
 

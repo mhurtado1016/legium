@@ -63,7 +63,7 @@ export function SelectorFranja({
             Elige una fecha
           </div>
           <div className="flex items-center gap-1.5 text-xs text-slate">
-            <span className="inline-block w-2 h-2 rounded-full bg-seal-soft border border-seal/40" />
+            <span className="inline-block w-2 h-2 rounded-full bg-success-soft border border-success/40" />
             Con disponibilidad
           </div>
         </div>

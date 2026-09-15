@@ -115,8 +115,14 @@ export interface DatosReserva {
 // interno al agendar manualmente: la política RLS de `citas_agenda`
 // permite el insert a ambos roles, y `creado_por` queda en null o con
 // el uuid del usuario según haya o no sesión (columna `default auth.uid()`).
+//
+// Sin `.select()`: la política de SELECT de `citas_agenda` solo
+// permite `authenticated` (para no exponer datos de otros clientes a
+// cualquier visitante — ver 0016), así que pedir de vuelta la fila
+// insertada rompía la reserva anónima entera con un 401 de RLS. Ningún
+// llamador usa el valor de retorno, así que no hace falta.
 export async function reservarCita(datos: DatosReserva) {
-  const { data, error } = await supabase.from('citas_agenda').insert(datos).select().single()
+  const { error } = await supabase.from('citas_agenda').insert(datos)
   if (error) {
     // Violación del índice único citas_agenda_franja_unica: otra persona
     // reservó esa misma franja entre que se cargó la disponibilidad y el envío.
@@ -125,7 +131,6 @@ export async function reservarCita(datos: DatosReserva) {
     }
     throw error
   }
-  return data as Cita
 }
 
 export async function cancelarCita(id: string) {

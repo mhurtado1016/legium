@@ -25,7 +25,6 @@ const NAV_ITEMS = [
   { href: '#servicios', label: 'Áreas de práctica' },
   { href: '#metodologia', label: 'Cómo trabajamos' },
   { href: '#equipo', label: 'Equipo' },
-  { href: '#agenda', label: 'Agenda tu consulta' },
   { href: '#contacto', label: 'Contacto' },
 ]
 

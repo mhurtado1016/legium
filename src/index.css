@@ -20,6 +20,8 @@
   --color-paper-raised: #ffffff;
   --color-seal: #7a2a2e;
   --color-seal-soft: #f3e6e6;
+  --color-success: #2f6d4c;
+  --color-success-soft: #e6efe9;
   --color-slate: #5b6472;
   --color-line: #e4e1d8;
 
@@ -231,12 +233,14 @@
     transform: scale(1.08);
   }
 
-  /* Día con disponibilidad: burbuja de acento en vez de solo negrita,
-     para que se distinga de un vistazo del resto del mes. */
+  /* Día con disponibilidad: burbuja verde (convención habitual para
+     "disponible") en vez de solo negrita, para que se distinga de un
+     vistazo del resto del mes. El rojo (--color-seal) queda reservado
+     para "hoy", no para disponibilidad. */
   .rdp-selector .rdp-disponible .rdp-day_button {
-    background: var(--color-seal-soft) !important;
+    background: var(--color-success-soft) !important;
     font-weight: 600 !important;
-    color: var(--color-ink) !important;
+    color: var(--color-success) !important;
   }
 
   .rdp-selector .rdp-selected .rdp-day_button {
