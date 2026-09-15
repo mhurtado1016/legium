@@ -28,8 +28,8 @@ export function AgendarConsultaPublico() {
     try {
       // Import dinámico: igual que en el formulario de contacto, el
       // resto del landing no depende de Supabase para renderizar.
-      const { reservarCita } = await import('../lib/agenda')
-      await reservarCita({
+      const { reservarCita, notificarCitaAgendada } = await import('../lib/agenda')
+      const citaId = await reservarCita({
         fecha: franja.fecha,
         hora_inicio: franja.hora_inicio,
         hora_fin: franja.hora_fin,
@@ -40,6 +40,9 @@ export function AgendarConsultaPublico() {
         notas: notas || undefined,
       })
       setReservada(franja)
+      // Sin await a propósito: la confirmación en pantalla no debe
+      // esperar a que se despachen los correos/push.
+      notificarCitaAgendada(citaId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo agendar la consulta. Intenta de nuevo.')
       setFranja(null)

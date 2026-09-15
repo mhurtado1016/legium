@@ -119,10 +119,13 @@ export interface DatosReserva {
 // Sin `.select()`: la política de SELECT de `citas_agenda` solo
 // permite `authenticated` (para no exponer datos de otros clientes a
 // cualquier visitante — ver 0016), así que pedir de vuelta la fila
-// insertada rompía la reserva anónima entera con un 401 de RLS. Ningún
-// llamador usa el valor de retorno, así que no hace falta.
+// insertada rompía la reserva anónima entera con un 401 de RLS. Por eso
+// el id se genera aquí mismo y se manda explícito en el insert — así el
+// llamador lo tiene disponible (ej. para notificar-cita-agendada) sin
+// necesitar leer la fila de vuelta.
 export async function reservarCita(datos: DatosReserva) {
-  const { error } = await supabase.from('citas_agenda').insert(datos)
+  const id = crypto.randomUUID()
+  const { error } = await supabase.from('citas_agenda').insert({ id, ...datos })
   if (error) {
     // Violación del índice único citas_agenda_franja_unica: otra persona
     // reservó esa misma franja entre que se cargó la disponibilidad y el envío.
@@ -130,6 +133,30 @@ export async function reservarCita(datos: DatosReserva) {
       throw new Error('Esa franja horaria ya no está disponible. Por favor elige otra.')
     }
     throw error
+  }
+  return id
+}
+
+// Dispara el aviso (correo al cliente + correo y push a administradores)
+// para una cita ya reservada — ver api/notificar-cita.ts. Es una
+// función de Vercel (Node.js), no una Edge Function de Supabase: el
+// runtime de Supabase Edge Functions no soporta SMTP real (ver
+// comentario en api/notificar-cita.ts). Solo se llama desde el landing
+// público (sección "cuando un usuario concrete una cita desde el
+// landing page"); una reserva manual hecha por el propio equipo no
+// necesita avisarse a sí misma. Los errores se registran pero no se
+// propagan: que falle el aviso no debe deshacer una reserva que ya
+// quedó confirmada en la base de datos.
+export async function notificarCitaAgendada(citaId: string) {
+  try {
+    const res = await fetch('/api/notificar-cita', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cita_id: citaId }),
+    })
+    if (!res.ok) console.error('No se pudo notificar la cita agendada:', await res.text())
+  } catch (err) {
+    console.error('No se pudo notificar la cita agendada:', err)
   }
 }
 

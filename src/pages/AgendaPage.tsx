@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ChevronDown, Loader2, Trash2 } from 'lucide-react'
+import { Bell, BellOff, ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { SelectorFranja } from '../components/SelectorFranja'
-import { useUsuario } from '../lib/useUsuario'
+import { useUsuario, type Usuario } from '../lib/useUsuario'
+import { suscribirsePush } from '../lib/plazos'
 import {
   DIAS_SEMANA,
   actualizarConfiguracion,
@@ -37,12 +38,74 @@ export function AgendaPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
       <main className="px-6 py-6 max-w-4xl mx-auto space-y-8">
-        <h1 className="font-display text-lg">Agenda</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-lg">Agenda</h1>
+          {usuario?.es_administrador && <NotificacionesPushBoton usuario={usuario} />}
+        </div>
         <CitasSeccion refrescar={refrescoCitas} />
         <ReservarManualSeccion onReservada={() => setRefrescoCitas((n) => n + 1)} />
         {usuario?.es_administrador && <ConfiguracionSeccion />}
       </main>
     </div>
+  )
+}
+
+// Solo hay a quién avisar (notificar-cita-agendada) si al menos un
+// administrador se suscribió desde su navegador — este botón es ese
+// paso, ausente hasta ahora en toda la app (suscribirsePush() existía
+// en src/lib/plazos.ts pero nada la invocaba).
+function NotificacionesPushBoton({ usuario }: { usuario: Usuario }) {
+  const [estado, setEstado] = useState<'inactivo' | 'activando' | 'activo' | 'error' | 'no_soportado'>('inactivo')
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setEstado('no_soportado')
+      return
+    }
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => {
+        if (sub) setEstado('activo')
+      })
+      .catch(() => {})
+  }, [])
+
+  async function activar() {
+    setEstado('activando')
+    try {
+      await suscribirsePush(usuario.firma_id, usuario.id)
+      setEstado('activo')
+    } catch (err) {
+      console.error('No se pudo activar las notificaciones push:', err)
+      setEstado('error')
+    }
+  }
+
+  if (estado === 'no_soportado') return null
+
+  if (estado === 'activo') {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-slate">
+        <Bell size={14} strokeWidth={1.75} className="text-success" />
+        Notificaciones activas
+      </span>
+    )
+  }
+
+  return (
+    <button type="button" onClick={activar} disabled={estado === 'activando'} className="btn-secondary btn-sm">
+      {estado === 'activando' ? (
+        <>
+          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+          Activando…
+        </>
+      ) : (
+        <>
+          <BellOff size={14} strokeWidth={1.75} />
+          {estado === 'error' ? 'Reintentar activar notificaciones' : 'Activar notificaciones'}
+        </>
+      )}
+    </button>
   )
 }
 

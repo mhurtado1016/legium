@@ -226,6 +226,35 @@ Implementado:
   especificación).
 - No incluye exportación (CSV/PDF) todavía.
 
+**Fase 8 — Módulo 8: Agenda de consultas**
+- Esquema `configuracion_agenda` (fila única: días hábiles, horario,
+  duración de franja), `bloqueos_agenda` (franjas, días, semanas o
+  meses — con o sin rango de hora) y `citas_agenda`, sin `firma_id`
+  (igual razón que `contactos_landing`: un único despacho, no un dato
+  aislado por tenant). Vistas públicas (`bloqueos_agenda_publico`,
+  `citas_agenda_ocupacion`) exponen solo lo necesario para calcular
+  disponibilidad, sin datos de otros clientes, a un visitante anónimo.
+- Landing público (sección "Agenda tu consulta" en `LandingPage.tsx`):
+  calendario (`react-day-picker`) con los días disponibles resaltados,
+  selección de horario agrupado en mañana/tarde, tipo de sesión
+  (presencial/virtual) y confirmación — sin necesidad de sesión.
+- Agenda interna (`/app/agenda`): próximas citas con opción de
+  cancelar, reserva manual por el equipo, y — solo administradores —
+  configuración de horario/duración de franja y gestión de bloqueos.
+- Al agendar desde el landing: correo de confirmación al cliente, y
+  correo + push a cada administrador (`api/notificar-cita.ts`, ver nota
+  más abajo). Requiere los secretos `SUPABASE_SERVICE_ROLE_KEY`,
+  `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`,
+  `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` como
+  variables de entorno del proyecto en Vercel (no en `.env` de Vite: no
+  llevan el prefijo `VITE_` porque no deben llegar al bundle del
+  cliente). El botón "Activar notificaciones" en `/app/agenda` (solo
+  administradores) es lo que crea la suscripción push — sin al menos un
+  administrador suscrito, `pushEnviados` siempre da 0. La clave pública
+  VAPID también va en `.env` del cliente como `VITE_VAPID_PUBLIC_KEY`
+  (mismo par de llaves, generado una sola vez con
+  `npx web-push generate-vapid-keys`).
+
 **Landing público — servicios jurídicos**
 - La ruta `/` ya no es el dashboard: es un landing público (sin sesión)
   para ofertar los servicios jurídicos del despacho — `LandingPage.tsx`,
@@ -321,6 +350,17 @@ app. Las cuatro Edge Functions que necesitan el texto de una sentencia
 el contenido a este endpoint en vez de conectarse directamente. Sigue
 siendo infraestructura 100% propia, sin depender de ningún tercero.
 
+**Sobre el runtime de las notificaciones de Módulo 8**: se intentó
+primero enviar el correo desde una Edge Function de Supabase, con
+`denomailer` (cliente SMTP para Deno) — el runtime sandboxeado de
+Supabase Edge Functions no completa el handshake STARTTLS y revienta
+el worker completo (`BadResource`/`invalid cmd` al conectar a
+`smtp.gmail.com:587`), el mismo tipo de limitación de TLS/sockets ya
+documentada arriba para `api/proxy-corte.ts` en ese runtime. La
+solución: `api/notificar-cita.ts` es una función serverless de
+**Vercel** (Node.js), donde `nodemailer` funciona sin ese problema —
+verificado con un envío real por SMTP antes de dar esto por resuelto.
+
 **Sentencias favoritas**: tabla `sentencia_favoritos` (migración 0012),
 compartida por todo el despacho (no por usuario individual) — mismo
 criterio que el resto de datos del tenant. Botón de estrella en cada
@@ -378,6 +418,9 @@ sobre tarjetas individuales por resultado, en vez de una lista plana.
 src/
   components/
     AppHeader.tsx      encabezado compartido con menú hamburguesa
+    SelectorFranja.tsx calendario + horarios disponibles (Módulo 8), compartido
+                       entre el landing público y la agenda interna
+    AgendarConsultaPublico.tsx flujo de reserva del landing público (Módulo 8)
   lib/
     supabase.ts       cliente de Supabase
     AuthContext.tsx   sesión, login, logout, recuperación de contraseña
@@ -387,6 +430,7 @@ src/
     plazos.ts          plazos, notificaciones y suscripción push (Módulo 3)
     documentos.ts      documentos, versiones y subida a Storage (Módulo 4)
     plantillas.ts      generación de documentos desde plantilla (Módulo 5)
+    agenda.ts          configuración, bloqueos, citas y disponibilidad (Módulo 8)
     facturacion.ts     horas, honorarios fijos y cuentas de cobro (Módulo 6)
     reportes.ts        cartera, casos, plazos y horas por usuario (Módulo 7)
   pages/
@@ -398,10 +442,18 @@ src/
     PlazosPage.tsx     vista general de plazos (sección 13.6)
     CuentasCobroPage.tsx listado de cuentas de cobro
     ReportesPage.tsx   reportes y analítica
+    AgendaPage.tsx     citas próximas, reserva manual y configuración/bloqueos
+                       para administradores (Módulo 8), en `/app/agenda`
 api/
   proxy-corte.ts       función serverless de Vercel (Node.js) que resuelve el
                        problema de certificado TLS del sitio de la Corte —
                        ver la nota más arriba
+  notificar-cita.ts    función serverless de Vercel (Node.js): correo (SMTP,
+                       nodemailer) al cliente y a cada administrador, y push
+                       (VAPID) a los administradores, al agendar desde el
+                       landing — ver la nota de Módulo 8 más arriba
+  _lib/
+    plantillasCorreo.ts plantillas HTML/texto de los correos de notificar-cita.ts
 public/
   sw.js                service worker para notificaciones push
 supabase/
