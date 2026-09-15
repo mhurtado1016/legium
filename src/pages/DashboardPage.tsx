@@ -13,7 +13,13 @@ import {
   Star,
 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
 import { useUsuario } from '../lib/useUsuario'
+import {
+  actualizarConfiguracionContacto,
+  obtenerConfiguracionContacto,
+  type ConfiguracionContacto,
+} from '../lib/configuracionContacto'
 import {
   buscarSentencias,
   generarAnalisisIA,
@@ -675,8 +681,94 @@ export function DashboardPage() {
               {casosAbiertos.length === 0 && <li className="text-slate">Sin casos abiertos.</li>}
             </ul>
           </div>
+
+          {usuario?.es_administrador && <ContactoConfigSeccion />}
         </aside>
       </main>
+    </div>
+  )
+}
+
+// Datos de contacto mostrados en el landing público (sección "Contacto"
+// de LandingPage.tsx) — antes hardcodeados, ahora editables desde acá
+// vía configuracion_contacto (fila única, RLS solo-admin en UPDATE).
+function ContactoConfigSeccion() {
+  const [abierto, setAbierto] = useState(false)
+  const [contacto, setContacto] = useState<ConfiguracionContacto | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [guardado, setGuardado] = useState(false)
+
+  useEffect(() => {
+    if (abierto && !contacto) obtenerConfiguracionContacto().then(setContacto).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto])
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!contacto) return
+    setGuardando(true)
+    setGuardado(false)
+    try {
+      await actualizarConfiguracionContacto(contacto)
+      setGuardado(true)
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <div className="card p-4">
+      <EncabezadoColapsable
+        titulo="Datos de contacto (landing)"
+        abierto={abierto}
+        onToggle={() => setAbierto((v) => !v)}
+      />
+      {abierto && !contacto && (
+        <p className="text-sm text-slate flex items-center gap-2 mt-4">
+          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+          Cargando…
+        </p>
+      )}
+      {abierto && contacto && (
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-sm">
+          <label className="block">
+            <span className="block text-slate mb-1">Correo</span>
+            <input
+              type="email"
+              value={contacto.correo}
+              onChange={(e) => setContacto({ ...contacto, correo: e.target.value })}
+              className="w-full field field-sm"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="block text-slate mb-1">Teléfono</span>
+            <input
+              type="tel"
+              value={contacto.telefono}
+              onChange={(e) => setContacto({ ...contacto, telefono: e.target.value })}
+              className="w-full field field-sm"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="block text-slate mb-1">Ciudad</span>
+            <input
+              type="text"
+              value={contacto.ciudad}
+              onChange={(e) => setContacto({ ...contacto, ciudad: e.target.value })}
+              className="w-full field field-sm"
+              required
+            />
+          </label>
+          <div className="flex items-center gap-2">
+            <button type="submit" disabled={guardando} className="btn-primary btn-sm">
+              {guardando ? 'Guardando…' : 'Guardar'}
+            </button>
+            {guardado && <span className="text-slate">Guardado.</span>}
+          </div>
+        </form>
+      )}
     </div>
   )
 }

@@ -96,8 +96,11 @@ const METODOLOGIA = [
 // firmado — pensadas específicamente como fondo del carrusel del hero.
 const HERO_SLIDES = [ColumnasSVG, BalanzaSVG, EstanteriaSVG, DocumentoSVG]
 
-// TODO: reemplazar por los datos reales de contacto del despacho.
-const CONTACTO = {
+// Valores mostrados mientras se carga configuracion_contacto (o si la
+// carga falla) — se reemplazan por los datos reales editables desde el
+// panel admin (ver DashboardPage.tsx, ContactoConfigSeccion) en cuanto
+// resuelve el fetch en el componente Contacto de abajo.
+const CONTACTO_FALLBACK = {
   correo: 'contacto@legium.com',
   telefono: '+57 300 000 0000',
   ciudad: 'Bogotá, Colombia',
@@ -540,6 +543,7 @@ function Agenda() {
 }
 
 function Contacto() {
+  const [datosContacto, setDatosContacto] = useState(CONTACTO_FALLBACK)
   const [nombre, setNombre] = useState('')
   const [correo, setCorreo] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -547,6 +551,15 @@ function Contacto() {
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Import dinámico, misma razón que en handleSubmit más abajo: el
+    // landing no debe depender de Supabase para su primer render.
+    import('../lib/configuracionContacto')
+      .then(({ obtenerConfiguracionContacto }) => obtenerConfiguracionContacto())
+      .then(setDatosContacto)
+      .catch(() => {}) // se queda con CONTACTO_FALLBACK
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -584,17 +597,17 @@ function Contacto() {
         <div className="mt-12 grid grid-cols-1 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2 space-y-6">
             <ContactoDato icon={Mail} label="Correo">
-              <a href={`mailto:${CONTACTO.correo}`} className="link">
-                {CONTACTO.correo}
+              <a href={`mailto:${datosContacto.correo}`} className="link">
+                {datosContacto.correo}
               </a>
             </ContactoDato>
             <ContactoDato icon={Phone} label="Teléfono">
-              <a href={`tel:${CONTACTO.telefono.replace(/\s+/g, '')}`} className="link">
-                {CONTACTO.telefono}
+              <a href={`tel:${datosContacto.telefono.replace(/\s+/g, '')}`} className="link">
+                {datosContacto.telefono}
               </a>
             </ContactoDato>
             <ContactoDato icon={MapPin} label="Ciudad">
-              <span className="text-ink">{CONTACTO.ciudad}</span>
+              <span className="text-ink">{datosContacto.ciudad}</span>
             </ContactoDato>
           </div>
 

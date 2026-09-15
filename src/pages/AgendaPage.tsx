@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Bell, BellOff, ChevronDown, Loader2, Trash2 } from 'lucide-react'
+import { Bell, BellOff, Loader2, Trash2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
 import { SelectorFranja } from '../components/SelectorFranja'
 import { useUsuario, type Usuario } from '../lib/useUsuario'
 import { suscribirsePush } from '../lib/plazos'
@@ -108,27 +109,6 @@ function NotificacionesPushBoton({ usuario }: { usuario: Usuario }) {
           {estado === 'error' ? 'Reintentar activar notificaciones' : 'Activar notificaciones'}
         </>
       )}
-    </button>
-  )
-}
-
-function EncabezadoColapsable({
-  titulo,
-  abierto,
-  onToggle,
-}: {
-  titulo: string
-  abierto: boolean
-  onToggle: () => void
-}) {
-  return (
-    <button type="button" onClick={onToggle} className="flex items-center gap-1.5 w-full text-left">
-      <h2 className="font-display text-base">{titulo}</h2>
-      <ChevronDown
-        size={18}
-        strokeWidth={1.75}
-        className={'text-slate transition-transform ' + (abierto ? 'rotate-180' : '')}
-      />
     </button>
   )
 }
