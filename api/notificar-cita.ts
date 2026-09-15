@@ -173,8 +173,17 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:soporte@legium.app'
 
+// web-push valida el formato de la vapid key al configurarla y lanza de
+// forma síncrona si está mal formada — sin este try/catch eso tumbaba
+// el módulo entero en cada cold start y todas las peticiones recibían
+// un 500 genérico de la plataforma, sin llegar nunca al handler ni a
+// su try/catch (que sí devuelve el detalle en JSON).
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+  } catch (err) {
+    console.error('VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY inválidas, push deshabilitado:', err)
+  }
 }
 
 const SMTP_HOST = process.env.SMTP_HOST
@@ -231,9 +240,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
   try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
     const { data: cita, error: errCita } = await admin
       .from('citas_agenda')
       .select('*')
