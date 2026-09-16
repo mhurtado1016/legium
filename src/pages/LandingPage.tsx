@@ -16,8 +16,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   ImagePlus,
   Code2,
   Workflow,
@@ -119,13 +117,6 @@ const METODOLOGIA = [
     descripcion: 'El cliente conoce en todo momento en qué va su caso, sin tener que preguntar.',
   },
 ]
-
-// Ilustraciones propias en SVG (no fotos de stock de terceros ni fotos
-// genéricas que podrían pasar por el despacho real sin serlo). Cada una
-// es una composición de líneas/formas con la paleta de la marca —
-// columnas de un templo de justicia, balanza, estantería y un documento
-// firmado — pensadas específicamente como fondo del carrusel del hero.
-const HERO_SLIDES = [ColumnasSVG, BalanzaSVG, EstanteriaSVG, DocumentoSVG]
 
 // Valores mostrados mientras se carga configuracion_contacto (o si la
 // carga falla) — se reemplazan por los datos reales editables desde el
@@ -236,13 +227,9 @@ function SiteHeader({
 function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
-      <HeroCarousel />
+      <HeroImage />
 
-      {/* pointer-events-none: este div ocupa todo el ancho de la sección
-          aunque el texto esté alineado a la izquierda, y sin esto tapaba
-          los clics de las flechas/puntos del carrusel de fondo — se
-          reactivan explícitamente en los dos enlaces del CTA. */}
-      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-20 pb-28 md:pt-28 md:pb-36 pointer-events-none">
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-20 pb-28 md:pt-28 md:pb-36">
         <p className="text-sm font-medium text-paper/85 tracking-wide uppercase mb-4">
           Despacho de abogados
         </p>
@@ -254,11 +241,11 @@ function Hero() {
           cumplimiento riguroso de plazos y tecnología propia de investigación jurisprudencial.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-4">
-          <a href="#agenda" className="btn-primary pointer-events-auto">
+          <a href="#agenda" className="btn-primary">
             Agenda una consulta
             <ArrowRight size={16} strokeWidth={1.75} />
           </a>
-          <a href="#servicios" className="btn-secondary pointer-events-auto">
+          <a href="#servicios" className="btn-secondary">
             Ver áreas de práctica
           </a>
         </div>
@@ -267,191 +254,20 @@ function Hero() {
   )
 }
 
-// Carrusel de fondo del hero. Autoavanza cada 6s (en pausa con el mouse
-// encima o si el visitante prefiere menos movimiento), con flechas y
-// puntos para navegación manual. Cada slide es una ilustración SVG
-// propia — ver el comentario en HERO_SLIDES.
-function HeroCarousel() {
-  const [indice, setIndice] = useState(0)
-  const [pausado, setPausado] = useState(false)
-
-  useEffect(() => {
-    const prefiereMenosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefiereMenosMovimiento || pausado) return
-    const id = setInterval(() => setIndice((i) => (i + 1) % HERO_SLIDES.length), 6000)
-    return () => clearInterval(id)
-  }, [pausado])
-
-  function anterior() {
-    setIndice((i) => (i - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)
-  }
-  function siguiente() {
-    setIndice((i) => (i + 1) % HERO_SLIDES.length)
-  }
-
+// Foto real del equipo como fondo del hero. El degradado va de oscuro
+// (izquierda, donde se superpone el texto) a transparente (derecha, donde
+// la foto deja espacio negativo) para que el texto siga siendo legible
+// sin oscurecer la imagen completa.
+function HeroImage() {
   return (
-    <div
-      className="absolute inset-0"
-      onMouseEnter={() => setPausado(true)}
-      onMouseLeave={() => setPausado(false)}
-    >
-      {HERO_SLIDES.map((Slide, i) => (
-        <div
-          key={i}
-          aria-hidden={i !== indice}
-          className={`absolute inset-0 overflow-hidden transition-opacity duration-1000 ease-in-out
-            ${i === indice ? 'opacity-100' : 'opacity-0'}`}
-        >
-          <Slide />
-        </div>
-      ))}
-      <div className="absolute inset-0 bg-ink/60" />
-
-      {/* Flechas solo desde sm: en móvil el hero es más alto que ancho (el
-          texto ocupa el centro vertical) y quedaban encima del párrafo;
-          ahí los puntos de abajo bastan como control táctil. */}
-      <button
-        onClick={anterior}
-        aria-label="Imagen anterior"
-        className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-paper/15 text-paper
-          hover:bg-paper/25 transition-colors"
-      >
-        <ChevronLeft size={20} strokeWidth={1.75} />
-      </button>
-      <button
-        onClick={siguiente}
-        aria-label="Imagen siguiente"
-        className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-paper/15 text-paper
-          hover:bg-paper/25 transition-colors"
-      >
-        <ChevronRight size={20} strokeWidth={1.75} />
-      </button>
-
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
-        {HERO_SLIDES.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndice(i)}
-            aria-label={`Ir a la imagen ${i + 1}`}
-            aria-current={i === indice}
-            className={`h-1.5 rounded-full transition-all ${
-              i === indice ? 'w-6 bg-paper' : 'w-1.5 bg-paper/50 hover:bg-paper/80'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Las cuatro ilustraciones del carrusel. Mismo esquema: un <rect> de
-// fondo con degradado de marca (colores tomados directo de index.css,
-// ya que un <linearGradient> de SVG no puede referenciar clases de
-// Tailwind) y encima formas simples en blanco muy transparente — el
-// mismo lenguaje de "línea fina, bajo contraste" que ya usan los íconos
-// del resto del sitio, evitando cualquier parecido con una foto real.
-function ColumnasSVG() {
-  return (
-    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-      <defs>
-        <linearGradient id="grad-columnas" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#161d27" />
-          <stop offset="100%" stopColor="#2b3542" />
-        </linearGradient>
-      </defs>
-      <rect width="800" height="450" fill="url(#grad-columnas)" />
-      <polygon points="250,140 550,140 400,64" fill="none" stroke="#f7f6f3" strokeOpacity="0.16" strokeWidth="2" />
-      <rect x="228" y="140" width="344" height="14" fill="#f7f6f3" fillOpacity="0.12" />
-      {[260, 320, 380, 440, 500].map((x) => (
-        <rect key={x} x={x} y="154" width="20" height="212" fill="#f7f6f3" fillOpacity="0.1" />
-      ))}
-      <rect x="228" y="366" width="344" height="14" fill="#f7f6f3" fillOpacity="0.12" />
-    </svg>
-  )
-}
-
-function BalanzaSVG() {
-  return (
-    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-      <defs>
-        <linearGradient id="grad-balanza" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7a2a2e" />
-          <stop offset="100%" stopColor="#161d27" />
-        </linearGradient>
-      </defs>
-      <rect width="800" height="450" fill="url(#grad-balanza)" />
-      <g fill="none" stroke="#f7f6f3" strokeOpacity="0.18" strokeWidth="3">
-        <line x1="400" y1="80" x2="400" y2="360" />
-        <line x1="300" y1="380" x2="500" y2="380" />
-        <line x1="220" y1="120" x2="580" y2="120" />
-        <line x1="220" y1="120" x2="180" y2="216" />
-        <line x1="220" y1="120" x2="260" y2="216" />
-        <line x1="580" y1="120" x2="540" y2="216" />
-        <line x1="580" y1="120" x2="620" y2="216" />
-        <path d="M172,216 a48,26 0 0 0 96,0" />
-        <path d="M532,216 a48,26 0 0 0 96,0" />
-      </g>
-    </svg>
-  )
-}
-
-function EstanteriaSVG() {
-  const anchos = [18, 26, 16, 30, 20, 24, 16, 34, 18, 22, 28, 16, 24, 20, 30, 18]
-  return (
-    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-      <defs>
-        <linearGradient id="grad-estanteria" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#2b3542" />
-          <stop offset="100%" stopColor="#5b6472" />
-        </linearGradient>
-      </defs>
-      <rect width="800" height="450" fill="url(#grad-estanteria)" />
-      {[70, 190, 310].map((yBase, fila) => (
-        <g key={fila}>
-          {anchos.map((w, i) => {
-            const h = 70 + ((i + fila * 5) % 5) * 10
-            const x = 40 + i * 46
-            return (
-              <rect
-                key={i}
-                x={x}
-                y={yBase + (90 - h)}
-                width={w}
-                height={h}
-                fill="#f7f6f3"
-                fillOpacity={0.06 + (i % 3) * 0.03}
-              />
-            )
-          })}
-          <rect x="30" y={yBase + 92} width="740" height="5" fill="#f7f6f3" fillOpacity="0.14" />
-        </g>
-      ))}
-    </svg>
-  )
-}
-
-function DocumentoSVG() {
-  return (
-    <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-      <defs>
-        <linearGradient id="grad-documento" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#5b6472" />
-          <stop offset="100%" stopColor="#161d27" />
-        </linearGradient>
-      </defs>
-      <rect width="800" height="450" fill="url(#grad-documento)" />
-      <rect x="480" y="55" width="240" height="320" rx="6" fill="#f7f6f3" fillOpacity="0.08" />
-      {[100, 142, 184, 226, 268].map((y, i) => (
-        <rect key={y} x="510" y={y} width={i === 4 ? 110 : 180} height="10" fill="#f7f6f3" fillOpacity="0.16" />
-      ))}
-      <path
-        d="M505,330 q18,-28 36,0 t36,0 t36,0 t36,0"
-        fill="none"
-        stroke="#f7f6f3"
-        strokeOpacity="0.22"
-        strokeWidth="3"
+    <div className="absolute inset-0">
+      <img
+        src="/hero/01-equipo.jpg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
       />
-    </svg>
+      <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/20" />
+    </div>
   )
 }
 
