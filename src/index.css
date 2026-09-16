@@ -235,8 +235,7 @@
 
   /* Día con disponibilidad: burbuja verde (convención habitual para
      "disponible") en vez de solo negrita, para que se distinga de un
-     vistazo del resto del mes. El rojo (--color-seal) queda reservado
-     para "hoy", no para disponibilidad. */
+     vistazo del resto del mes. */
   .rdp-selector .rdp-disponible .rdp-day_button {
     background: var(--color-success-soft) !important;
     font-weight: 600 !important;
@@ -245,9 +244,5 @@
 
   .rdp-selector .rdp-selected .rdp-day_button {
     box-shadow: var(--shadow-card);
-  }
-
-  .rdp-selector .rdp-today:not(.rdp-selected) .rdp-day_button {
-    border: 1.5px solid var(--color-seal) !important;
   }
 }

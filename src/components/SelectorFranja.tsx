@@ -91,7 +91,6 @@ export function SelectorFranja({
               {
                 '--rdp-accent-color': 'var(--color-ink)',
                 '--rdp-accent-background-color': 'var(--color-seal-soft)',
-                '--rdp-today-color': 'var(--color-seal)',
               } as CSSProperties
             }
             month={mes}
