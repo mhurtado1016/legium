@@ -55,7 +55,16 @@ export function SelectorFranja({
   const tarde = franjasDelDia.filter((f) => Number(f.hora_inicio.slice(0, 2)) >= 12)
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+    <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-8">
+      {cargando && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[var(--radius-card)] bg-ink/50 backdrop-blur-sm">
+          <p className="text-sm text-paper-raised flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+            Cargando disponibilidad…
+          </p>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm font-medium text-ink">
@@ -97,12 +106,6 @@ export function SelectorFranja({
           />
         </div>
 
-        {cargando && (
-          <p className="text-sm text-slate flex items-center gap-2 mt-3">
-            <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-            Cargando disponibilidad…
-          </p>
-        )}
         {error && (
           <p className="text-sm text-seal mt-3">
             No se pudo cargar la disponibilidad. Intenta de nuevo más tarde.
