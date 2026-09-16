@@ -118,6 +118,15 @@ const METODOLOGIA = [
   },
 ]
 
+// Logos de clientes reales en public/clientes/. Si algún archivo llegara
+// a faltar (404 → onError), LogoCliente cae a una caja placeholder en vez
+// de inventar una marca.
+const CLIENTES_LOGOS = [
+  { src: '/clientes/logo-life.jpg', alt: 'Life' },
+  { src: '/clientes/logo-logistic.png', alt: 'Logistic' },
+  { src: '/clientes/logo-petro.png', alt: 'Petro' },
+]
+
 // Valores mostrados mientras se carga configuracion_contacto (o si la
 // carga falla) — se reemplazan por los datos reales editables desde el
 // panel admin (ver DashboardPage.tsx, ContactoConfigSeccion) en cuanto
@@ -134,8 +143,9 @@ const CONTACTO_FALLBACK = {
  * se movió a /app (ver App.tsx). Diseño inspirado en la estructura de
  * lexia.co (hero → propuesta de valor → metodología → áreas de práctica
  * → diferenciador tecnológico → contacto), adaptado a un solo despacho
- * y sin contenido inventado (sin testimonios, logos de clientes ni
- * cifras que no podemos respaldar).
+ * y sin contenido inventado (sin testimonios ni cifras que no podemos
+ * respaldar). Los logos de clientes en <Clientes /> son placeholders
+ * hasta que se agreguen los archivos reales en /public/clientes/.
  */
 export function LandingPage() {
   const [menuAbierto, setMenuAbierto] = useState(false)
@@ -147,6 +157,7 @@ export function LandingPage() {
       <Metodologia />
       <AreasPractica />
       <Equipo />
+      <Clientes />
       <Agenda />
       <Contacto />
       <SiteFooter />
@@ -377,6 +388,44 @@ function FotoGrupalEquipo() {
       alt="Equipo de Legium"
       onError={() => setError(true)}
       className="w-full max-w-3xl mx-auto rounded-[var(--radius-card)] block"
+    />
+  )
+}
+
+function Clientes() {
+  return (
+    <section id="clientes" className="border-t border-line/70 bg-paper-raised">
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <p className="text-center text-sm font-medium text-slate tracking-wide uppercase mb-10">
+          Empresas y personas que han confiado en nosotros
+        </p>
+        <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-8">
+          {CLIENTES_LOGOS.map((logo) => (
+            <LogoCliente key={logo.src} src={logo.src} alt={logo.alt} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function LogoCliente({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false)
+
+  if (error) {
+    return (
+      <div className="w-28 h-12 rounded-md border border-dashed border-line flex items-center justify-center text-slate/40">
+        <ImagePlus size={16} strokeWidth={1.5} />
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setError(true)}
+      className="h-20 w-auto mx-auto object-contain grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition"
     />
   )
 }
