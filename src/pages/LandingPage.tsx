@@ -19,6 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ImagePlus,
+  Code2,
+  Workflow,
+  Plug,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -28,39 +31,67 @@ const NAV_ITEMS = [
   { href: '#contacto', label: 'Contacto' },
 ]
 
-const AREAS_PRACTICA = [
+const GRUPOS_SERVICIOS = [
   {
-    icon: Scale,
-    titulo: 'Derecho Civil',
-    descripcion: 'Contratos, responsabilidad civil, propiedad y procesos declarativos o ejecutivos.',
+    titulo: 'Legal',
+    items: [
+      {
+        icon: Scale,
+        titulo: 'Derecho Civil',
+        descripcion:
+          'Contratos, responsabilidad civil, propiedad y procesos declarativos o ejecutivos.',
+      },
+      {
+        icon: Building2,
+        titulo: 'Derecho Comercial y Corporativo',
+        descripcion:
+          'Constitución de sociedades, contratos mercantiles, gobierno corporativo y cumplimiento.',
+      },
+      {
+        icon: Briefcase,
+        titulo: 'Derecho Laboral',
+        descripcion:
+          'Contratación, terminaciones, procesos ante el Ministerio del Trabajo y litigios laborales.',
+      },
+      {
+        icon: Landmark,
+        titulo: 'Litigios y Arbitraje',
+        descripcion: 'Representación en procesos judiciales y arbitrales, de la demanda al fallo.',
+      },
+      {
+        icon: Users,
+        titulo: 'Derecho de Familia',
+        descripcion: 'Divorcios, custodia, alimentos, sucesiones y demás procesos de familia.',
+      },
+      {
+        icon: FileText,
+        titulo: 'Derecho Administrativo',
+        descripcion:
+          'Contratación estatal, procesos ante entidades públicas y acciones constitucionales.',
+      },
+    ],
   },
   {
-    icon: Building2,
-    titulo: 'Derecho Comercial y Corporativo',
-    descripcion:
-      'Constitución de sociedades, contratos mercantiles, gobierno corporativo y cumplimiento.',
-  },
-  {
-    icon: Briefcase,
-    titulo: 'Derecho Laboral',
-    descripcion:
-      'Contratación, terminaciones, procesos ante el Ministerio del Trabajo y litigios laborales.',
-  },
-  {
-    icon: Landmark,
-    titulo: 'Litigios y Arbitraje',
-    descripcion: 'Representación en procesos judiciales y arbitrales, de la demanda al fallo.',
-  },
-  {
-    icon: Users,
-    titulo: 'Derecho de Familia',
-    descripcion: 'Divorcios, custodia, alimentos, sucesiones y demás procesos de familia.',
-  },
-  {
-    icon: FileText,
-    titulo: 'Derecho Administrativo',
-    descripcion:
-      'Contratación estatal, procesos ante entidades públicas y acciones constitucionales.',
+    titulo: 'Desarrollo de software',
+    items: [
+      {
+        icon: Code2,
+        titulo: 'Desarrollo a la medida',
+        descripcion:
+          'Aplicaciones web y sistemas internos diseñados alrededor de los procesos reales de tu negocio.',
+      },
+      {
+        icon: Workflow,
+        titulo: 'Automatización de procesos',
+        descripcion:
+          'Herramientas que eliminan tareas manuales repetitivas y aceleran la operación diaria.',
+      },
+      {
+        icon: Plug,
+        titulo: 'Integraciones y APIs',
+        descripcion: 'Conectamos tus sistemas, datos y plataformas para que trabajen como uno solo.',
+      },
+    ],
   },
 ]
 
@@ -455,15 +486,24 @@ function AreasPractica() {
         <SectionHeading
           eyebrow="Áreas de práctica"
           titulo="En qué te podemos ayudar"
-          descripcion="Cobertura amplia con el mismo estándar de rigor en cada materia."
+          descripcion="Servicios legales y de desarrollo de software, con el mismo estándar de rigor en cada materia."
         />
 
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {AREAS_PRACTICA.map((area) => (
-            <div key={area.titulo} className="card p-6">
-              <area.icon size={22} strokeWidth={1.75} className="text-seal mb-4" />
-              <h3 className="text-base font-semibold mb-2">{area.titulo}</h3>
-              <p className="text-sm text-slate leading-relaxed">{area.descripcion}</p>
+        <div className="mt-12 flex flex-col gap-12">
+          {GRUPOS_SERVICIOS.map((grupo) => (
+            <div key={grupo.titulo}>
+              <h3 className="text-sm font-medium text-slate tracking-wide uppercase mb-5">
+                {grupo.titulo}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {grupo.items.map((item) => (
+                  <div key={item.titulo} className="card p-6">
+                    <item.icon size={22} strokeWidth={1.75} className="text-seal mb-4" />
+                    <h4 className="text-base font-semibold mb-2">{item.titulo}</h4>
+                    <p className="text-sm text-slate leading-relaxed">{item.descripcion}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
