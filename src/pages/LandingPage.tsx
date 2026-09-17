@@ -258,10 +258,10 @@ function SiteHeader({
 
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden">
+    <section id="top" className="relative overflow-hidden bg-ink">
       <HeroImage />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-20 pb-28 md:pt-28 md:pb-36">
+      <div className="relative z-10 mx-auto max-w-6xl px-6 py-10 md:pt-28 md:pb-36">
         <p className="text-sm font-medium text-paper/85 tracking-wide uppercase mb-4">
           Despacho de abogados
         </p>
@@ -286,19 +286,29 @@ function Hero() {
   )
 }
 
-// Foto real del equipo como fondo del hero. El degradado va de oscuro
-// (izquierda, donde se superpone el texto) a transparente (derecha, donde
-// la foto deja espacio negativo) para que el texto siga siendo legible
-// sin oscurecer la imagen completa.
+// Foto real del equipo (1840×576, muy panorámica) como fondo del hero. En
+// desktop la sección es ancha y baja, así que la foto llena toda la
+// sección con object-cover sin perder al grupo. En móvil la sección es
+// angosta y alta: forzar la misma foto a "cubrir" ese alto la ampliaría
+// tanto que solo se vería un fragmento borroso en el borde (el equipo
+// quedaba prácticamente fuera de cuadro). Por eso en móvil la foto vive en
+// un bloque propio con su propia relación de aspecto (banner arriba,
+// ancla a la izquierda donde está el grupo) y el texto va debajo en flujo
+// normal, en vez de superpuesto — de ahí "aspect-[2/1] md:aspect-auto
+// md:absolute md:inset-0": relación de aspecto fija en móvil, y en
+// desktop se abandona porque el inset-0 ya fija ambas dimensiones.
 function HeroImage() {
   return (
-    <div className="absolute inset-0">
+    <div className="relative aspect-[2/1] md:aspect-auto md:absolute md:inset-0">
       <img
         src="/hero/01-equipo.jpg"
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
+        alt="Equipo de Legium"
+        className="absolute inset-0 h-full w-full object-cover object-left md:object-center"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/20" />
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent
+          md:bg-gradient-to-r md:from-ink/85 md:via-ink/55 md:to-ink/20"
+      />
     </div>
   )
 }
