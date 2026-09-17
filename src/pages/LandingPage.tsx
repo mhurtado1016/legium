@@ -20,6 +20,7 @@ import {
   Code2,
   Workflow,
   Plug,
+  CalendarDays,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -161,7 +162,27 @@ export function LandingPage() {
       <Agenda />
       <Contacto />
       <SiteFooter />
+      <BotonAgendarFlotante />
     </div>
+  )
+}
+
+// Botón flotante solo en móvil (en desktop el CTA ya está siempre visible
+// en el header) para que agendar una consulta quede a un toque, sin
+// depender de que el usuario haga scroll hasta el header o la sección
+// #agenda.
+function BotonAgendarFlotante() {
+  return (
+    <a
+      href="#agenda"
+      className="md:hidden fixed z-40 bottom-5 right-5 inline-flex items-center gap-2
+        rounded-full bg-ink text-paper-raised px-5 py-3.5 text-sm font-medium
+        shadow-[var(--shadow-raised)] active:scale-[0.97] transition-transform"
+      style={{ bottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+    >
+      <CalendarDays size={18} strokeWidth={1.75} />
+      Agendar consulta
+    </a>
   )
 }
 
