@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
+import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
   actualizarConfiguracionContacto,
@@ -241,17 +242,20 @@ export function DashboardPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
 
-      <main className="px-6 py-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+      <main className="px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10 max-w-[100rem] mx-auto">
         <section>
-          <h2 className="font-display text-lg mb-2">Buscar jurisprudencia</h2>
+          <h1 className="font-display text-2xl font-semibold tracking-tight mb-1">Buscar jurisprudencia</h1>
+          <p className="text-sm text-slate mb-5">
+            Sentencias de la Corte Constitucional, con análisis asistido por IA.
+          </p>
           <form onSubmit={handleBuscar}>
-            <div className="flex gap-2 mb-2">
+            <div className="card p-2 flex gap-2 mb-3 shadow-[var(--shadow-raised)]">
               <input
                 type="text"
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
                 placeholder="Número de sentencia, tipo de proceso o palabra clave del análisis…"
-                className="flex-1 field"
+                className="flex-1 border-none shadow-none focus:ring-0 field"
               />
               <button
                 type="submit"
@@ -271,7 +275,7 @@ export function DashboardPage() {
             </button>
 
             {filtrosAbiertos && (
-              <div className="card p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="card p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm animate-in">
                 <div>
                   <label className="block text-slate mb-1">Tipo de sentencia</label>
                   <select
@@ -362,7 +366,7 @@ export function DashboardPage() {
             )}
           </form>
 
-          {error && <p className="text-sm text-seal mb-4">{error}</p>}
+          {error && <p className="text-sm text-danger mb-4">{error}</p>}
 
           {buscado && (
             <p className="text-sm text-slate mb-2">
@@ -391,15 +395,15 @@ export function DashboardPage() {
                           handleExpandir(s)
                         }
                       }}
-                      className="w-full text-left p-5 hover:bg-paper transition-colors cursor-pointer"
+                      className="w-full text-left p-5 hover:bg-paper-sunken transition-colors cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className="shrink-0 rounded-full bg-paper p-2.5 text-ink">
+                          <div className="shrink-0 rounded-full bg-paper-sunken p-2.5 text-ink">
                             <Scale size={18} strokeWidth={1.75} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-ink">
+                            <p className="font-semibold text-ink">
                               {s.sentencia}{' '}
                               <span className="text-slate font-normal">
                                 · {s.sala ?? 'Sala no especificada'}
@@ -433,7 +437,7 @@ export function DashboardPage() {
                             <Star
                               size={18}
                               strokeWidth={1.75}
-                              className={favoritasIds.has(s.id) ? 'fill-seal text-seal' : ''}
+                              className={favoritasIds.has(s.id) ? 'fill-accent text-accent' : ''}
                             />
                           </button>
                           <ChevronDown
@@ -448,7 +452,7 @@ export function DashboardPage() {
                       </div>
 
                       {errorFavoritoPorId[s.id] && (
-                        <p className="mt-2 text-sm text-seal">{errorFavoritoPorId[s.id]}</p>
+                        <p className="mt-2 text-sm text-danger">{errorFavoritoPorId[s.id]}</p>
                       )}
 
                       {s.resumen_ia && !expandido && (
@@ -535,7 +539,7 @@ export function DashboardPage() {
 
                           {s.texto_completo_no_disponible && !s.texto_completo_url && (
                             <div className="text-slate space-y-2 mb-3">
-                              <p className="inline-flex items-center gap-1.5 text-seal">
+                              <p className="inline-flex items-center gap-1.5 text-danger">
                                 <AlertCircle size={14} strokeWidth={1.75} />
                                 No se pudo localizar la sentencia completa en el sitio oficial la
                                 última vez. El botón de arriba lo vuelve a intentar.
@@ -547,7 +551,7 @@ export function DashboardPage() {
                           )}
 
                           {errorGeneracion[s.id] && (
-                            <p className="inline-flex items-center gap-1.5 text-seal mb-3">
+                            <p className="inline-flex items-center gap-1.5 text-danger mb-3">
                               <AlertCircle size={14} strokeWidth={1.75} />
                               {errorGeneracion[s.id]}
                             </p>
@@ -597,7 +601,7 @@ export function DashboardPage() {
                             <>
                               {cargandoTextoId === s.id && <p className="text-slate">Cargando…</p>}
                               {errorTextoPorId[s.id] && (
-                                <p className="text-seal mb-2">{errorTextoPorId[s.id]}</p>
+                                <p className="text-danger mb-2">{errorTextoPorId[s.id]}</p>
                               )}
                               {htmlPorId[s.id] && textoVisiblePorId[s.id] && (
                                 <div
@@ -640,45 +644,54 @@ export function DashboardPage() {
           </ul>
         </section>
 
-        <aside className="space-y-4">
-          <h2 className="font-display text-lg mb-2">Su actividad</h2>
+        <aside className="space-y-5 lg:sticky lg:top-24 self-start">
+          <h2 className="font-display text-sm font-semibold text-slate tracking-[0.08em] uppercase">
+            Su actividad
+          </h2>
 
           <div className="card p-4">
-            <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-2">
-              <Clock3 size={14} strokeWidth={1.75} />
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate tracking-wide uppercase mb-3">
+              <Clock3 size={13} strokeWidth={1.75} />
               Plazos próximos
             </p>
-            <ul className="text-sm space-y-1">
+            <ul className="text-sm divide-y divide-line -mx-4">
               {plazosProximos.map((p) => {
                 const dias = diasRestantes(p.fecha_vencimiento)
+                const urgente = dias <= 0
                 return (
-                  <li key={p.id}>
-                    <Link to={`/app/casos/${p.caso_id}`} className="hover:underline">
+                  <li key={p.id} className="px-4 py-2 hover:bg-paper-sunken transition-colors">
+                    <Link to={`/app/casos/${p.caso_id}`} className="hover:text-ink font-medium">
                       {p.titulo}
-                    </Link>{' '}
-                    <span className="text-slate">— {dias <= 0 ? 'hoy o vencido' : `${dias} días`}</span>
+                    </Link>
+                    <div className={'text-xs mt-0.5 ' + (urgente ? 'text-danger font-medium' : 'text-slate')}>
+                      {urgente ? 'Hoy o vencido' : `${dias} días`}
+                    </div>
                   </li>
                 )
               })}
-              {plazosProximos.length === 0 && <li className="text-slate">Sin plazos pendientes.</li>}
+              {plazosProximos.length === 0 && (
+                <li className="px-4 py-2 text-slate">Sin plazos pendientes.</li>
+              )}
             </ul>
           </div>
 
           <div className="card p-4">
-            <p className="inline-flex items-center gap-1.5 text-sm text-slate mb-2">
-              <FolderOpen size={14} strokeWidth={1.75} />
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate tracking-wide uppercase mb-3">
+              <FolderOpen size={13} strokeWidth={1.75} />
               Casos abiertos
             </p>
-            <ul className="text-sm space-y-1">
+            <ul className="text-sm divide-y divide-line -mx-4">
               {casosAbiertos.map((c) => (
-                <li key={c.id}>
-                  <Link to={`/app/casos/${c.id}`} className="hover:underline">
+                <li key={c.id} className="px-4 py-2 hover:bg-paper-sunken transition-colors flex items-center justify-between gap-2">
+                  <Link to={`/app/casos/${c.id}`} className="min-w-0 hover:text-ink font-medium truncate">
                     {c.titulo}
-                  </Link>{' '}
-                  <span className="text-slate">— {c.estado}</span>
+                  </Link>
+                  <StatusBadge estado={c.estado} />
                 </li>
               ))}
-              {casosAbiertos.length === 0 && <li className="text-slate">Sin casos abiertos.</li>}
+              {casosAbiertos.length === 0 && (
+                <li className="px-4 py-2 text-slate">Sin casos abiertos.</li>
+              )}
             </ul>
           </div>
 

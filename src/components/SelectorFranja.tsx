@@ -68,7 +68,7 @@ export function SelectorFranja({
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm font-medium text-ink">
-            <CalendarDays size={16} strokeWidth={1.75} className="text-seal" />
+            <CalendarDays size={16} strokeWidth={1.75} className="text-accent" />
             Elige una fecha
           </div>
           <div className="flex items-center gap-1.5 text-xs text-slate">
@@ -90,7 +90,7 @@ export function SelectorFranja({
             style={
               {
                 '--rdp-accent-color': 'var(--color-ink)',
-                '--rdp-accent-background-color': 'var(--color-seal-soft)',
+                '--rdp-accent-background-color': 'var(--color-accent-soft)',
               } as CSSProperties
             }
             month={mes}
@@ -106,7 +106,7 @@ export function SelectorFranja({
         </div>
 
         {error && (
-          <p className="text-sm text-seal mt-3">
+          <p className="text-sm text-danger mt-3">
             No se pudo cargar la disponibilidad. Intenta de nuevo más tarde.
           </p>
         )}

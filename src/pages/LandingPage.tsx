@@ -260,29 +260,51 @@ function Hero() {
   return (
     <section id="top" className="relative overflow-hidden bg-ink">
       <HeroImage />
+      <HeroPattern />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-6 py-10 md:pt-28 md:pb-36">
-        <p className="text-sm font-medium text-paper/85 tracking-wide uppercase mb-4">
-          Despacho de abogados
-        </p>
-        <h1 className="font-display text-4xl md:text-6xl leading-[1.1] tracking-tight max-w-3xl text-paper">
+      <div className="relative z-10 mx-auto max-w-6xl px-6 py-14 md:pt-32 md:pb-40">
+        <div className="flex items-center gap-2 mb-5">
+          <span className="h-px w-6 bg-[#d9b878]/70 shrink-0" />
+          <p className="min-w-0 text-xs font-semibold text-[#d9b878] tracking-[0.16em] uppercase">
+            Despacho de abogados &amp; software jurídico
+          </p>
+        </div>
+        <h1 className="font-serif text-4xl md:text-6xl leading-[1.08] tracking-tight max-w-3xl text-paper-raised">
           Claridad jurídica para decisiones que importan.
         </h1>
-        <p className="mt-6 text-lg text-paper/85 max-w-2xl">
+        <p className="mt-6 text-lg text-paper-raised/80 max-w-2xl leading-relaxed">
           Acompañamos a personas y empresas en sus procesos legales con estrategia clara,
           cumplimiento riguroso de plazos y tecnología propia de investigación jurisprudencial.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-4">
-          <a href="#agenda" className="btn-primary">
+        <div className="mt-9 flex flex-wrap items-center gap-4">
+          <a href="#agenda" className="btn-primary bg-paper-raised text-ink hover:bg-paper-raised/90">
             Agenda una consulta
             <ArrowRight size={16} strokeWidth={1.75} />
           </a>
-          <a href="#servicios" className="btn-secondary">
+          <a
+            href="#servicios"
+            className="btn-secondary bg-transparent border-paper-raised/25 text-paper-raised hover:bg-paper-raised/10 hover:border-paper-raised/40"
+          >
             Ver áreas de práctica
           </a>
         </div>
       </div>
     </section>
+  )
+}
+
+// Textura discreta (grid de puntos) sobre el degradado del hero — aporta
+// profundidad sin competir con la foto ni con el texto; opacidad muy baja
+// a propósito (sección 7 del pedido: "no abusar de patrones").
+function HeroPattern() {
+  return (
+    <div
+      className="absolute inset-0 z-[1] opacity-[0.07] pointer-events-none"
+      style={{
+        backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)',
+        backgroundSize: '22px 22px',
+      }}
+    />
   )
 }
 
@@ -323,11 +345,11 @@ function Metodologia() {
           descripcion="Cada caso sigue la misma disciplina, desde la primera consulta hasta el cierre."
         />
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
           {METODOLOGIA.map((paso) => (
-            <div key={paso.numero}>
-              <p className="font-display text-3xl text-seal mb-3">{paso.numero}</p>
-              <h3 className="text-base font-semibold mb-2">{paso.titulo}</h3>
+            <div key={paso.numero} className="relative pl-0 lg:pr-6 lg:border-r lg:border-line last:border-r-0">
+              <p className="font-serif text-4xl text-accent mb-4">{paso.numero}</p>
+              <h3 className="text-base font-semibold mb-2 tracking-tight">{paso.titulo}</h3>
               <p className="text-sm text-slate leading-relaxed">{paso.descripcion}</p>
             </div>
           ))}
@@ -347,17 +369,20 @@ function AreasPractica() {
           descripcion="Servicios legales y de desarrollo de software, con el mismo estándar de rigor en cada materia."
         />
 
-        <div className="mt-12 flex flex-col gap-12">
+        <div className="mt-14 flex flex-col gap-14">
           {GRUPOS_SERVICIOS.map((grupo) => (
             <div key={grupo.titulo}>
-              <h3 className="text-sm font-medium text-slate tracking-wide uppercase mb-5">
+              <h3 className="flex items-center gap-3 text-xs font-semibold text-slate tracking-[0.14em] uppercase mb-6">
                 {grupo.titulo}
+                <span className="h-px flex-1 bg-line" />
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {grupo.items.map((item) => (
-                  <div key={item.titulo} className="card p-6">
-                    <item.icon size={22} strokeWidth={1.75} className="text-seal mb-4" />
-                    <h4 className="text-base font-semibold mb-2">{item.titulo}</h4>
+                  <div key={item.titulo} className="card card-interactive p-6">
+                    <span className="inline-flex items-center justify-center h-11 w-11 rounded-[var(--radius-field)] bg-[var(--color-accent-soft)] mb-5">
+                      <item.icon size={20} strokeWidth={1.75} className="text-[var(--color-accent-strong)]" />
+                    </span>
+                    <h4 className="text-base font-semibold mb-2 tracking-tight">{item.titulo}</h4>
                     <p className="text-sm text-slate leading-relaxed">{item.descripcion}</p>
                   </div>
                 ))}
@@ -425,9 +450,9 @@ function FotoGrupalEquipo() {
 
 function Clientes() {
   return (
-    <section id="clientes" className="border-t border-line/70 bg-paper-raised">
+    <section id="clientes" className="border-t border-line/70 bg-paper-sunken">
       <div className="mx-auto max-w-6xl px-6 py-16">
-        <p className="text-center text-sm font-medium text-slate tracking-wide uppercase mb-10">
+        <p className="text-center text-xs font-semibold text-slate tracking-[0.14em] uppercase mb-10">
           Empresas y personas que han confiado en nosotros
         </p>
         <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-8">
@@ -463,7 +488,7 @@ function LogoCliente({ src, alt }: { src: string; alt: string }) {
 
 function Agenda() {
   return (
-    <section id="agenda" className="border-t border-line/70">
+    <section id="agenda" className="border-t border-line/70 bg-paper-raised">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <SectionHeading
           eyebrow="Agenda tu consulta"
@@ -549,8 +574,10 @@ function Contacto() {
 
           <div className="lg:col-span-3">
             {enviado ? (
-              <div className="card p-8 flex items-start gap-3">
-                <CheckCircle2 size={22} className="text-seal shrink-0 mt-0.5" strokeWidth={1.75} />
+              <div className="card p-8 flex items-start gap-3 animate-in">
+                <span className="flex items-center justify-center h-9 w-9 rounded-full bg-[var(--color-success-soft)] shrink-0">
+                  <CheckCircle2 size={20} className="text-success" strokeWidth={1.75} />
+                </span>
                 <div>
                   <p className="font-medium text-ink">Mensaje enviado</p>
                   <p className="text-sm text-slate mt-1">
@@ -587,7 +614,7 @@ function Contacto() {
                   />
                 </label>
 
-                {error && <p className="text-sm text-seal">{error}</p>}
+                {error && <p className="text-sm text-danger">{error}</p>}
 
                 <button type="submit" disabled={enviando} className="btn-primary">
                   {enviando ? (
@@ -618,11 +645,13 @@ function ContactoDato({
   children: ReactNode
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <Icon size={18} strokeWidth={1.75} className="text-slate mt-0.5 shrink-0" />
-      <div>
+    <div className="flex items-start gap-3.5">
+      <span className="flex items-center justify-center h-10 w-10 rounded-[var(--radius-field)] bg-paper-sunken shrink-0">
+        <Icon size={17} strokeWidth={1.75} className="text-ink" />
+      </span>
+      <div className="pt-1.5">
         <p className="text-xs uppercase tracking-wide text-slate mb-0.5">{label}</p>
-        <p className="text-sm">{children}</p>
+        <p className="text-sm font-medium">{children}</p>
       </div>
     </div>
   )
@@ -630,7 +659,7 @@ function ContactoDato({
 
 function SiteFooter() {
   return (
-    <footer className="border-t border-line/70">
+    <footer className="border-t border-line/70 bg-paper-sunken">
       <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <img src="/logo.svg" alt="Legium" className="h-11 w-auto mb-2" />
@@ -668,9 +697,9 @@ function SectionHeading({
 }) {
   return (
     <div className="max-w-2xl">
-      <p className="text-sm font-medium text-seal tracking-wide uppercase mb-3">{eyebrow}</p>
-      <h2 className="font-display text-3xl md:text-4xl tracking-tight">{titulo}</h2>
-      <p className="mt-3 text-slate">{descripcion}</p>
+      <p className="eyebrow mb-3">{eyebrow}</p>
+      <h2 className="font-serif text-3xl md:text-[2.75rem] leading-[1.1] tracking-tight">{titulo}</h2>
+      <p className="mt-4 text-slate leading-relaxed">{descripcion}</p>
     </div>
   )
 }

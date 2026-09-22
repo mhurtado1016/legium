@@ -63,8 +63,10 @@ export function AgendarConsultaPublico() {
 
   if (reservada) {
     return (
-      <div ref={confirmacionRef} className="card p-8 flex items-start gap-3">
-        <CheckCircle2 size={22} className="text-seal shrink-0 mt-0.5" strokeWidth={1.75} />
+      <div ref={confirmacionRef} className="card p-8 flex items-start gap-3 animate-in">
+        <span className="flex items-center justify-center h-9 w-9 rounded-full bg-[var(--color-success-soft)] shrink-0">
+          <CheckCircle2 size={20} className="text-success" strokeWidth={1.75} />
+        </span>
         <div>
           <p className="font-medium text-ink">Consulta agendada</p>
           <p className="text-sm text-slate mt-1">
@@ -146,7 +148,7 @@ export function AgendarConsultaPublico() {
             />
           </label>
 
-          {error && <p className="text-sm text-seal">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
 
           <button type="submit" disabled={enviando} className="btn-primary">
             {enviando ? (

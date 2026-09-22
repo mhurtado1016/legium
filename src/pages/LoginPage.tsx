@@ -36,11 +36,21 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-display text-ink text-center mb-8 tracking-tight">Legium</h1>
+    <div className="relative min-h-screen flex items-center justify-center bg-paper px-4 overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-[0.4] pointer-events-none"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 50% 0%, var(--color-accent-soft), transparent 55%)',
+        }}
+      />
 
-        <div className="card p-8">
+      <div className="relative w-full max-w-sm">
+        <div className="flex justify-center mb-8">
+          <img src="/logo.svg" alt="Legium" className="h-14 w-auto rounded-lg shadow-[var(--shadow-card)]" />
+        </div>
+
+        <div className="card shadow-[var(--shadow-raised)] p-8">
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <Field label="Correo" type="email" value={email} onChange={setEmail} required />
@@ -52,7 +62,7 @@ export function LoginPage() {
                 required
               />
 
-              {error && <p className="text-sm text-seal">{error}</p>}
+              {error && <p className="text-sm text-danger">{error}</p>}
 
               <button type="submit" disabled={submitting} className="w-full btn-primary">
                 {submitting ? 'Ingresando…' : 'Ingresar'}

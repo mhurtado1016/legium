@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AppHeader } from '../components/AppHeader'
+import { StatusBadge } from '../components/StatusBadge'
 import {
   actualizarEstadoCuentaCobro,
   listarCuentasCobro,
@@ -43,13 +44,16 @@ export function CuentasCobroPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
 
-      <main className="px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="font-display text-lg">Cuentas de cobro</h1>
+      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-[100rem] mx-auto">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Cuentas de cobro</h1>
+            <p className="text-sm text-slate mt-1">Facturación emitida a los clientes del despacho.</p>
+          </div>
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value as EstadoCuentaCobro | '')}
-            className="field field-sm"
+            className="field field-sm w-auto"
           >
             <option value="">Todos los estados</option>
             {ESTADOS.map((e) => (
@@ -60,53 +64,57 @@ export function CuentasCobroPage() {
           </select>
         </div>
 
-        <table className="w-full text-sm border-t border-line">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
-              <th className="py-2">Número</th>
-              <th className="py-2">Caso</th>
-              <th className="py-2">Cliente</th>
-              <th className="py-2">Total</th>
-              <th className="py-2">Estado</th>
-              <th className="py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {cuentas.map((c) => (
-              <tr key={c.id}>
-                <td className="py-2">
-                  <button onClick={() => handleDescargar(c.storage_path)} className="hover:underline">
-                    {c.numero}
-                  </button>
-                </td>
-                <td className="py-2">{c.casos?.titulo ?? '—'}</td>
-                <td className="py-2">{c.clientes?.nombre ?? '—'}</td>
-                <td className="py-2">${c.total.toLocaleString('es-CO')}</td>
-                <td className="py-2">
-                  <select
-                    value={c.estado}
-                    onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
-                    className="field field-sm"
-                  >
-                    {ESTADOS.map((e) => (
-                      <option key={e} value={e}>
-                        {e}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="py-2" />
-              </tr>
-            ))}
-            {cuentas.length === 0 && (
+        <div className="card overflow-hidden overflow-x-auto">
+          <table className="table-modern">
+            <thead>
               <tr>
-                <td colSpan={6} className="py-4 text-slate">
-                  No hay cuentas de cobro con este filtro.
-                </td>
+                <th>Número</th>
+                <th>Caso</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th />
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {cuentas.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <button onClick={() => handleDescargar(c.storage_path)} className="font-medium text-ink hover:text-accent transition-colors">
+                      {c.numero}
+                    </button>
+                  </td>
+                  <td>{c.casos?.titulo ?? '—'}</td>
+                  <td>{c.clientes?.nombre ?? '—'}</td>
+                  <td className="font-medium">${c.total.toLocaleString('es-CO')}</td>
+                  <td>
+                    <StatusBadge estado={c.estado} />
+                  </td>
+                  <td>
+                    <select
+                      value={c.estado}
+                      onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
+                      className="field field-sm w-auto"
+                    >
+                      {ESTADOS.map((e) => (
+                        <option key={e} value={e}>
+                          {e}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+              {cuentas.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-6 text-slate text-center">
+                    No hay cuentas de cobro con este filtro.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     </div>
   )

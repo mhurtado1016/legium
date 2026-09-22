@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { FolderKanban, FolderOpen, Clock3, CheckCircle2, AlertTriangle, Plus } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { Modal } from '../components/Modal'
+import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
   crearCaso,
@@ -123,39 +125,48 @@ export function CasosListPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
 
-      <main className="px-6 py-6">
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <h1 className="font-display text-lg">Casos</h1>
+      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-[100rem] mx-auto">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Casos</h1>
+            <p className="text-sm text-slate mt-1">Seguimiento de todos los casos del despacho.</p>
+          </div>
           <button
             onClick={() => setMostrarForm((v) => !v)}
             className="btn-primary btn-sm"
           >
-            + Nuevo caso
+            <Plus size={15} strokeWidth={2} />
+            Nuevo caso
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
           <ResumenCard
+            icon={FolderKanban}
             label="Total"
             value={resumen.total.length}
             onClick={() => setModalResumen('total')}
           />
           <ResumenCard
+            icon={FolderOpen}
             label="Abiertos"
             value={resumen.abiertos.length}
             onClick={() => setModalResumen('abiertos')}
           />
           <ResumenCard
+            icon={Clock3}
             label="Pendientes"
             value={resumen.pendientes.length}
             onClick={() => setModalResumen('pendientes')}
           />
           <ResumenCard
+            icon={CheckCircle2}
             label="Cerrados"
             value={resumen.cerrados.length}
             onClick={() => setModalResumen('cerrados')}
           />
           <ResumenCard
+            icon={AlertTriangle}
             label="Plazos vencidos"
             value={resumen.vencidos.length}
             onClick={() => setModalResumen('vencidos')}
@@ -165,21 +176,21 @@ export function CasosListPage() {
 
         {modalResumen && (
           <Modal title={RESUMEN_TITULOS[modalResumen]} onClose={() => setModalResumen(null)}>
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-line -mx-5">
               {resumen[modalResumen].map((c) => (
-                <li key={c.id} className="py-2">
+                <li key={c.id} className="px-5 py-2.5 hover:bg-paper-sunken transition-colors">
                   <Link
                     to={`/app/casos/${c.id}`}
                     onClick={() => setModalResumen(null)}
-                    className="font-medium hover:underline"
+                    className="font-medium hover:text-accent transition-colors"
                   >
                     {c.titulo}
                   </Link>
-                  <div className="text-xs text-slate">
-                    {c.clientes?.nombre ?? '—'} · {c.estado}
+                  <div className="text-xs text-slate mt-0.5">
+                    {c.clientes?.nombre ?? '—'} · <StatusBadge estado={c.estado} />
                   </div>
                   {modalResumen === 'vencidos' && (
-                    <div className="text-xs text-red-600 mt-0.5">
+                    <div className="text-xs text-danger mt-1">
                       Plazo(s) vencido(s):{' '}
                       {(plazosVencidosPorCaso.get(c.id) ?? []).map((p) => p.titulo).join(', ')}
                     </div>
@@ -187,13 +198,13 @@ export function CasosListPage() {
                 </li>
               ))}
               {resumen[modalResumen].length === 0 && (
-                <li className="py-4 text-sm text-slate">No hay casos en esta categoría.</li>
+                <li className="px-5 py-4 text-sm text-slate">No hay casos en esta categoría.</li>
               )}
             </ul>
           </Modal>
         )}
 
-        <div className="flex items-end gap-3 flex-wrap mb-4">
+        <div className="card p-4 flex items-end gap-3 flex-wrap mb-6">
           <div>
             <label className="block text-sm text-slate mb-1">Título</label>
             <input
@@ -266,59 +277,65 @@ export function CasosListPage() {
           />
         )}
 
-        <table className="w-full text-sm border-t border-line">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
-              {COLUMNAS.map((col) => (
-                <th key={col.id} className="py-2">
-                  <button
-                    onClick={() => handleOrdenar(col.id)}
-                    className="flex items-center gap-1 uppercase tracking-wide hover:text-ink"
-                  >
-                    {col.label}
-                    {orderBy === col.id && <span>{orderAsc ? '▲' : '▼'}</span>}
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {casos.map((c) => (
-              <tr key={c.id}>
-                <td className="py-2">
-                  <Link to={`/app/casos/${c.id}`} className="hover:underline">
-                    {c.titulo}
-                  </Link>
-                </td>
-                <td className="py-2">{c.clientes?.nombre ?? '—'}</td>
-                <td className="py-2">{c.tipo}</td>
-                <td className="py-2">{c.numero_radicado ?? '—'}</td>
-                <td className="py-2">{c.estado}</td>
-                <td className="py-2 text-slate">
-                  {new Date(c.created_at).toLocaleDateString('es-CO')}
-                </td>
-              </tr>
-            ))}
-            {casos.length === 0 && (
+        <div className="card overflow-hidden overflow-x-auto">
+          <table className="table-modern">
+            <thead>
               <tr>
-                <td colSpan={6} className="py-4 text-slate">
-                  No hay casos con este filtro.
-                </td>
+                {COLUMNAS.map((col) => (
+                  <th key={col.id}>
+                    <button
+                      onClick={() => handleOrdenar(col.id)}
+                      className="flex items-center gap-1 uppercase tracking-wide hover:text-ink transition-colors"
+                    >
+                      {col.label}
+                      {orderBy === col.id && <span className="text-accent">{orderAsc ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                ))}
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {casos.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <Link to={`/app/casos/${c.id}`} className="font-medium text-ink hover:text-accent transition-colors">
+                      {c.titulo}
+                    </Link>
+                  </td>
+                  <td>{c.clientes?.nombre ?? '—'}</td>
+                  <td className="capitalize">{c.tipo}</td>
+                  <td>{c.numero_radicado ?? '—'}</td>
+                  <td>
+                    <StatusBadge estado={c.estado} />
+                  </td>
+                  <td className="text-slate">
+                    {new Date(c.created_at).toLocaleDateString('es-CO')}
+                  </td>
+                </tr>
+              ))}
+              {casos.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-6 text-slate text-center">
+                    No hay casos con este filtro.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     </div>
   )
 }
 
 function ResumenCard({
+  icon: Icon,
   label,
   value,
   onClick,
   alerta,
 }: {
+  icon: typeof FolderKanban
   label: string
   value: number
   onClick: () => void
@@ -328,12 +345,19 @@ function ResumenCard({
     <button
       onClick={onClick}
       className={
-        'card p-3 text-left hover:border-ink transition-colors' +
-        (alerta ? ' border-red-400 text-red-700' : '')
+        'card card-interactive p-4 text-left ' +
+        (alerta && value > 0 ? 'border-[var(--color-danger)]/30' : '')
       }
     >
-      <div className="font-display text-2xl">{value}</div>
-      <div className="text-xs text-slate uppercase tracking-wide">{label}</div>
+      <Icon
+        size={16}
+        strokeWidth={1.75}
+        className={alerta && value > 0 ? 'text-danger mb-2.5' : 'text-slate-soft mb-2.5'}
+      />
+      <div className={'font-display text-2xl font-semibold ' + (alerta && value > 0 ? 'text-danger' : 'text-ink')}>
+        {value}
+      </div>
+      <div className="text-xs text-slate uppercase tracking-wide mt-0.5">{label}</div>
     </button>
   )
 }
@@ -390,7 +414,8 @@ function NuevoCasoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card p-4 mb-6 space-y-3 max-w-lg">
+    <form onSubmit={handleSubmit} className="card p-5 mb-6 space-y-3 max-w-lg animate-in">
+      <h2 className="font-display text-sm font-semibold mb-1">Nuevo caso</h2>
       <div>
         <label className="block text-sm text-slate mb-1">Cliente existente</label>
         <select

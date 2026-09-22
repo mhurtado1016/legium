@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AlertTriangle } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { StatusBadge } from '../components/StatusBadge'
 import { diasRestantes, listarPlazos, marcarCumplido, type EstadoPlazo, type Plazo } from '../lib/plazos'
 
 const ESTADOS: EstadoPlazo[] = ['pendiente', 'vencido', 'cumplido']
@@ -34,13 +36,16 @@ export function PlazosPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
 
-      <main className="px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="font-display text-lg">Plazos</h1>
+      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-[100rem] mx-auto">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Plazos</h1>
+            <p className="text-sm text-slate mt-1">Términos y vencimientos de todos los casos.</p>
+          </div>
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value as EstadoPlazo | '')}
-            className="field field-sm"
+            className="field field-sm w-auto"
           >
             <option value="">Todos los estados</option>
             {ESTADOS.map((e) => (
@@ -51,54 +56,61 @@ export function PlazosPage() {
           </select>
         </div>
 
-        <table className="w-full text-sm border-t border-line">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
-              <th className="py-2">Vence en</th>
-              <th className="py-2">Título</th>
-              <th className="py-2">Caso</th>
-              <th className="py-2">Estado</th>
-              <th className="py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {plazos.map((p) => {
-              const dias = diasRestantes(p.fecha_vencimiento)
-              const urgente = p.estado !== 'cumplido' && dias < 3
-              return (
-                <tr key={p.id} className={urgente ? 'text-seal' : ''}>
-                  <td className="py-2">
-                    {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
-                  </td>
-                  <td className="py-2">{p.titulo}</td>
-                  <td className="py-2">
-                    <Link to={`/app/casos/${p.caso_id}`} className="hover:underline">
-                      {p.casos?.titulo ?? '—'}
-                    </Link>
-                  </td>
-                  <td className="py-2">{p.estado}</td>
-                  <td className="py-2">
-                    {p.estado !== 'cumplido' && (
-                      <button
-                        onClick={() => handleCumplido(p.id)}
-                        className="link"
-                      >
-                        marcar cumplido
-                      </button>
-                    )}
+        <div className="card overflow-hidden overflow-x-auto">
+          <table className="table-modern">
+            <thead>
+              <tr>
+                <th>Vence en</th>
+                <th>Título</th>
+                <th>Caso</th>
+                <th>Estado</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {plazos.map((p) => {
+                const dias = diasRestantes(p.fecha_vencimiento)
+                const urgente = p.estado !== 'cumplido' && dias < 3
+                return (
+                  <tr key={p.id} className={urgente ? 'bg-[var(--color-danger-soft)]/40' : ''}>
+                    <td>
+                      <span className={urgente ? 'inline-flex items-center gap-1.5 font-medium text-danger' : ''}>
+                        {urgente && <AlertTriangle size={14} strokeWidth={1.75} />}
+                        {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
+                      </span>
+                    </td>
+                    <td className="font-medium text-ink">{p.titulo}</td>
+                    <td>
+                      <Link to={`/app/casos/${p.caso_id}`} className="hover:text-accent transition-colors">
+                        {p.casos?.titulo ?? '—'}
+                      </Link>
+                    </td>
+                    <td>
+                      <StatusBadge estado={p.estado} />
+                    </td>
+                    <td>
+                      {p.estado !== 'cumplido' && (
+                        <button
+                          onClick={() => handleCumplido(p.id)}
+                          className="link"
+                        >
+                          marcar cumplido
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+              {plazos.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-6 text-slate text-center">
+                    No hay plazos con este filtro.
                   </td>
                 </tr>
-              )
-            })}
-            {plazos.length === 0 && (
-              <tr>
-                <td colSpan={5} className="py-4 text-slate">
-                  No hay plazos con este filtro.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     </div>
   )

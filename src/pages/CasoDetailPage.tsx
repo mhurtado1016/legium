@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
   actualizarEstadoCaso,
@@ -130,38 +132,52 @@ export function CasoDetailPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader
         left={
-          <div className="flex items-center gap-4">
-            <Link to="/app/casos" className="text-sm text-slate hover:text-ink">
-              ← Casos
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              to="/app/casos"
+              className="flex items-center justify-center h-8 w-8 -ml-1.5 rounded-full text-slate hover:text-ink hover:bg-paper-sunken transition-colors shrink-0"
+              aria-label="Volver a casos"
+            >
+              <ArrowLeft size={17} strokeWidth={1.75} />
             </Link>
-            <h1 className="font-display text-lg">{caso.titulo}</h1>
+            <div className="min-w-0">
+              <h1 className="font-display text-base font-semibold truncate">{caso.titulo}</h1>
+            </div>
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-8 px-6 py-6">
-        <nav className="text-sm text-slate space-y-2 self-start">
-          <p className="text-ink mb-1">En esta página</p>
+      <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-10 px-4 sm:px-6 lg:px-8 py-8 max-w-5xl mx-auto">
+        <nav className="text-sm text-slate space-y-0.5 self-start md:sticky md:top-24">
+          <p className="eyebrow mb-2">En esta página</p>
           {SECCIONES.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="block hover:text-ink">
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className="block px-2.5 py-1.5 -mx-2.5 rounded-[var(--radius-field)] hover:text-ink hover:bg-paper-sunken transition-colors"
+            >
               {s.label}
             </a>
           ))}
         </nav>
 
-        <div className="max-w-2xl space-y-8">
-          <section id="datos">
-            <h2 className="font-display text-base mb-2">Datos generales</h2>
-            <p className="text-sm text-slate mb-3">
+        <div className="max-w-2xl space-y-10">
+          <section id="datos" className="card p-6">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h2 className="font-display text-base font-semibold">Datos generales</h2>
+              <StatusBadge estado={caso.estado} />
+            </div>
+            <p className="text-sm text-slate mb-4">
               Información básica que identifica el caso: cliente, tipo, estado y, si aplica,
               el número de radicado judicial. Actualiza el estado y el radicado aquí a medida
               que el caso avanza.
             </p>
             <p className="text-sm">
-              Cliente: {caso.clientes?.nombre ?? '—'} · Tipo: {caso.tipo}
+              Cliente: <span className="font-medium">{caso.clientes?.nombre ?? '—'}</span> · Tipo:{' '}
+              <span className="capitalize">{caso.tipo}</span>
             </p>
-            <p className="text-sm text-slate">
-              Estado:{' '}
+            <label className="block mt-3 max-w-[14rem]">
+              <span className="block text-sm text-slate mb-1">Estado</span>
               <select
                 value={caso.estado}
                 onChange={(e) => handleCambiarEstado(e.target.value as EstadoCaso)}
@@ -173,8 +189,8 @@ export function CasoDetailPage() {
                   </option>
                 ))}
               </select>
-            </p>
-            <form onSubmit={handleGuardarRadicado} className="flex items-end gap-2 mt-2">
+            </label>
+            <form onSubmit={handleGuardarRadicado} className="flex items-end gap-2 mt-3">
               <div>
                 <label className="block text-sm text-slate mb-1">Número de radicado</label>
                 <input
@@ -183,21 +199,19 @@ export function CasoDetailPage() {
                   className="field field-sm"
                 />
               </div>
-              <button type="submit" disabled={guardandoRadicado} className="btn-primary btn-sm">
+              <button type="submit" disabled={guardandoRadicado} className="btn-secondary btn-sm">
                 {guardandoRadicado ? 'Guardando…' : 'Guardar'}
               </button>
             </form>
             {caso.tipo === 'litigio' && (
-              <p className="text-sm text-slate mt-1">
+              <p className="text-sm text-slate mt-3 pt-3 border-t border-line">
                 Despacho: {caso.despacho_judicial ?? '—'} · Etapa: {caso.etapa_procesal ?? '—'}
               </p>
             )}
           </section>
 
-          <hr className="border-line" />
-
           <section id="actividad">
-            <h2 className="font-display text-base mb-2">Actividad</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Actividad</h2>
             <p className="text-sm text-slate mb-3">
               Bitácora cronológica del caso. Deja constancia de gestiones, llamadas, reuniones
               o decisiones importantes para que quede un historial consultable por todo el
@@ -214,31 +228,29 @@ export function CasoDetailPage() {
                 Agregar
               </button>
             </form>
-            <ul className="text-sm divide-y divide-line">
+            <ul className="text-sm divide-y divide-line card overflow-hidden">
               {actividad.map((a) => (
-                <li key={a.id} className="py-2">
+                <li key={a.id} className="px-4 py-2.5">
                   <span className="text-slate">
                     {new Date(a.created_at).toLocaleDateString('es-CO')} —{' '}
                   </span>
                   {a.descripcion}
                 </li>
               ))}
-              {actividad.length === 0 && <li className="py-2 text-slate">Sin actividad aún.</li>}
+              {actividad.length === 0 && <li className="px-4 py-3 text-slate">Sin actividad aún.</li>}
             </ul>
           </section>
 
-          <hr className="border-line" />
-
           <section id="sentencias">
-            <h2 className="font-display text-base mb-2">Sentencias vinculadas</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Sentencias vinculadas</h2>
             <p className="text-sm text-slate mb-3">
               Sentencias del buscador jurisprudencial que se relacionan con este caso, útiles
               como precedente o soporte argumentativo al momento de preparar la estrategia o
               los documentos del proceso.
             </p>
-            <ul className="text-sm divide-y divide-line">
+            <ul className="text-sm divide-y divide-line card overflow-hidden">
               {sentencias.map((s) => (
-                <li key={s.id} className="py-2">
+                <li key={s.id} className="px-4 py-2.5">
                   {s.sentencias_cache ? (
                     <>
                       {s.sentencias_cache.sentencia} · {s.sentencias_cache.sala ?? '—'}
@@ -250,7 +262,7 @@ export function CasoDetailPage() {
                 </li>
               ))}
               {sentencias.length === 0 && (
-                <li className="py-2 text-slate">
+                <li className="px-4 py-3 text-slate">
                   Ninguna todavía. Vincula sentencias desde el buscador (pendiente de integrar
                   aquí).
                 </li>
@@ -258,10 +270,8 @@ export function CasoDetailPage() {
             </ul>
           </section>
 
-          <hr className="border-line" />
-
           <section id="plazos">
-            <h2 className="font-display text-base mb-2">Plazos</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Plazos</h2>
             <p className="text-sm text-slate mb-3">
               Fechas límite del caso, ya sean términos procesales, vencimientos contractuales u
               otros compromisos. Configura recordatorios por app, correo o notificación push
@@ -275,12 +285,13 @@ export function CasoDetailPage() {
                 onCreado={cargar}
               />
             )}
-            <ul className="text-sm divide-y divide-line mt-3">
+            <ul className="text-sm divide-y divide-line card overflow-hidden mt-3">
               {plazos.map((p) => (
-                <li key={p.id} className="py-2 flex items-center justify-between">
-                  <span>
-                    {p.titulo} — vence {new Date(p.fecha_vencimiento).toLocaleDateString('es-CO')}{' '}
-                    <span className="text-slate">({p.estado})</span>
+                <li key={p.id} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="font-medium">{p.titulo}</span> — vence{' '}
+                    {new Date(p.fecha_vencimiento).toLocaleDateString('es-CO')}{' '}
+                    <StatusBadge estado={p.estado} />
                   </span>
                   {p.estado !== 'cumplido' && (
                     <button
@@ -288,21 +299,19 @@ export function CasoDetailPage() {
                         await marcarCumplido(p.id)
                         cargar()
                       }}
-                      className="link"
+                      className="link shrink-0"
                     >
                       marcar cumplido
                     </button>
                   )}
                 </li>
               ))}
-              {plazos.length === 0 && <li className="py-2 text-slate">Sin plazos para este caso.</li>}
+              {plazos.length === 0 && <li className="px-4 py-3 text-slate">Sin plazos para este caso.</li>}
             </ul>
           </section>
 
-          <hr className="border-line" />
-
           <section id="documentos">
-            <h2 className="font-display text-base mb-2">Documentos</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Documentos</h2>
             <p className="text-sm text-slate mb-3">
               Archivos del caso: escritos, pruebas, contratos o cualquier documento generado a
               partir de una plantilla. Cada archivo se organiza por categoría y mantiene un
@@ -321,10 +330,8 @@ export function CasoDetailPage() {
             )}
           </section>
 
-          <hr className="border-line" />
-
           <section id="facturacion">
-            <h2 className="font-display text-base mb-2">Facturación</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Facturación</h2>
             <p className="text-sm text-slate mb-3">
               Control del cobro del caso: define un honorario fijo o registra las horas
               trabajadas, y genera la cuenta de cobro correspondiente para el cliente.
@@ -529,8 +536,8 @@ function DocumentosSeccion({
   return (
     <div>
       {plantillas.length > 0 && (
-        <form onSubmit={handleGenerarDesdePlantilla} className="card p-4 mb-4 space-y-2 text-sm">
-          <p className="text-slate">Generar desde plantilla</p>
+        <form onSubmit={handleGenerarDesdePlantilla} className="card p-5 mb-4 space-y-2 text-sm">
+          <p className="text-slate font-medium">Generar desde plantilla</p>
           <div className="flex flex-wrap items-end gap-3">
             <select
               value={plantillaId}
@@ -604,7 +611,7 @@ function DocumentosSeccion({
         </button>
       </form>
 
-      {error && <p className="text-sm text-seal mb-3">{error}</p>}
+      {error && <p className="text-sm text-danger mb-3">{error}</p>}
 
       <input
         type="text"
@@ -614,76 +621,78 @@ function DocumentosSeccion({
         className="field field-sm mb-3 w-full max-w-xs"
       />
 
-      <table className="w-full text-sm border-t border-line">
-        <thead>
-          <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
-            <th className="py-2">Nombre</th>
-            <th className="py-2">Categoría</th>
-            <th className="py-2">Versión</th>
-            <th className="py-2">Actualizado</th>
-            <th className="py-2" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
-          {documentosFiltrados.map((d) => (
-            <Fragment key={d.id}>
-              <tr>
-                <td className="py-2">{d.nombre}</td>
-                <td className="py-2">{d.categorias_documento?.nombre ?? '—'}</td>
-                <td className="py-2">
-                  {d.ultima_version ? (
-                    <button
-                      onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
-                      className="hover:underline"
-                    >
-                      v{d.ultima_version.version_numero}
-                    </button>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="py-2 text-slate">
-                  {d.ultima_version
-                    ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO')
-                    : '—'}
-                </td>
-                <td className="py-2">
-                  <button
-                    onClick={() => handleVerHistorial(d.id)}
-                    className="link"
-                  >
-                    historial
-                  </button>
-                </td>
-              </tr>
-              {historialAbierto === d.id && (
+      <div className="card overflow-hidden overflow-x-auto">
+        <table className="table-modern">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Versión</th>
+              <th>Actualizado</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {documentosFiltrados.map((d) => (
+              <Fragment key={d.id}>
                 <tr>
-                  <td colSpan={5} className="py-2 pl-4">
-                    <ul className="text-slate space-y-1">
-                      {versiones.map((v) => (
-                        <li key={v.id}>
-                          v{v.version_numero} — {v.nombre_archivo} —{' '}
-                          {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
-                          <button onClick={() => handleDescargar(v.storage_path)} className="underline">
-                            descargar
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                  <td className="font-medium text-ink">{d.nombre}</td>
+                  <td>{d.categorias_documento?.nombre ?? '—'}</td>
+                  <td>
+                    {d.ultima_version ? (
+                      <button
+                        onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
+                        className="hover:text-accent transition-colors"
+                      >
+                        v{d.ultima_version.version_numero}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className="text-slate">
+                    {d.ultima_version
+                      ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO')
+                      : '—'}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => handleVerHistorial(d.id)}
+                      className="link"
+                    >
+                      historial
+                    </button>
                   </td>
                 </tr>
-              )}
-            </Fragment>
-          ))}
-          {documentosFiltrados.length === 0 && (
-            <tr>
-              <td colSpan={5} className="py-4 text-slate">
-                Sin documentos todavía.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                {historialAbierto === d.id && (
+                  <tr>
+                    <td colSpan={5} className="bg-paper-sunken">
+                      <ul className="text-slate space-y-1 py-1">
+                        {versiones.map((v) => (
+                          <li key={v.id}>
+                            v{v.version_numero} — {v.nombre_archivo} —{' '}
+                            {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                            <button onClick={() => handleDescargar(v.storage_path)} className="underline hover:text-ink">
+                              descargar
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+            {documentosFiltrados.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-6 text-slate text-center">
+                  Sin documentos todavía.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -744,9 +753,9 @@ function FacturacionSeccion({
   const horasPendientes = registrosTiempo.filter((r) => !r.facturado)
 
   return (
-    <div className="text-sm space-y-4">
-      <div>
-        <p className="text-slate mb-1">Honorario fijo (si aplica)</p>
+    <div className="text-sm space-y-5">
+      <div className="card p-4">
+        <p className="text-slate mb-2">Honorario fijo (si aplica)</p>
         <form onSubmit={handleGuardarHonorarioFijo} className="flex items-end gap-2">
           <input
             type="number"
@@ -756,17 +765,17 @@ function FacturacionSeccion({
             onChange={(e) => setMontoFijo(e.target.value)}
             className="field field-sm w-40"
           />
-          <button className="btn-primary btn-sm">Guardar</button>
+          <button className="btn-secondary btn-sm">Guardar</button>
         </form>
         {honorarioFijo && (
-          <p className="text-slate mt-1">
-            Actual: ${honorarioFijo.monto_acordado.toLocaleString('es-CO')}
+          <p className="text-slate mt-2">
+            Actual: <span className="font-medium text-ink">${honorarioFijo.monto_acordado.toLocaleString('es-CO')}</span>
           </p>
         )}
       </div>
 
-      <div>
-        <p className="text-slate mb-1">Registrar horas trabajadas</p>
+      <div className="card p-4">
+        <p className="text-slate mb-2">Registrar horas trabajadas</p>
         <form onSubmit={handleRegistrarHoras} className="flex items-end gap-2">
           <input
             type="number"
@@ -782,18 +791,20 @@ function FacturacionSeccion({
             onChange={(e) => setDescripcionHoras(e.target.value)}
             className="flex-1 field field-sm"
           />
-          <button className="btn-primary btn-sm">Registrar</button>
+          <button className="btn-secondary btn-sm">Registrar</button>
         </form>
-        <ul className="text-slate divide-y divide-line mt-2">
+        <ul className="text-slate divide-y divide-line mt-3 -mx-4">
           {registrosTiempo.map((r) => (
-            <li key={r.id} className="py-1 flex justify-between">
-              <span>
+            <li key={r.id} className="px-4 py-1.5 flex justify-between items-center gap-2">
+              <span className="min-w-0 truncate">
                 {r.fecha} — {r.horas}h — {r.descripcion || 'sin descripción'}
               </span>
-              <span>{r.facturado ? 'facturado' : 'pendiente'}</span>
+              <span className={r.facturado ? 'badge-success' : 'badge-neutral'}>
+                {r.facturado ? 'Facturado' : 'Pendiente'}
+              </span>
             </li>
           ))}
-          {registrosTiempo.length === 0 && <li className="py-1">Sin horas registradas.</li>}
+          {registrosTiempo.length === 0 && <li className="px-4 py-1.5">Sin horas registradas.</li>}
         </ul>
       </div>
 
@@ -805,8 +816,8 @@ function FacturacionSeccion({
         >
           {generando ? 'Generando…' : 'Generar cuenta de cobro'}
         </button>
-        {resultado && <p className="text-slate mt-2">{resultado}</p>}
-        {error && <p className="text-seal mt-2">{error}</p>}
+        {resultado && <p className="text-success mt-2">{resultado}</p>}
+        {error && <p className="text-danger mt-2">{error}</p>}
       </div>
     </div>
   )

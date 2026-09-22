@@ -3,6 +3,7 @@ import { Bell, BellOff, Loader2, Trash2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
 import { SelectorFranja } from '../components/SelectorFranja'
+import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario, type Usuario } from '../lib/useUsuario'
 import { suscribirsePush } from '../lib/plazos'
 import {
@@ -41,9 +42,12 @@ export function AgendaPage() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
-      <main className="px-6 py-6 max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-lg">Agenda</h1>
+      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto space-y-10">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Agenda</h1>
+            <p className="text-sm text-slate mt-1">Citas del equipo y disponibilidad para agendar.</p>
+          </div>
           {usuario?.es_administrador && <NotificacionesPushBoton usuario={usuario} />}
         </div>
         <CitasSeccion refrescar={refrescoCitas} />
@@ -113,11 +117,6 @@ function NotificacionesPushBoton({ usuario }: { usuario: Usuario }) {
   )
 }
 
-const ESTADO_LABEL: Record<Cita['estado'], string> = {
-  confirmada: 'Confirmada',
-  cancelada: 'Cancelada',
-}
-
 function CitasSeccion({ refrescar }: { refrescar: number }) {
   const [citas, setCitas] = useState<Cita[]>([])
   const [cargando, setCargando] = useState(true)
@@ -145,53 +144,57 @@ function CitasSeccion({ refrescar }: { refrescar: number }) {
 
   return (
     <section>
-      <h2 className="font-display text-base mb-3">Próximas citas</h2>
+      <h2 className="font-display text-base font-semibold mb-3">Próximas citas</h2>
       {cargando ? (
         <p className="text-sm text-slate flex items-center gap-2">
           <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
           Cargando…
         </p>
       ) : (
-        <table className="table-modern">
-          <thead>
-            <tr>
-              <th className="pr-3">Fecha</th>
-              <th className="pr-3">Hora</th>
-              <th className="pr-3">Cliente</th>
-              <th className="pr-3">Tipo</th>
-              <th className="pr-3">Estado</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {citas.map((c) => (
-              <tr key={c.id} className={c.estado === 'cancelada' ? 'text-slate' : ''}>
-                <td className="pr-3">{formatoFechaCorta(c.fecha)}</td>
-                <td className="pr-3">{formatoHora12(c.hora_inicio)}</td>
-                <td className="pr-3">
-                  <div>{c.nombre_cliente}</div>
-                  <div className="text-xs text-slate">{c.correo_cliente}</div>
-                </td>
-                <td className="pr-3 capitalize">{c.tipo_sesion}</td>
-                <td className="pr-3">{ESTADO_LABEL[c.estado]}</td>
-                <td>
-                  {c.estado === 'confirmada' && (
-                    <button onClick={() => handleCancelar(c.id)} className="link">
-                      cancelar
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {citas.length === 0 && (
+        <div className="card overflow-hidden overflow-x-auto">
+          <table className="table-modern">
+            <thead>
               <tr>
-                <td colSpan={6} className="py-4 text-slate">
-                  No hay citas próximas.
-                </td>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th />
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {citas.map((c) => (
+                <tr key={c.id} className={c.estado === 'cancelada' ? 'text-slate' : ''}>
+                  <td>{formatoFechaCorta(c.fecha)}</td>
+                  <td>{formatoHora12(c.hora_inicio)}</td>
+                  <td>
+                    <div className="font-medium text-ink">{c.nombre_cliente}</div>
+                    <div className="text-xs text-slate">{c.correo_cliente}</div>
+                  </td>
+                  <td className="capitalize">{c.tipo_sesion}</td>
+                  <td>
+                    <StatusBadge estado={c.estado} />
+                  </td>
+                  <td>
+                    {c.estado === 'confirmada' && (
+                      <button onClick={() => handleCancelar(c.id)} className="link">
+                        cancelar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {citas.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-6 text-slate text-center">
+                    No hay citas próximas.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )
@@ -288,7 +291,7 @@ function ReservarManualSeccion({ onReservada }: { onReservada: () => void }) {
                 <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className="w-full field" />
               </label>
 
-              {error && <p className="text-sm text-seal">{error}</p>}
+              {error && <p className="text-sm text-danger">{error}</p>}
 
               <button type="submit" disabled={guardando} className="btn-primary btn-sm">
                 {guardando ? 'Guardando…' : 'Agendar cita'}
@@ -360,49 +363,51 @@ function ConfiguracionSeccion() {
           />
 
           <div>
-            <h3 className="font-display text-sm mb-3">Bloqueos</h3>
+            <h3 className="font-display text-sm font-semibold mb-3">Bloqueos</h3>
             <NuevoBloqueoForm onCreado={(b) => setBloqueos((prev) => [b, ...prev])} />
 
             {cargandoBloqueos ? null : (
-              <table className="table-modern mt-4">
-                <thead>
-                  <tr>
-                    <th className="pr-3">Desde</th>
-                    <th className="pr-3">Hasta</th>
-                    <th className="pr-3">Horario</th>
-                    <th className="pr-3">Motivo</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {bloqueos.map((b) => (
-                    <tr key={b.id}>
-                      <td className="pr-3">{formatoFechaCorta(b.fecha_inicio)}</td>
-                      <td className="pr-3">{formatoFechaCorta(b.fecha_fin)}</td>
-                      <td className="pr-3">
-                        {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
-                      </td>
-                      <td className="pr-3">{b.motivo || '—'}</td>
-                      <td>
-                        <button
-                          onClick={() => handleEliminarBloqueo(b.id)}
-                          aria-label="Eliminar bloqueo"
-                          className="text-slate hover:text-seal transition-colors"
-                        >
-                          <Trash2 size={16} strokeWidth={1.75} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {bloqueos.length === 0 && (
+              <div className="card overflow-hidden overflow-x-auto mt-4">
+                <table className="table-modern">
+                  <thead>
                     <tr>
-                      <td colSpan={5} className="py-4 text-slate">
-                        No hay bloqueos registrados.
-                      </td>
+                      <th>Desde</th>
+                      <th>Hasta</th>
+                      <th>Horario</th>
+                      <th>Motivo</th>
+                      <th />
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {bloqueos.map((b) => (
+                      <tr key={b.id}>
+                        <td>{formatoFechaCorta(b.fecha_inicio)}</td>
+                        <td>{formatoFechaCorta(b.fecha_fin)}</td>
+                        <td>
+                          {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
+                        </td>
+                        <td>{b.motivo || '—'}</td>
+                        <td>
+                          <button
+                            onClick={() => handleEliminarBloqueo(b.id)}
+                            aria-label="Eliminar bloqueo"
+                            className="text-slate hover:text-danger transition-colors"
+                          >
+                            <Trash2 size={16} strokeWidth={1.75} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {bloqueos.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-slate text-center">
+                          No hay bloqueos registrados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -548,7 +553,7 @@ function ConfiguracionForm({
                 type="button"
                 onClick={() => eliminarGrupo(i)}
                 aria-label="Eliminar horario"
-                className="text-slate hover:text-seal transition-colors ml-auto"
+                className="text-slate hover:text-danger transition-colors ml-auto"
               >
                 <Trash2 size={16} strokeWidth={1.75} />
               </button>
@@ -563,7 +568,7 @@ function ConfiguracionForm({
         )}
       </div>
 
-      {error && <p className="text-sm text-seal">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
@@ -682,7 +687,7 @@ function NuevoBloqueoForm({ onCreado }: { onCreado: (b: Bloqueo) => void }) {
       <button type="submit" disabled={guardando} className="btn-secondary btn-sm">
         {guardando ? 'Guardando…' : 'Agregar bloqueo'}
       </button>
-      {error && <p className="text-sm text-seal w-full">{error}</p>}
+      {error && <p className="text-sm text-danger w-full">{error}</p>}
     </form>
   )
 }

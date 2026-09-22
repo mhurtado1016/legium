@@ -1,44 +1,80 @@
 @import "tailwindcss";
 
 /*
-  Tokens de diseño de Legium — evolución "moderna y profesional" del
-  sistema original (sección 13.1 de la especificación): se conserva el
-  mismo espíritu sobrio/editorial (serif + sans, un solo acento de
-  color), pero con más profundidad — radios sutiles, sombras suaves en
-  superficies elevadas, y una jerarquía tipográfica más marcada — en
-  vez del estilo completamente plano de la primera versión.
+  Tokens de diseño de Legium — "Corporate Technology / Premium SaaS".
 
-  Tipografía: por pedido explícito, toda la página (encabezados y texto)
-  usa Segoe UI en vez del par serif/sans original — se dejó el mismo
-  nombre de variable (--font-display) para no tocar cada selector que
-  ya lo usa, aunque hoy apunte a la misma fuente que --font-sans.
+  La paleta parte del isotipo real (public/logo.svg: fondo azul-marino
+  casi negro + acento dorado, tipografía Inter) en vez de inventar una
+  identidad nueva desconectada de la marca. El acento dorado se reserva
+  para jerarquía y elementos de marca (nunca para texto de error); el
+  rojo "danger" es exclusivamente semántico (errores, vencimientos,
+  acciones destructivas) — antes ambos usos compartían --color-seal,
+  lo que mezclaba "marca" con "alerta".
+
+  Tipografía: Inter en todo el producto (interfaz interna, botones,
+  tablas — el mismo grotesco que ya usa el logotipo). Fraunces se suma
+  como serif de marca (--font-serif) solo para los momentos editoriales
+  del landing público (hero, títulos de sección, numeración de la
+  metodología) — así el producto interno se mantiene limpio y denso, y
+  el sitio público gana el carácter "consultoría/firma premium" sin
+  mezclar dos familias en la misma pantalla.
 */
 @theme {
-  --color-ink: #161d27;
-  --color-ink-soft: #2b3542;
-  --color-paper: #f7f6f3;
-  --color-paper-raised: #ffffff;
-  --color-seal: #7a2a2e;
-  --color-seal-soft: #f3e6e6;
-  --color-success: #2f6d4c;
-  --color-success-soft: #e6efe9;
-  --color-slate: #5b6472;
-  --color-line: #e4e1d8;
+  --color-ink: #101b2c;
+  --color-ink-soft: #24344c;
+  --color-ink-faint: #0a1220;
 
-  --font-display: "Segoe UI", system-ui, -apple-system, "Segoe UI Emoji", sans-serif;
-  --font-sans: "Segoe UI", system-ui, -apple-system, "Segoe UI Emoji", sans-serif;
+  --color-paper: #f5f6f8;
+  --color-paper-raised: #ffffff;
+  --color-paper-sunken: #edf0f4;
+
+  --color-line: #e1e5eb;
+  --color-line-strong: #ccd2db;
+
+  --color-slate: #5b6577;
+  --color-slate-soft: #97a0ac;
+
+  --color-accent: #96702b;
+  --color-accent-soft: #f6ecd9;
+  --color-accent-strong: #7c5c22;
+
+  --color-danger: #b3312f;
+  --color-danger-soft: #fbeaea;
+  --color-danger-strong: #942725;
+
+  --color-success: #1f7a52;
+  --color-success-soft: #e5f3ec;
+
+  /* Compatibilidad: "seal" se conserva solo como alias del acento de
+     marca para cualquier utilidad que aún no se haya migrado. */
+  --color-seal: var(--color-accent);
+  --color-seal-soft: var(--color-accent-soft);
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Fraunces", "Iowan Old Style", "Georgia", serif;
 
   --radius-field: 0.5rem;
   --radius-card: 0.75rem;
 
-  --shadow-card: 0 1px 2px rgba(22, 29, 39, 0.04), 0 4px 12px rgba(22, 29, 39, 0.06);
-  --shadow-raised: 0 1px 3px rgba(22, 29, 39, 0.08), 0 8px 24px rgba(22, 29, 39, 0.10);
+  --shadow-xs: 0 1px 2px rgba(16, 27, 44, 0.05);
+  --shadow-card: 0 1px 2px rgba(16, 27, 44, 0.04), 0 8px 20px -8px rgba(16, 27, 44, 0.14);
+  --shadow-raised: 0 6px 16px -4px rgba(16, 27, 44, 0.14), 0 24px 48px -16px rgba(16, 27, 44, 0.20);
+  --shadow-button: 0 1px 2px rgba(16, 27, 44, 0.10);
 }
 
 @layer base {
   html {
     font-feature-settings: "tnum" 1; /* cifras tabulares para tablas y fechas */
     scroll-behavior: smooth; /* navegación por anclas del landing público (LandingPage) */
+  }
+
+  html, body {
+    /* Red de seguridad contra overflow horizontal en móvil (sección
+       13.8/11 del pedido): un solo elemento con min-width:auto mal
+       contenido en un flex/grid no debe producir scroll lateral de
+       toda la página. */
+    overflow-x: hidden;
   }
 
   body {
@@ -50,13 +86,14 @@
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: 650;
+    letter-spacing: -0.015em;
   }
 
-  /* Foco de teclado visible en --seal, nunca eliminado sin reemplazo (sección 13.8) */
+  /* Foco de teclado visible con el acento de marca (antes usaba el rojo
+     de error, lo que confundía "foco" con "alerta"). */
   :focus-visible {
-    outline: 2px solid var(--color-seal);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -67,7 +104,12 @@
     transition: background-color 150ms;
   }
   table tbody tr:hover {
-    background-color: var(--color-paper);
+    background-color: var(--color-paper-sunken);
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-ink);
   }
 }
 
@@ -86,15 +128,28 @@
     @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
       px-4 py-2 text-sm font-medium transition-all duration-150
       disabled:opacity-50 disabled:cursor-not-allowed
-      bg-ink text-paper-raised shadow-[var(--shadow-card)]
+      bg-ink text-paper-raised shadow-[var(--shadow-button)]
       hover:bg-[var(--color-ink-soft)] active:scale-[0.98];
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
       px-4 py-2 text-sm font-medium transition-all duration-150
       disabled:opacity-50 disabled:cursor-not-allowed
-      border border-line bg-paper-raised text-ink
-      hover:border-ink/30 hover:bg-paper active:scale-[0.98];
+      border border-line bg-paper-raised text-ink shadow-[var(--shadow-xs)]
+      hover:border-ink/25 hover:bg-paper active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
+      px-4 py-2 text-sm font-medium transition-all duration-150
+      disabled:opacity-50 disabled:cursor-not-allowed
+      text-slate hover:text-ink hover:bg-paper-sunken active:scale-[0.98];
+  }
+  .btn-destructive {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-field)]
+      px-4 py-2 text-sm font-medium transition-all duration-150
+      disabled:opacity-50 disabled:cursor-not-allowed
+      bg-danger text-paper-raised shadow-[var(--shadow-button)]
+      hover:bg-[var(--color-danger-strong)] active:scale-[0.98];
   }
   .btn-sm {
     @apply px-3 py-1.5 text-sm;
@@ -106,9 +161,10 @@
 
   .field {
     @apply w-full rounded-[var(--radius-field)] border border-line bg-paper-raised
-      px-3 py-2 text-base text-ink shadow-[0_1px_2px_rgba(22,29,39,0.03)]
-      transition-colors placeholder:text-slate/60
-      hover:border-ink/20 focus:border-ink/30;
+      px-3 py-2 text-base text-ink shadow-[var(--shadow-xs)]
+      transition-colors placeholder:text-slate-soft
+      hover:border-ink/20 focus:border-ink/40 focus:outline-none
+      focus:ring-2 focus:ring-[var(--color-accent)]/15;
   }
   .field-sm {
     @apply text-sm px-2.5 py-1.5;
@@ -118,27 +174,57 @@
     @apply rounded-[var(--radius-card)] border border-line bg-paper-raised
       shadow-[var(--shadow-card)];
   }
+  .card-interactive {
+    @apply transition-all duration-200 hover:shadow-[var(--shadow-raised)]
+      hover:border-ink/15 hover:-translate-y-0.5;
+  }
 
+  /* Tailwind v4 no permite @apply de una clase compuesta con @apply
+     (p.ej. @apply badge) dentro de otra — cada variante repite la base
+     en vez de encadenarlas, para evitar el error de build. */
+  .badge-neutral {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
+      text-xs font-medium whitespace-nowrap bg-paper-sunken text-slate;
+  }
+  .badge-accent {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
+      text-xs font-medium whitespace-nowrap bg-[var(--color-accent-soft)]
+      text-[var(--color-accent-strong)];
+  }
+  .badge-success {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
+      text-xs font-medium whitespace-nowrap bg-[var(--color-success-soft)] text-success;
+  }
+  .badge-danger {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
+      text-xs font-medium whitespace-nowrap bg-[var(--color-danger-soft)] text-danger;
+  }
+  /* Alias retrocompatible del nombre anterior. */
   .badge-alert {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-[var(--color-seal-soft)]
-      px-2.5 py-0.5 text-xs font-medium text-seal;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
+      text-xs font-medium whitespace-nowrap bg-[var(--color-danger-soft)] text-danger;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold text-[var(--color-accent-strong)] tracking-[0.14em] uppercase;
   }
 
   .table-modern {
     @apply w-full text-sm border-separate border-spacing-0;
   }
   .table-modern thead th {
-    @apply text-left text-xs font-medium uppercase tracking-wide text-slate
-      pb-2 border-b border-line;
+    @apply text-left text-xs font-semibold uppercase tracking-wide text-slate
+      bg-paper-sunken px-4 py-2.5 border-b border-line first:rounded-tl-[var(--radius-card)]
+      last:rounded-tr-[var(--radius-card)];
   }
   .table-modern tbody td {
-    @apply py-3 border-b border-line;
+    @apply px-4 py-3 border-b border-line;
   }
   .table-modern tbody tr:last-child td {
     @apply border-b-0;
   }
   .table-modern tbody tr {
-    @apply transition-colors hover:bg-paper;
+    @apply transition-colors hover:bg-paper-sunken;
   }
 
   /* Contenedor del texto completo de una sentencia, tal como llega
@@ -201,6 +287,7 @@
 
   .rdp-selector .rdp-month_caption {
     font-family: var(--font-display) !important;
+    font-weight: 650 !important;
     font-size: 1.05rem !important;
     text-transform: capitalize;
   }
@@ -245,4 +332,21 @@
   .rdp-selector .rdp-selected .rdp-day_button {
     box-shadow: var(--shadow-card);
   }
+}
+
+/* Aparición suave de tarjetas y secciones al montar — microinteracción
+   discreta (sin duración/retraso excesivos) usada puntualmente vía la
+   clase .animate-in, nunca de forma global para no saturar la interfaz. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-in {
+  animation: fade-in-up 400ms ease-out both;
 }

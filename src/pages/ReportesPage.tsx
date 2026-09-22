@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Wallet, AlertTriangle, CircleDollarSign } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import {
   obtenerCartera,
@@ -44,13 +45,16 @@ export function ReportesPage() {
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
 
-      <main className="px-6 py-6 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="font-display text-lg">Reportes</h1>
+      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Reportes</h1>
+            <p className="text-sm text-slate mt-1">Cartera, casos y horas del despacho.</p>
+          </div>
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value as Periodo)}
-            className="field field-sm"
+            className="field field-sm w-auto"
           >
             {PERIODOS.map((p) => (
               <option key={p.value} value={p.value}>
@@ -60,97 +64,106 @@ export function ReportesPage() {
           </select>
         </div>
 
-        <section className="mb-8">
-          <h2 className="font-display text-base mb-3">Cartera</h2>
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-slate">Pendiente</p>
-              <p className="text-2xl font-display">${(cartera?.pendiente ?? 0).toLocaleString('es-CO')}</p>
+        <section className="mb-10">
+          <h2 className="eyebrow mb-3">Cartera</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card p-5">
+              <Wallet size={17} strokeWidth={1.75} className="text-slate-soft mb-3" />
+              <p className="text-2xl font-display font-semibold">
+                ${(cartera?.pendiente ?? 0).toLocaleString('es-CO')}
+              </p>
+              <p className="text-sm text-slate mt-1">Pendiente</p>
             </div>
-            <div>
-              <p className="text-sm text-slate">Vencida</p>
-              <p className="text-2xl font-display text-seal">
+            <div className="card p-5 border-[var(--color-danger)]/25">
+              <AlertTriangle size={17} strokeWidth={1.75} className="text-danger mb-3" />
+              <p className="text-2xl font-display font-semibold text-danger">
                 ${(cartera?.vencida ?? 0).toLocaleString('es-CO')}
               </p>
+              <p className="text-sm text-slate mt-1">Vencida</p>
             </div>
-            <div>
-              <p className="text-sm text-slate">Cobrado</p>
-              <p className="text-2xl font-display">${(cartera?.cobrado ?? 0).toLocaleString('es-CO')}</p>
+            <div className="card p-5">
+              <CircleDollarSign size={17} strokeWidth={1.75} className="text-success mb-3" />
+              <p className="text-2xl font-display font-semibold">
+                ${(cartera?.cobrado ?? 0).toLocaleString('es-CO')}
+              </p>
+              <p className="text-sm text-slate mt-1">Cobrado</p>
             </div>
           </div>
         </section>
 
-        <hr className="border-line mb-8" />
-
-        <div className="grid grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
           <section>
-            <h2 className="font-display text-base mb-2">Casos por estado</h2>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-line">
-                {casosPorEstado.map((c) => (
-                  <tr key={c.estado}>
-                    <td className="py-1 text-slate">{c.estado}</td>
-                    <td className="py-1 text-right">{c.total}</td>
-                  </tr>
-                ))}
-                {casosPorEstado.length === 0 && (
-                  <tr>
-                    <td className="py-1 text-slate">Sin datos.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <h2 className="eyebrow mb-3">Casos por estado</h2>
+            <div className="card overflow-hidden">
+              <table className="table-modern">
+                <tbody>
+                  {casosPorEstado.map((c) => (
+                    <tr key={c.estado}>
+                      <td className="capitalize">{c.estado}</td>
+                      <td className="text-right font-medium">{c.total}</td>
+                    </tr>
+                  ))}
+                  {casosPorEstado.length === 0 && (
+                    <tr>
+                      <td className="text-slate">Sin datos.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section>
-            <h2 className="font-display text-base mb-2">Plazos</h2>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-line">
-                {plazosPorEstado.map((p) => (
-                  <tr key={p.estado}>
-                    <td className="py-1 text-slate">{p.estado}</td>
-                    <td className="py-1 text-right">{p.total}</td>
-                  </tr>
-                ))}
-                {plazosPorEstado.length === 0 && (
-                  <tr>
-                    <td className="py-1 text-slate">Sin datos.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <h2 className="eyebrow mb-3">Plazos</h2>
+            <div className="card overflow-hidden">
+              <table className="table-modern">
+                <tbody>
+                  {plazosPorEstado.map((p) => (
+                    <tr key={p.estado}>
+                      <td className="capitalize">{p.estado}</td>
+                      <td className="text-right font-medium">{p.total}</td>
+                    </tr>
+                  ))}
+                  {plazosPorEstado.length === 0 && (
+                    <tr>
+                      <td className="text-slate">Sin datos.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
 
-        <hr className="border-line mb-8" />
-
         <section>
-          <h2 className="font-display text-base mb-2">Horas por usuario</h2>
-          <table className="w-full text-sm border-t border-line">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
-                <th className="py-2">Usuario</th>
-                <th className="py-2">Horas registradas</th>
-                <th className="py-2">Horas facturadas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {horasPorUsuario.map((h) => (
-                <tr key={h.usuario_id}>
-                  <td className="py-2">{h.nombre ?? '—'}</td>
-                  <td className="py-2">{h.horas_totales}</td>
-                  <td className="py-2">{h.horas_facturadas}</td>
-                </tr>
-              ))}
-              {horasPorUsuario.length === 0 && (
+          <h2 className="eyebrow mb-3">Horas por usuario</h2>
+          <div className="card overflow-hidden overflow-x-auto">
+            <table className="table-modern">
+              <thead>
                 <tr>
-                  <td colSpan={3} className="py-4 text-slate">
-                    Sin horas registradas en este período.
-                  </td>
+                  <th>Usuario</th>
+                  <th>Horas registradas</th>
+                  <th>Horas facturadas</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {horasPorUsuario.map((h) => (
+                  <tr key={h.usuario_id}>
+                    <td className="font-medium text-ink">{h.nombre ?? '—'}</td>
+                    <td>{h.horas_totales}</td>
+                    <td>{h.horas_facturadas}</td>
+                  </tr>
+                ))}
+                {horasPorUsuario.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-6 text-slate text-center">
+                      Sin horas registradas en este período.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
       </main>
     </div>
