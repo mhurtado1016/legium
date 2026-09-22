@@ -27,6 +27,25 @@ export interface Caso {
   responsable_id: string
   created_at: string
   clientes?: { nombre: string }
+  usuarios?: { nombre: string | null }
+}
+
+export interface UsuarioFirma {
+  id: string
+  nombre: string | null
+}
+
+export interface CasoTraslado {
+  id: string
+  caso_id: string
+  responsable_anterior_id: string
+  responsable_nuevo_id: string
+  trasladado_por: string
+  motivo: string | null
+  created_at: string
+  responsable_anterior?: string | null
+  responsable_nuevo?: string | null
+  trasladado_por_nombre?: string | null
 }
 
 export interface CasoActividad {
@@ -56,7 +75,11 @@ export async function listarCasos(filtro?: {
   const necesitaInnerJoinCliente = !!filtro?.clienteNombre
   let query = supabase
     .from('casos')
-    .select(necesitaInnerJoinCliente ? '*, clientes!inner(nombre)' : '*, clientes(nombre)')
+    .select(
+      necesitaInnerJoinCliente
+        ? '*, clientes!inner(nombre), usuarios(nombre)'
+        : '*, clientes(nombre), usuarios(nombre)',
+    )
 
   if (filtro?.estado) query = query.eq('estado', filtro.estado)
   if (filtro?.tipo) query = query.eq('tipo', filtro.tipo)
@@ -79,11 +102,21 @@ export async function listarCasos(filtro?: {
 export async function obtenerCaso(id: string) {
   const { data, error } = await supabase
     .from('casos')
-    .select('*, clientes(nombre)')
+    .select('*, clientes(nombre), usuarios(nombre)')
     .eq('id', id)
     .single()
   if (error) throw error
   return data as Caso
+}
+
+export async function listarUsuariosFirma() {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('id, nombre')
+    .eq('activo', true)
+    .order('nombre')
+  if (error) throw error
+  return data as UsuarioFirma[]
 }
 
 export async function listarClientes() {
@@ -120,6 +153,45 @@ export async function actualizarNumeroRadicado(id: string, numeroRadicado: strin
     .update({ numero_radicado: numeroRadicado })
     .eq('id', id)
   if (error) throw error
+}
+
+// Reasigna el responsable de un caso vía la función `fn_trasladar_caso`
+// (en vez de un update directo) para que el traslado quede registrado
+// en `caso_traslados`.
+export async function trasladarCaso(casoId: string, nuevoResponsableId: string, motivo: string) {
+  const { error } = await supabase.rpc('fn_trasladar_caso', {
+    p_caso_id: casoId,
+    p_nuevo_responsable_id: nuevoResponsableId,
+    p_motivo: motivo.trim() || null,
+  })
+  if (error) throw error
+}
+
+export async function listarTraslados(casoId: string) {
+  const { data: traslados, error } = await supabase
+    .from('caso_traslados')
+    .select('*')
+    .eq('caso_id', casoId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  if (!traslados || traslados.length === 0) return []
+
+  const usuarioIds = [
+    ...new Set(traslados.flatMap((t) => [t.responsable_anterior_id, t.responsable_nuevo_id, t.trasladado_por])),
+  ]
+  const { data: usuariosData, error: usuariosError } = await supabase
+    .from('usuarios')
+    .select('id, nombre')
+    .in('id', usuarioIds)
+  if (usuariosError) throw usuariosError
+  const nombrePorId = new Map((usuariosData ?? []).map((u) => [u.id, u.nombre]))
+
+  return traslados.map((t) => ({
+    ...t,
+    responsable_anterior: nombrePorId.get(t.responsable_anterior_id) ?? null,
+    responsable_nuevo: nombrePorId.get(t.responsable_nuevo_id) ?? null,
+    trasladado_por_nombre: nombrePorId.get(t.trasladado_por) ?? null,
+  })) as CasoTraslado[]
 }
 
 export async function listarActividad(casoId: string) {

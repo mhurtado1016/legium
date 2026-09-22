@@ -10,11 +10,14 @@ import {
   crearCliente,
   listarCasos,
   listarClientes,
+  listarUsuariosFirma,
+  trasladarCaso,
   type Caso,
   type Cliente,
   type ColumnaOrdenCaso,
   type EstadoCaso,
   type TipoCaso,
+  type UsuarioFirma,
 } from '../lib/casos'
 import { listarPlazos, type Plazo } from '../lib/plazos'
 
@@ -48,6 +51,8 @@ export function CasosListPage() {
   const { usuario } = useUsuario()
   const [casos, setCasos] = useState<Caso[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [usuariosFirma, setUsuariosFirma] = useState<UsuarioFirma[]>([])
+  const [casoATrasladar, setCasoATrasladar] = useState<Caso | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<EstadoCaso | ''>('')
   const [filtroTipo, setFiltroTipo] = useState<TipoCaso | ''>('')
   const [filtroRadicado, setFiltroRadicado] = useState('')
@@ -90,7 +95,7 @@ export function CasosListPage() {
   }, [todosCasos, plazosVencidosPorCaso])
 
   async function cargar() {
-    const [c, cl] = await Promise.all([
+    const [c, cl, uf] = await Promise.all([
       listarCasos({
         estado: filtroEstado || undefined,
         tipo: filtroTipo || undefined,
@@ -101,9 +106,19 @@ export function CasosListPage() {
         orderAsc,
       }),
       listarClientes(),
+      listarUsuariosFirma(),
     ])
     setCasos(c)
     setClientes(cl)
+    setUsuariosFirma(uf)
+  }
+
+  async function handleTrasladar(nuevoResponsableId: string, motivo: string) {
+    if (!casoATrasladar) return
+    await trasladarCaso(casoATrasladar.id, nuevoResponsableId, motivo)
+    setCasoATrasladar(null)
+    cargar()
+    cargarResumen()
   }
 
   useEffect(() => {
@@ -292,6 +307,8 @@ export function CasosListPage() {
                     </button>
                   </th>
                 ))}
+                <th className="uppercase tracking-wide">Responsable</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -311,11 +328,17 @@ export function CasosListPage() {
                   <td className="text-slate">
                     {new Date(c.created_at).toLocaleDateString('es-CO')}
                   </td>
+                  <td>{c.usuarios?.nombre ?? '—'}</td>
+                  <td>
+                    <button onClick={() => setCasoATrasladar(c)} className="link">
+                      transferir
+                    </button>
+                  </td>
                 </tr>
               ))}
               {casos.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-slate text-center">
+                  <td colSpan={8} className="py-6 text-slate text-center">
                     No hay casos con este filtro.
                   </td>
                 </tr>
@@ -323,8 +346,92 @@ export function CasosListPage() {
             </tbody>
           </table>
         </div>
+
+        {casoATrasladar && (
+          <TrasladarCasoModal
+            caso={casoATrasladar}
+            usuarios={usuariosFirma}
+            onClose={() => setCasoATrasladar(null)}
+            onTrasladar={handleTrasladar}
+          />
+        )}
       </main>
     </div>
+  )
+}
+
+function TrasladarCasoModal({
+  caso,
+  usuarios,
+  onClose,
+  onTrasladar,
+}: {
+  caso: Caso
+  usuarios: UsuarioFirma[]
+  onClose: () => void
+  onTrasladar: (nuevoResponsableId: string, motivo: string) => Promise<void>
+}) {
+  const opciones = usuarios.filter((u) => u.id !== caso.responsable_id)
+  const [nuevoResponsableId, setNuevoResponsableId] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!nuevoResponsableId) return
+    setError(null)
+    setGuardando(true)
+    try {
+      await onTrasladar(nuevoResponsableId, motivo)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo trasladar el caso.')
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Modal title={`Transferir «${caso.titulo}»`} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-3 text-sm">
+        <p className="text-slate">
+          Responsable actual: <span className="font-medium text-ink">{caso.usuarios?.nombre ?? '—'}</span>
+        </p>
+        <div>
+          <label className="block text-slate mb-1">Nuevo responsable</label>
+          <select
+            value={nuevoResponsableId}
+            onChange={(e) => setNuevoResponsableId(e.target.value)}
+            required
+            className="w-full field field-sm"
+          >
+            <option value="">— elegir —</option>
+            {opciones.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nombre ?? u.id}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-slate mb-1">Comentario (opcional)</label>
+          <textarea
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            rows={3}
+            className="w-full field field-sm"
+          />
+        </div>
+        {error && <p className="text-danger">{error}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={onClose} className="btn-secondary btn-sm">
+            Cancelar
+          </button>
+          <button type="submit" disabled={guardando || !nuevoResponsableId} className="btn-primary btn-sm">
+            {guardando ? 'Transfiriendo…' : 'Transferir caso'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 

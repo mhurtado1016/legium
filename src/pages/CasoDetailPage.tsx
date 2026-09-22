@@ -10,11 +10,16 @@ import {
   agregarActividad,
   listarActividad,
   listarSentenciasVinculadas,
+  listarTraslados,
+  listarUsuariosFirma,
   obtenerCaso,
+  trasladarCaso,
   type Caso,
   type CasoActividad,
   type CasoSentencia,
+  type CasoTraslado,
   type EstadoCaso,
+  type UsuarioFirma,
 } from '../lib/casos'
 import { crearPlazo, listarPlazos, marcarCumplido, type Plazo } from '../lib/plazos'
 import {
@@ -41,6 +46,7 @@ import {
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const SECCIONES = [
   { id: 'datos', label: 'Datos' },
+  { id: 'responsable', label: 'Responsable' },
   { id: 'actividad', label: 'Actividad' },
   { id: 'sentencias', label: 'Sentencias' },
   { id: 'plazos', label: 'Plazos' },
@@ -56,6 +62,8 @@ export function CasoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { usuario } = useUsuario()
   const [caso, setCaso] = useState<Caso | null>(null)
+  const [usuariosFirma, setUsuariosFirma] = useState<UsuarioFirma[]>([])
+  const [traslados, setTraslados] = useState<CasoTraslado[]>([])
   const [actividad, setActividad] = useState<CasoActividad[]>([])
   const [sentencias, setSentencias] = useState<CasoSentencia[]>([])
   const [plazos, setPlazos] = useState<Plazo[]>([])
@@ -70,8 +78,10 @@ export function CasoDetailPage() {
 
   async function cargar() {
     if (!id) return
-    const [c, a, s, p, d, cat, plant, rt, hf] = await Promise.all([
+    const [c, uf, t, a, s, p, d, cat, plant, rt, hf] = await Promise.all([
       obtenerCaso(id),
+      listarUsuariosFirma(),
+      listarTraslados(id),
       listarActividad(id),
       listarSentenciasVinculadas(id),
       listarPlazos({ caso_id: id }),
@@ -83,6 +93,8 @@ export function CasoDetailPage() {
     ])
     setCaso(c)
     setNumeroRadicado(c.numero_radicado ?? '')
+    setUsuariosFirma(uf)
+    setTraslados(t)
     setActividad(a)
     setSentencias(s)
     setPlazos(p)
@@ -115,6 +127,12 @@ export function CasoDetailPage() {
     } finally {
       setGuardandoRadicado(false)
     }
+  }
+
+  async function handleTrasladar(nuevoResponsableId: string, motivo: string) {
+    if (!id) return
+    await trasladarCaso(id, nuevoResponsableId, motivo)
+    await cargar()
   }
 
   async function handleAgregarNota(e: FormEvent) {
@@ -208,6 +226,41 @@ export function CasoDetailPage() {
                 Despacho: {caso.despacho_judicial ?? '—'} · Etapa: {caso.etapa_procesal ?? '—'}
               </p>
             )}
+          </section>
+
+          <section id="responsable" className="card p-6">
+            <h2 className="font-display text-base font-semibold mb-2">Responsable</h2>
+            <p className="text-sm text-slate mb-4">
+              Abogado a cargo del caso. Puede trasladarse a otro miembro del equipo en cualquier
+              momento; cada traslado queda registrado abajo con fecha, motivo y quién lo hizo.
+            </p>
+            <p className="text-sm mb-4">
+              Responsable actual: <span className="font-medium">{caso.usuarios?.nombre ?? '—'}</span>
+            </p>
+            <TrasladarResponsableForm
+              usuarios={usuariosFirma}
+              responsableActualId={caso.responsable_id}
+              onTrasladar={handleTrasladar}
+            />
+            <div className="mt-5 pt-4 border-t border-line">
+              <p className="text-sm text-slate font-medium mb-2">Historial de traslados</p>
+              <ul className="text-sm divide-y divide-line card overflow-hidden">
+                {traslados.map((t) => (
+                  <li key={t.id} className="px-4 py-2.5">
+                    <span className="text-slate">
+                      {new Date(t.created_at).toLocaleDateString('es-CO')} —{' '}
+                    </span>
+                    de <span className="font-medium">{t.responsable_anterior ?? '—'}</span> a{' '}
+                    <span className="font-medium">{t.responsable_nuevo ?? '—'}</span>
+                    <span className="text-slate"> · por {t.trasladado_por_nombre ?? '—'}</span>
+                    {t.motivo && <span className="text-slate"> — {t.motivo}</span>}
+                  </li>
+                ))}
+                {traslados.length === 0 && (
+                  <li className="px-4 py-3 text-slate">Sin traslados registrados todavía.</li>
+                )}
+              </ul>
+            </div>
           </section>
 
           <section id="actividad">
@@ -350,6 +403,70 @@ export function CasoDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function TrasladarResponsableForm({
+  usuarios,
+  responsableActualId,
+  onTrasladar,
+}: {
+  usuarios: UsuarioFirma[]
+  responsableActualId: string
+  onTrasladar: (nuevoResponsableId: string, motivo: string) => Promise<void>
+}) {
+  const opciones = usuarios.filter((u) => u.id !== responsableActualId)
+  const [nuevoResponsableId, setNuevoResponsableId] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!nuevoResponsableId) return
+    setError(null)
+    setGuardando(true)
+    try {
+      await onTrasladar(nuevoResponsableId, motivo)
+      setNuevoResponsableId('')
+      setMotivo('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo trasladar el caso.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 text-sm">
+      <div>
+        <label className="block text-slate mb-1">Nuevo responsable</label>
+        <select
+          value={nuevoResponsableId}
+          onChange={(e) => setNuevoResponsableId(e.target.value)}
+          className="field field-sm"
+        >
+          <option value="">— elegir —</option>
+          {opciones.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.nombre ?? u.id}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-slate mb-1">Motivo (opcional)</label>
+        <input
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          className="field field-sm"
+        />
+      </div>
+      <button type="submit" disabled={guardando || !nuevoResponsableId} className="btn-primary btn-sm">
+        {guardando ? 'Trasladando…' : 'Trasladar caso'}
+      </button>
+      {error && <p className="text-danger basis-full">{error}</p>}
+    </form>
   )
 }
 
