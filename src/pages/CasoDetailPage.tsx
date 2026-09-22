@@ -4,6 +4,7 @@ import { AppHeader } from '../components/AppHeader'
 import { useUsuario } from '../lib/useUsuario'
 import {
   actualizarEstadoCaso,
+  actualizarNumeroRadicado,
   agregarActividad,
   listarActividad,
   listarSentenciasVinculadas,
@@ -62,6 +63,8 @@ export function CasoDetailPage() {
   const [registrosTiempo, setRegistrosTiempo] = useState<RegistroTiempo[]>([])
   const [honorarioFijo, setHonorarioFijo] = useState<HonorarioFijo | null>(null)
   const [nuevaNota, setNuevaNota] = useState('')
+  const [numeroRadicado, setNumeroRadicado] = useState('')
+  const [guardandoRadicado, setGuardandoRadicado] = useState(false)
 
   async function cargar() {
     if (!id) return
@@ -77,6 +80,7 @@ export function CasoDetailPage() {
       obtenerHonorarioFijo(id),
     ])
     setCaso(c)
+    setNumeroRadicado(c.numero_radicado ?? '')
     setActividad(a)
     setSentencias(s)
     setPlazos(p)
@@ -96,6 +100,19 @@ export function CasoDetailPage() {
     if (!id) return
     await actualizarEstadoCaso(id, estado)
     setCaso((prev) => (prev ? { ...prev, estado } : prev))
+  }
+
+  async function handleGuardarRadicado(e: FormEvent) {
+    e.preventDefault()
+    if (!id) return
+    setGuardandoRadicado(true)
+    try {
+      const valor = numeroRadicado.trim() || null
+      await actualizarNumeroRadicado(id, valor)
+      setCaso((prev) => (prev ? { ...prev, numero_radicado: valor } : prev))
+    } finally {
+      setGuardandoRadicado(false)
+    }
   }
 
   async function handleAgregarNota(e: FormEvent) {
@@ -152,10 +169,22 @@ export function CasoDetailPage() {
                 ))}
               </select>
             </p>
+            <form onSubmit={handleGuardarRadicado} className="flex items-end gap-2 mt-2">
+              <div>
+                <label className="block text-sm text-slate mb-1">Número de radicado</label>
+                <input
+                  value={numeroRadicado}
+                  onChange={(e) => setNumeroRadicado(e.target.value)}
+                  className="field field-sm"
+                />
+              </div>
+              <button type="submit" disabled={guardandoRadicado} className="btn-primary btn-sm">
+                {guardandoRadicado ? 'Guardando…' : 'Guardar'}
+              </button>
+            </form>
             {caso.tipo === 'litigio' && (
               <p className="text-sm text-slate mt-1">
-                Radicado: {caso.numero_radicado ?? '—'} · Despacho: {caso.despacho_judicial ?? '—'}{' '}
-                · Etapa: {caso.etapa_procesal ?? '—'}
+                Despacho: {caso.despacho_judicial ?? '—'} · Etapa: {caso.etapa_procesal ?? '—'}
               </p>
             )}
           </section>

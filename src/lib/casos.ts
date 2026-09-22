@@ -93,6 +93,14 @@ export async function actualizarEstadoCaso(id: string, estado: EstadoCaso) {
   if (error) throw error
 }
 
+export async function actualizarNumeroRadicado(id: string, numeroRadicado: string | null) {
+  const { error } = await supabase
+    .from('casos')
+    .update({ numero_radicado: numeroRadicado })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function listarActividad(casoId: string) {
   const { data, error } = await supabase
     .from('caso_actividad')
