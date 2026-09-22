@@ -41,14 +41,22 @@ export interface CasoSentencia {
   sentencias_cache: { sentencia: string; sala: string | null } | null
 }
 
-export async function listarCasos(filtro?: { estado?: EstadoCaso; tipo?: TipoCaso }) {
+export async function listarCasos(filtro?: {
+  estado?: EstadoCaso
+  tipo?: TipoCaso
+  numeroRadicado?: string
+  clienteNombre?: string
+}) {
+  const necesitaInnerJoinCliente = !!filtro?.clienteNombre
   let query = supabase
     .from('casos')
-    .select('*, clientes(nombre)')
+    .select(necesitaInnerJoinCliente ? '*, clientes!inner(nombre)' : '*, clientes(nombre)')
     .order('created_at', { ascending: false })
 
   if (filtro?.estado) query = query.eq('estado', filtro.estado)
   if (filtro?.tipo) query = query.eq('tipo', filtro.tipo)
+  if (filtro?.numeroRadicado) query = query.ilike('numero_radicado', `%${filtro.numeroRadicado}%`)
+  if (filtro?.clienteNombre) query = query.ilike('clientes.nombre', `%${filtro.clienteNombre}%`)
 
   const { data, error } = await query
   if (error) throw error

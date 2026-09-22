@@ -14,22 +14,31 @@ import {
 } from '../lib/casos'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
+const TIPOS: TipoCaso[] = ['litigio', 'consultoria']
 
 /**
- * Listado de casos, con filtro por estado (sección 5.4).
- * Incluye un formulario mínimo de alta de caso (+ cliente nuevo si hace
- * falta) para poder probar el módulo de punta a punta.
+ * Listado de casos, con filtro por estado, tipo, radicado y cliente
+ * (sección 5.4). Incluye un formulario mínimo de alta de caso (+ cliente
+ * nuevo si hace falta) para poder probar el módulo de punta a punta.
  */
 export function CasosListPage() {
   const { usuario } = useUsuario()
   const [casos, setCasos] = useState<Caso[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [filtroEstado, setFiltroEstado] = useState<EstadoCaso | ''>('')
+  const [filtroTipo, setFiltroTipo] = useState<TipoCaso | ''>('')
+  const [filtroRadicado, setFiltroRadicado] = useState('')
+  const [filtroCliente, setFiltroCliente] = useState('')
   const [mostrarForm, setMostrarForm] = useState(false)
 
   async function cargar() {
     const [c, cl] = await Promise.all([
-      listarCasos(filtroEstado ? { estado: filtroEstado } : undefined),
+      listarCasos({
+        estado: filtroEstado || undefined,
+        tipo: filtroTipo || undefined,
+        numeroRadicado: filtroRadicado || undefined,
+        clienteNombre: filtroCliente || undefined,
+      }),
       listarClientes(),
     ])
     setCasos(c)
@@ -37,18 +46,62 @@ export function CasosListPage() {
   }
 
   useEffect(() => {
-    cargar()
+    const timeout = setTimeout(cargar, 300)
+    return () => clearTimeout(timeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroEstado])
+  }, [filtroEstado, filtroTipo, filtroRadicado, filtroCliente])
 
   return (
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
 
       <main className="px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h1 className="font-display text-lg">Casos</h1>
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMostrarForm((v) => !v)}
+            className="btn-primary btn-sm"
+          >
+            + Nuevo caso
+          </button>
+        </div>
+
+        <div className="flex items-end gap-3 flex-wrap mb-4">
+          <div>
+            <label className="block text-sm text-slate mb-1">Radicado</label>
+            <input
+              value={filtroRadicado}
+              onChange={(e) => setFiltroRadicado(e.target.value)}
+              placeholder="Buscar por radicado…"
+              className="field field-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate mb-1">Cliente</label>
+            <input
+              value={filtroCliente}
+              onChange={(e) => setFiltroCliente(e.target.value)}
+              placeholder="Buscar por cliente…"
+              className="field field-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate mb-1">Tipo</label>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value as TipoCaso | '')}
+              className="field field-sm"
+            >
+              <option value="">Todos los tipos</option>
+              {TIPOS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-slate mb-1">Estado</label>
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value as EstadoCaso | '')}
@@ -61,12 +114,6 @@ export function CasosListPage() {
                 </option>
               ))}
             </select>
-            <button
-              onClick={() => setMostrarForm((v) => !v)}
-              className="btn-primary btn-sm"
-            >
-              + Nuevo caso
-            </button>
           </div>
         </div>
 
