@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
+import { Modal } from '../components/Modal'
 import { useUsuario } from '../lib/useUsuario'
 import {
   crearCaso,
@@ -13,6 +14,7 @@ import {
   type EstadoCaso,
   type TipoCaso,
 } from '../lib/casos'
+import { listarPlazos, type Plazo } from '../lib/plazos'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const TIPOS: TipoCaso[] = ['litigio', 'consultoria']
@@ -24,6 +26,16 @@ const COLUMNAS: { id: ColumnaOrdenCaso; label: string }[] = [
   { id: 'estado', label: 'Estado' },
   { id: 'created_at', label: 'Creado' },
 ]
+
+type ResumenKey = 'total' | 'abiertos' | 'pendientes' | 'cerrados' | 'vencidos'
+
+const RESUMEN_TITULOS: Record<ResumenKey, string> = {
+  total: 'Todos los casos',
+  abiertos: 'Casos abiertos',
+  pendientes: 'Casos pendientes',
+  cerrados: 'Casos cerrados',
+  vencidos: 'Casos con plazos vencidos',
+}
 
 /**
  * Listado de casos, con filtro por estado, tipo, radicado y cliente
@@ -42,6 +54,38 @@ export function CasosListPage() {
   const [mostrarForm, setMostrarForm] = useState(false)
   const [orderBy, setOrderBy] = useState<ColumnaOrdenCaso>('created_at')
   const [orderAsc, setOrderAsc] = useState(false)
+
+  const [todosCasos, setTodosCasos] = useState<Caso[]>([])
+  const [plazosVencidos, setPlazosVencidos] = useState<Plazo[]>([])
+  const [modalResumen, setModalResumen] = useState<ResumenKey | null>(null)
+
+  async function cargarResumen() {
+    const [c, p] = await Promise.all([listarCasos(), listarPlazos({ estado: 'vencido' })])
+    setTodosCasos(c)
+    setPlazosVencidos(p)
+  }
+
+  useEffect(() => {
+    cargarResumen()
+  }, [])
+
+  const plazosVencidosPorCaso = useMemo(() => {
+    const map = new Map<string, Plazo[]>()
+    for (const p of plazosVencidos) {
+      const lista = map.get(p.caso_id) ?? []
+      lista.push(p)
+      map.set(p.caso_id, lista)
+    }
+    return map
+  }, [plazosVencidos])
+
+  const resumen = useMemo(() => {
+    const abiertos = todosCasos.filter((c) => c.estado === 'abierto')
+    const cerrados = todosCasos.filter((c) => c.estado === 'cerrado')
+    const pendientes = todosCasos.filter((c) => c.estado === 'en_curso' || c.estado === 'suspendido')
+    const vencidos = todosCasos.filter((c) => plazosVencidosPorCaso.has(c.id))
+    return { total: todosCasos, abiertos, cerrados, pendientes, vencidos }
+  }, [todosCasos, plazosVencidosPorCaso])
 
   async function cargar() {
     const [c, cl] = await Promise.all([
@@ -89,6 +133,65 @@ export function CasosListPage() {
             + Nuevo caso
           </button>
         </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+          <ResumenCard
+            label="Total"
+            value={resumen.total.length}
+            onClick={() => setModalResumen('total')}
+          />
+          <ResumenCard
+            label="Abiertos"
+            value={resumen.abiertos.length}
+            onClick={() => setModalResumen('abiertos')}
+          />
+          <ResumenCard
+            label="Pendientes"
+            value={resumen.pendientes.length}
+            onClick={() => setModalResumen('pendientes')}
+          />
+          <ResumenCard
+            label="Cerrados"
+            value={resumen.cerrados.length}
+            onClick={() => setModalResumen('cerrados')}
+          />
+          <ResumenCard
+            label="Plazos vencidos"
+            value={resumen.vencidos.length}
+            onClick={() => setModalResumen('vencidos')}
+            alerta={resumen.vencidos.length > 0}
+          />
+        </div>
+
+        {modalResumen && (
+          <Modal title={RESUMEN_TITULOS[modalResumen]} onClose={() => setModalResumen(null)}>
+            <ul className="divide-y divide-line">
+              {resumen[modalResumen].map((c) => (
+                <li key={c.id} className="py-2">
+                  <Link
+                    to={`/app/casos/${c.id}`}
+                    onClick={() => setModalResumen(null)}
+                    className="font-medium hover:underline"
+                  >
+                    {c.titulo}
+                  </Link>
+                  <div className="text-xs text-slate">
+                    {c.clientes?.nombre ?? '—'} · {c.estado}
+                  </div>
+                  {modalResumen === 'vencidos' && (
+                    <div className="text-xs text-red-600 mt-0.5">
+                      Plazo(s) vencido(s):{' '}
+                      {(plazosVencidosPorCaso.get(c.id) ?? []).map((p) => p.titulo).join(', ')}
+                    </div>
+                  )}
+                </li>
+              ))}
+              {resumen[modalResumen].length === 0 && (
+                <li className="py-4 text-sm text-slate">No hay casos en esta categoría.</li>
+              )}
+            </ul>
+          </Modal>
+        )}
 
         <div className="flex items-end gap-3 flex-wrap mb-4">
           <div>
@@ -158,6 +261,7 @@ export function CasosListPage() {
             onCreado={() => {
               setMostrarForm(false)
               cargar()
+              cargarResumen()
             }}
           />
         )}
@@ -206,6 +310,31 @@ export function CasosListPage() {
         </table>
       </main>
     </div>
+  )
+}
+
+function ResumenCard({
+  label,
+  value,
+  onClick,
+  alerta,
+}: {
+  label: string
+  value: number
+  onClick: () => void
+  alerta?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        'card p-3 text-left hover:border-ink transition-colors' +
+        (alerta ? ' border-red-400 text-red-700' : '')
+      }
+    >
+      <div className="font-display text-2xl">{value}</div>
+      <div className="text-xs text-slate uppercase tracking-wide">{label}</div>
+    </button>
   )
 }
 
