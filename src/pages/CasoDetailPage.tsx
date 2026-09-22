@@ -152,6 +152,11 @@ export function CasoDetailPage() {
         <div className="max-w-2xl space-y-8">
           <section id="datos">
             <h2 className="font-display text-base mb-2">Datos generales</h2>
+            <p className="text-sm text-slate mb-3">
+              Información básica que identifica el caso: cliente, tipo, estado y, si aplica,
+              el número de radicado judicial. Actualiza el estado y el radicado aquí a medida
+              que el caso avanza.
+            </p>
             <p className="text-sm">
               Cliente: {caso.clientes?.nombre ?? '—'} · Tipo: {caso.tipo}
             </p>
@@ -193,6 +198,11 @@ export function CasoDetailPage() {
 
           <section id="actividad">
             <h2 className="font-display text-base mb-2">Actividad</h2>
+            <p className="text-sm text-slate mb-3">
+              Bitácora cronológica del caso. Deja constancia de gestiones, llamadas, reuniones
+              o decisiones importantes para que quede un historial consultable por todo el
+              equipo.
+            </p>
             <form onSubmit={handleAgregarNota} className="flex gap-2 mb-3">
               <input
                 value={nuevaNota}
@@ -221,6 +231,11 @@ export function CasoDetailPage() {
 
           <section id="sentencias">
             <h2 className="font-display text-base mb-2">Sentencias vinculadas</h2>
+            <p className="text-sm text-slate mb-3">
+              Sentencias del buscador jurisprudencial que se relacionan con este caso, útiles
+              como precedente o soporte argumentativo al momento de preparar la estrategia o
+              los documentos del proceso.
+            </p>
             <ul className="text-sm divide-y divide-line">
               {sentencias.map((s) => (
                 <li key={s.id} className="py-2">
@@ -241,6 +256,11 @@ export function CasoDetailPage() {
 
           <section id="plazos">
             <h2 className="font-display text-base mb-2">Plazos</h2>
+            <p className="text-sm text-slate mb-3">
+              Fechas límite del caso, ya sean términos procesales, vencimientos contractuales u
+              otros compromisos. Configura recordatorios por app, correo o notificación push
+              para no perderlos.
+            </p>
             {usuario && (
               <NuevoPlazoForm
                 casoId={caso.id}
@@ -277,6 +297,11 @@ export function CasoDetailPage() {
 
           <section id="documentos">
             <h2 className="font-display text-base mb-2">Documentos</h2>
+            <p className="text-sm text-slate mb-3">
+              Archivos del caso: escritos, pruebas, contratos o cualquier documento generado a
+              partir de una plantilla. Cada archivo se organiza por categoría y mantiene un
+              historial de versiones.
+            </p>
             {usuario && (
               <DocumentosSeccion
                 casoId={caso.id}
@@ -294,6 +319,10 @@ export function CasoDetailPage() {
 
           <section id="facturacion">
             <h2 className="font-display text-base mb-2">Facturación</h2>
+            <p className="text-sm text-slate mb-3">
+              Control del cobro del caso: define un honorario fijo o registra las horas
+              trabajadas, y genera la cuenta de cobro correspondiente para el cliente.
+            </p>
             {usuario && (
               <FacturacionSeccion
                 casoId={caso.id}
