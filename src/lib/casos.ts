@@ -78,7 +78,7 @@ export async function crearCliente(cliente: Omit<Cliente, 'id'> & { firma_id: st
 }
 
 export async function crearCaso(
-  caso: Pick<Caso, 'cliente_id' | 'tipo' | 'titulo' | 'descripcion'> & {
+  caso: Pick<Caso, 'cliente_id' | 'tipo' | 'titulo' | 'descripcion' | 'numero_radicado'> & {
     firma_id: string
     responsable_id: string
   },

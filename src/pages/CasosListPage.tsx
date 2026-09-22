@@ -88,6 +88,7 @@ export function CasosListPage() {
               <th className="py-2">Título</th>
               <th className="py-2">Cliente</th>
               <th className="py-2">Tipo</th>
+              <th className="py-2">Radicado</th>
               <th className="py-2">Estado</th>
             </tr>
           </thead>
@@ -101,12 +102,13 @@ export function CasosListPage() {
                 </td>
                 <td className="py-2">{c.clientes?.nombre ?? '—'}</td>
                 <td className="py-2">{c.tipo}</td>
+                <td className="py-2">{c.numero_radicado ?? '—'}</td>
                 <td className="py-2">{c.estado}</td>
               </tr>
             ))}
             {casos.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-4 text-slate">
+                <td colSpan={5} className="py-4 text-slate">
                   No hay casos con este filtro.
                 </td>
               </tr>
@@ -133,6 +135,7 @@ function NuevoCasoForm({
   const [nuevoClienteNombre, setNuevoClienteNombre] = useState('')
   const [tipo, setTipo] = useState<TipoCaso>('litigio')
   const [titulo, setTitulo] = useState('')
+  const [numeroRadicado, setNumeroRadicado] = useState('')
   const [guardando, setGuardando] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
@@ -160,6 +163,7 @@ function NuevoCasoForm({
         tipo,
         titulo,
         descripcion: null,
+        numero_radicado: numeroRadicado || null,
       })
       onCreado()
     } finally {
@@ -211,6 +215,14 @@ function NuevoCasoForm({
           value={titulo}
           required
           onChange={(e) => setTitulo(e.target.value)}
+          className="w-full field field-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm text-slate mb-1">Número de radicado (opcional)</label>
+        <input
+          value={numeroRadicado}
+          onChange={(e) => setNumeroRadicado(e.target.value)}
           className="w-full field field-sm"
         />
       </div>
