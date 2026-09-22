@@ -9,12 +9,21 @@ import {
   listarClientes,
   type Caso,
   type Cliente,
+  type ColumnaOrdenCaso,
   type EstadoCaso,
   type TipoCaso,
 } from '../lib/casos'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const TIPOS: TipoCaso[] = ['litigio', 'consultoria']
+const COLUMNAS: { id: ColumnaOrdenCaso; label: string }[] = [
+  { id: 'titulo', label: 'Título' },
+  { id: 'cliente', label: 'Cliente' },
+  { id: 'tipo', label: 'Tipo' },
+  { id: 'numero_radicado', label: 'Radicado' },
+  { id: 'estado', label: 'Estado' },
+  { id: 'created_at', label: 'Creado' },
+]
 
 /**
  * Listado de casos, con filtro por estado, tipo, radicado y cliente
@@ -29,7 +38,10 @@ export function CasosListPage() {
   const [filtroTipo, setFiltroTipo] = useState<TipoCaso | ''>('')
   const [filtroRadicado, setFiltroRadicado] = useState('')
   const [filtroCliente, setFiltroCliente] = useState('')
+  const [filtroTitulo, setFiltroTitulo] = useState('')
   const [mostrarForm, setMostrarForm] = useState(false)
+  const [orderBy, setOrderBy] = useState<ColumnaOrdenCaso>('created_at')
+  const [orderAsc, setOrderAsc] = useState(false)
 
   async function cargar() {
     const [c, cl] = await Promise.all([
@@ -38,6 +50,9 @@ export function CasosListPage() {
         tipo: filtroTipo || undefined,
         numeroRadicado: filtroRadicado || undefined,
         clienteNombre: filtroCliente || undefined,
+        titulo: filtroTitulo || undefined,
+        orderBy,
+        orderAsc,
       }),
       listarClientes(),
     ])
@@ -49,7 +64,16 @@ export function CasosListPage() {
     const timeout = setTimeout(cargar, 300)
     return () => clearTimeout(timeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroEstado, filtroTipo, filtroRadicado, filtroCliente])
+  }, [filtroEstado, filtroTipo, filtroRadicado, filtroCliente, filtroTitulo, orderBy, orderAsc])
+
+  function handleOrdenar(columna: ColumnaOrdenCaso) {
+    if (columna === orderBy) {
+      setOrderAsc((v) => !v)
+    } else {
+      setOrderBy(columna)
+      setOrderAsc(true)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -67,6 +91,15 @@ export function CasosListPage() {
         </div>
 
         <div className="flex items-end gap-3 flex-wrap mb-4">
+          <div>
+            <label className="block text-sm text-slate mb-1">Título</label>
+            <input
+              value={filtroTitulo}
+              onChange={(e) => setFiltroTitulo(e.target.value)}
+              placeholder="Buscar por título…"
+              className="field field-sm"
+            />
+          </div>
           <div>
             <label className="block text-sm text-slate mb-1">Radicado</label>
             <input
@@ -132,11 +165,17 @@ export function CasosListPage() {
         <table className="w-full text-sm border-t border-line">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-slate border-b border-line">
-              <th className="py-2">Título</th>
-              <th className="py-2">Cliente</th>
-              <th className="py-2">Tipo</th>
-              <th className="py-2">Radicado</th>
-              <th className="py-2">Estado</th>
+              {COLUMNAS.map((col) => (
+                <th key={col.id} className="py-2">
+                  <button
+                    onClick={() => handleOrdenar(col.id)}
+                    className="flex items-center gap-1 uppercase tracking-wide hover:text-ink"
+                  >
+                    {col.label}
+                    {orderBy === col.id && <span>{orderAsc ? '▲' : '▼'}</span>}
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -151,11 +190,14 @@ export function CasosListPage() {
                 <td className="py-2">{c.tipo}</td>
                 <td className="py-2">{c.numero_radicado ?? '—'}</td>
                 <td className="py-2">{c.estado}</td>
+                <td className="py-2 text-slate">
+                  {new Date(c.created_at).toLocaleDateString('es-CO')}
+                </td>
               </tr>
             ))}
             {casos.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-slate">
+                <td colSpan={6} className="py-4 text-slate">
                   No hay casos con este filtro.
                 </td>
               </tr>

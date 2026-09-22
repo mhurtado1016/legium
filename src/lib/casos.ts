@@ -25,6 +25,7 @@ export interface Caso {
   fecha_apertura: string
   fecha_cierre: string | null
   responsable_id: string
+  created_at: string
   clientes?: { nombre: string }
 }
 
@@ -41,22 +42,34 @@ export interface CasoSentencia {
   sentencias_cache: { sentencia: string; sala: string | null } | null
 }
 
+export type ColumnaOrdenCaso = 'titulo' | 'cliente' | 'tipo' | 'numero_radicado' | 'estado' | 'created_at'
+
 export async function listarCasos(filtro?: {
   estado?: EstadoCaso
   tipo?: TipoCaso
   numeroRadicado?: string
   clienteNombre?: string
+  titulo?: string
+  orderBy?: ColumnaOrdenCaso
+  orderAsc?: boolean
 }) {
   const necesitaInnerJoinCliente = !!filtro?.clienteNombre
   let query = supabase
     .from('casos')
     .select(necesitaInnerJoinCliente ? '*, clientes!inner(nombre)' : '*, clientes(nombre)')
-    .order('created_at', { ascending: false })
 
   if (filtro?.estado) query = query.eq('estado', filtro.estado)
   if (filtro?.tipo) query = query.eq('tipo', filtro.tipo)
   if (filtro?.numeroRadicado) query = query.ilike('numero_radicado', `%${filtro.numeroRadicado}%`)
   if (filtro?.clienteNombre) query = query.ilike('clientes.nombre', `%${filtro.clienteNombre}%`)
+  if (filtro?.titulo) query = query.ilike('titulo', `%${filtro.titulo}%`)
+
+  const orderAsc = filtro?.orderAsc ?? false
+  if (filtro?.orderBy === 'cliente') {
+    query = query.order('nombre', { ascending: orderAsc, referencedTable: 'clientes' })
+  } else {
+    query = query.order(filtro?.orderBy ?? 'created_at', { ascending: orderAsc })
+  }
 
   const { data, error } = await query
   if (error) throw error
