@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { FolderKanban, FolderOpen, Clock3, CheckCircle2, AlertTriangle, Plus } from 'lucide-react'
+import { FolderKanban, FolderOpen, Clock3, CheckCircle2, AlertTriangle, Plus, ArrowRightLeft } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { Modal } from '../components/Modal'
 import { StatusBadge } from '../components/StatusBadge'
@@ -58,6 +58,7 @@ export function CasosListPage() {
   const [filtroRadicado, setFiltroRadicado] = useState('')
   const [filtroCliente, setFiltroCliente] = useState('')
   const [filtroTitulo, setFiltroTitulo] = useState('')
+  const [soloMisCasos, setSoloMisCasos] = useState(false)
   const [mostrarForm, setMostrarForm] = useState(false)
   const [orderBy, setOrderBy] = useState<ColumnaOrdenCaso>('created_at')
   const [orderAsc, setOrderAsc] = useState(false)
@@ -102,6 +103,7 @@ export function CasosListPage() {
         numeroRadicado: filtroRadicado || undefined,
         clienteNombre: filtroCliente || undefined,
         titulo: filtroTitulo || undefined,
+        responsableId: soloMisCasos ? usuario?.id : undefined,
         orderBy,
         orderAsc,
       }),
@@ -125,7 +127,17 @@ export function CasosListPage() {
     const timeout = setTimeout(cargar, 300)
     return () => clearTimeout(timeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroEstado, filtroTipo, filtroRadicado, filtroCliente, filtroTitulo, orderBy, orderAsc])
+  }, [
+    filtroEstado,
+    filtroTipo,
+    filtroRadicado,
+    filtroCliente,
+    filtroTitulo,
+    soloMisCasos,
+    usuario?.id,
+    orderBy,
+    orderAsc,
+  ])
 
   function handleOrdenar(columna: ColumnaOrdenCaso) {
     if (columna === orderBy) {
@@ -277,6 +289,14 @@ export function CasosListPage() {
               ))}
             </select>
           </div>
+          <label className="flex items-center gap-1.5 text-sm pb-1.5">
+            <input
+              type="checkbox"
+              checked={soloMisCasos}
+              onChange={(e) => setSoloMisCasos(e.target.checked)}
+            />
+            Mis casos
+          </label>
         </div>
 
         {mostrarForm && usuario && (
@@ -330,8 +350,13 @@ export function CasosListPage() {
                   </td>
                   <td>{c.usuarios?.nombre ?? '—'}</td>
                   <td>
-                    <button onClick={() => setCasoATrasladar(c)} className="link">
-                      transferir
+                    <button
+                      onClick={() => setCasoATrasladar(c)}
+                      aria-label="Transferir caso"
+                      title="Transferir caso"
+                      className="flex items-center justify-center h-7 w-7 rounded-full text-slate hover:text-accent hover:bg-paper-sunken transition-colors"
+                    >
+                      <ArrowRightLeft size={15} strokeWidth={1.75} />
                     </button>
                   </td>
                 </tr>

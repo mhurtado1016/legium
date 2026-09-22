@@ -69,6 +69,7 @@ export async function listarCasos(filtro?: {
   numeroRadicado?: string
   clienteNombre?: string
   titulo?: string
+  responsableId?: string
   orderBy?: ColumnaOrdenCaso
   orderAsc?: boolean
 }) {
@@ -86,6 +87,7 @@ export async function listarCasos(filtro?: {
   if (filtro?.numeroRadicado) query = query.ilike('numero_radicado', `%${filtro.numeroRadicado}%`)
   if (filtro?.clienteNombre) query = query.ilike('clientes.nombre', `%${filtro.clienteNombre}%`)
   if (filtro?.titulo) query = query.ilike('titulo', `%${filtro.titulo}%`)
+  if (filtro?.responsableId) query = query.eq('responsable_id', filtro.responsableId)
 
   const orderAsc = filtro?.orderAsc ?? false
   if (filtro?.orderBy === 'cliente') {
