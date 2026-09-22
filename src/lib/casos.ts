@@ -38,7 +38,7 @@ export interface CasoActividad {
 export interface CasoSentencia {
   id: string
   nota: string | null
-  sentencias_cache: { sentencia: string; sala: string | null }
+  sentencias_cache: { sentencia: string; sala: string | null } | null
 }
 
 export async function listarCasos(filtro?: { estado?: EstadoCaso; tipo?: TipoCaso }) {

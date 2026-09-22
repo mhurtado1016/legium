@@ -239,7 +239,13 @@ export function CasoDetailPage() {
             <ul className="text-sm divide-y divide-line">
               {sentencias.map((s) => (
                 <li key={s.id} className="py-2">
-                  {s.sentencias_cache.sentencia} · {s.sentencias_cache.sala ?? '—'}
+                  {s.sentencias_cache ? (
+                    <>
+                      {s.sentencias_cache.sentencia} · {s.sentencias_cache.sala ?? '—'}
+                    </>
+                  ) : (
+                    <span className="text-slate">Sentencia no disponible</span>
+                  )}
                   {s.nota && <span className="text-slate"> — nota: {s.nota}</span>}
                 </li>
               ))}
