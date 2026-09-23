@@ -49,7 +49,7 @@ export function AdministracionPage() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <AppHeader />
-      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto space-y-6">
+      <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-display text-2xl font-semibold tracking-tight">Administración</h1>
@@ -94,7 +94,7 @@ export function AdministracionPage() {
                         <StatusBadge estado={u.activo ? 'activo' : 'inactivo'} />
                       </td>
                       <td>
-                        <div className="flex items-center justify-end gap-3 text-xs">
+                        <div className="flex items-center justify-end gap-3 text-xs whitespace-nowrap">
                           <button onClick={() => setEditando(u)} className="link">
                             Editar
                           </button>
