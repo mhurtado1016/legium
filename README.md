@@ -474,6 +474,8 @@ src/
     NuevaContrasenaPage.tsx fijar contraseña (recuperación o invitación), en "/nueva-contrasena"
     DashboardPage.tsx  dashboard + buscador de sentencias, con detalle expandible en la misma tarjeta (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
+    ClientesListPage.tsx listado de clientes, con edición de sus datos
+                       (incluido el teléfono en formato WhatsApp)
     CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
     PlazosPage.tsx     vista general de plazos (sección 13.6)
     CuentasCobroPage.tsx listado de cuentas de cobro

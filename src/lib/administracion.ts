@@ -4,6 +4,7 @@ export interface UsuarioAdmin {
   id: string
   nombre: string | null
   email: string | null
+  telefono_whatsapp: string | null
   activo: boolean
   es_administrador: boolean
   created_at: string
@@ -28,7 +29,7 @@ async function mensajeErrorFuncion(error: unknown): Promise<string> {
 export async function listarUsuarios() {
   const { data, error } = await supabase
     .from('usuarios')
-    .select('id, nombre, email, activo, es_administrador, created_at')
+    .select('id, nombre, email, telefono_whatsapp, activo, es_administrador, created_at')
     .order('created_at')
   if (error) throw error
   return data as UsuarioAdmin[]
@@ -42,7 +43,10 @@ export async function invitarUsuario(nombre: string, email: string) {
   return data as { ok: boolean }
 }
 
-export async function actualizarUsuario(id: string, cambios: { activo?: boolean; es_administrador?: boolean }) {
+export async function actualizarUsuario(
+  id: string,
+  cambios: { activo?: boolean; es_administrador?: boolean; nombre?: string; telefono_whatsapp?: string | null },
+) {
   const { error } = await supabase.from('usuarios').update(cambios).eq('id', id)
   if (error) throw error
 }

@@ -7,6 +7,7 @@ import { NuevaContrasenaPage } from './pages/NuevaContrasenaPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
+import { ClientesListPage } from './pages/ClientesListPage'
 import { PlazosPage } from './pages/PlazosPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { CuentasCobroPage } from './pages/CuentasCobroPage'
@@ -82,6 +83,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CasoDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/clientes"
+        element={
+          <ProtectedRoute>
+            <ClientesListPage />
           </ProtectedRoute>
         }
       />

@@ -7,6 +7,7 @@ import { useUsuario } from '../lib/useUsuario'
 const NAV_ITEMS = [
   { to: '/app', label: 'Buscador' },
   { to: '/app/casos', label: 'Casos' },
+  { to: '/app/clientes', label: 'Clientes' },
   { to: '/app/plazos', label: 'Plazos' },
   { to: '/app/agenda', label: 'Agenda' },
   { to: '/app/facturacion', label: 'Facturación' },

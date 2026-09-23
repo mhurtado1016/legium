@@ -121,8 +121,10 @@ export async function listarUsuariosFirma() {
   return data as UsuarioFirma[]
 }
 
-export async function listarClientes() {
-  const { data, error } = await supabase.from('clientes').select('*').order('nombre')
+export async function listarClientes(filtro?: { nombre?: string }) {
+  let query = supabase.from('clientes').select('*').order('nombre')
+  if (filtro?.nombre) query = query.ilike('nombre', `%${filtro.nombre}%`)
+  const { data, error } = await query
   if (error) throw error
   return data as Cliente[]
 }
@@ -131,6 +133,14 @@ export async function crearCliente(cliente: Omit<Cliente, 'id'> & { firma_id: st
   const { data, error } = await supabase.from('clientes').insert(cliente).select().single()
   if (error) throw error
   return data as Cliente
+}
+
+export async function actualizarCliente(
+  id: string,
+  cambios: Partial<Pick<Cliente, 'nombre' | 'tipo' | 'identificacion' | 'email' | 'telefono'>>,
+) {
+  const { error } = await supabase.from('clientes').update(cambios).eq('id', id)
+  if (error) throw error
 }
 
 export async function crearCaso(

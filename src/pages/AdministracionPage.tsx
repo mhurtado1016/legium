@@ -18,6 +18,7 @@ export function AdministracionPage() {
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([])
   const [cargando, setCargando] = useState(true)
   const [mostrarInvitar, setMostrarInvitar] = useState(false)
+  const [editando, setEditando] = useState<UsuarioAdmin | null>(null)
 
   async function cargar() {
     setCargando(true)
@@ -70,6 +71,7 @@ export function AdministracionPage() {
                 <tr>
                   <th>Nombre</th>
                   <th>Correo</th>
+                  <th>WhatsApp</th>
                   <th>Rol</th>
                   <th>Estado</th>
                   <th />
@@ -82,6 +84,7 @@ export function AdministracionPage() {
                     <tr key={u.id}>
                       <td className="font-medium text-ink">{u.nombre ?? '—'}</td>
                       <td className="text-slate">{u.email ?? '—'}</td>
+                      <td className="text-slate">{u.telefono_whatsapp ?? '—'}</td>
                       <td>
                         <StatusBadge estado={u.es_administrador ? 'administrador' : 'miembro'} />
                       </td>
@@ -90,6 +93,9 @@ export function AdministracionPage() {
                       </td>
                       <td>
                         <div className="flex items-center justify-end gap-3 text-xs">
+                          <button onClick={() => setEditando(u)} className="link">
+                            Editar
+                          </button>
                           <button
                             onClick={() => handleCambio(u.id, { es_administrador: !u.es_administrador })}
                             disabled={esUnoMismo}
@@ -113,7 +119,7 @@ export function AdministracionPage() {
                 })}
                 {usuarios.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-6 text-slate text-center">
+                    <td colSpan={6} className="py-6 text-slate text-center">
                       No hay usuarios registrados.
                     </td>
                   </tr>
@@ -129,6 +135,17 @@ export function AdministracionPage() {
           onClose={() => setMostrarInvitar(false)}
           onInvitado={() => {
             setMostrarInvitar(false)
+            cargar()
+          }}
+        />
+      )}
+
+      {editando && (
+        <EditarUsuarioModal
+          usuario={editando}
+          onClose={() => setEditando(null)}
+          onGuardado={() => {
+            setEditando(null)
             cargar()
           }}
         />
@@ -200,6 +217,83 @@ function InvitarUsuarioModal({ onClose, onInvitado }: { onClose: () => void; onI
           </div>
         </form>
       )}
+    </Modal>
+  )
+}
+
+function EditarUsuarioModal({
+  usuario,
+  onClose,
+  onGuardado,
+}: {
+  usuario: UsuarioAdmin
+  onClose: () => void
+  onGuardado: () => void
+}) {
+  const [nombre, setNombre] = useState(usuario.nombre ?? '')
+  const [telefonoWhatsapp, setTelefonoWhatsapp] = useState(usuario.telefono_whatsapp ?? '')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+
+    // Mismo criterio de "número válido" que el cliente de WhatsApp en el
+    // backend (supabase/functions/_shared/whatsapp.ts): al menos 8
+    // dígitos con el indicativo de país incluido, para no descubrir el
+    // problema recién al intentar enviar un mensaje.
+    const telefonoLimpio = telefonoWhatsapp.trim()
+    if (telefonoLimpio && telefonoLimpio.replace(/\D/g, '').length < 8) {
+      setError('El número de WhatsApp no parece completo (incluye el indicativo de país, ej. +57 300 123 4567).')
+      return
+    }
+
+    setGuardando(true)
+    try {
+      await actualizarUsuario(usuario.id, {
+        nombre: nombre.trim(),
+        telefono_whatsapp: telefonoLimpio || null,
+      })
+      onGuardado()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar los cambios.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Modal title="Editar usuario" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-3 text-sm">
+        <div>
+          <label className="block text-slate mb-1">Nombre</label>
+          <input
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required
+            className="w-full field field-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-slate mb-1">Teléfono (WhatsApp)</label>
+          <input
+            value={telefonoWhatsapp}
+            onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+            placeholder="+57 300 123 4567"
+            className="w-full field field-sm"
+          />
+        </div>
+        {error && <p className="text-danger">{error}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={onClose} className="btn-secondary btn-sm">
+            Cancelar
+          </button>
+          <button type="submit" disabled={guardando} className="btn-primary btn-sm">
+            {guardando ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </form>
     </Modal>
   )
 }
