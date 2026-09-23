@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AppHeader } from '../components/AppHeader'
 import { Modal } from '../components/Modal'
+import { TelefonoInput } from '../components/TelefonoInput'
 import { actualizarCliente, listarClientes, type Cliente } from '../lib/casos'
+import { separarTelefono } from '../lib/paisesTelefono'
 
 /**
  * Listado de clientes de la firma: consulta y edición de sus datos
@@ -131,12 +133,11 @@ function EditarClienteModal({
     e.preventDefault()
     setError(null)
 
-    // Mismo criterio de "número válido" que el resto de la app (ver
-    // EditarUsuarioModal en AdministracionPage.tsx): al menos 8 dígitos
-    // con el indicativo de país incluido.
+    // El indicativo ya lo garantiza el selector de país de TelefonoInput;
+    // solo falta validar que el número local en sí tenga pinta de completo.
     const telefonoLimpio = telefono.trim()
-    if (telefonoLimpio && telefonoLimpio.replace(/\D/g, '').length < 8) {
-      setError('El número de WhatsApp no parece completo (incluye el indicativo de país, ej. +57 300 123 4567).')
+    if (telefonoLimpio && separarTelefono(telefonoLimpio).numero.length < 6) {
+      setError('El número de WhatsApp no parece completo.')
       return
     }
 
@@ -199,12 +200,7 @@ function EditarClienteModal({
         </div>
         <div>
           <label className="block text-slate mb-1">Teléfono (WhatsApp)</label>
-          <input
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            placeholder="+57 300 123 4567"
-            className="w-full field field-sm"
-          />
+          <TelefonoInput value={telefono} onChange={setTelefono} />
         </div>
         {error && <p className="text-danger">{error}</p>}
         <div className="flex justify-end gap-2 pt-1">

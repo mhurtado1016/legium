@@ -3,8 +3,10 @@ import { Loader2, Plus, UserCog } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { Modal } from '../components/Modal'
 import { StatusBadge } from '../components/StatusBadge'
+import { TelefonoInput } from '../components/TelefonoInput'
 import { useUsuario } from '../lib/useUsuario'
 import { actualizarUsuario, invitarUsuario, listarUsuarios, type UsuarioAdmin } from '../lib/administracion'
+import { separarTelefono } from '../lib/paisesTelefono'
 
 /**
  * Panel de administración — gestión de usuarios de la firma (punto 1 del
@@ -239,13 +241,11 @@ function EditarUsuarioModal({
     e.preventDefault()
     setError(null)
 
-    // Mismo criterio de "número válido" que el cliente de WhatsApp en el
-    // backend (supabase/functions/_shared/whatsapp.ts): al menos 8
-    // dígitos con el indicativo de país incluido, para no descubrir el
-    // problema recién al intentar enviar un mensaje.
+    // El indicativo ya lo garantiza el selector de país de TelefonoInput;
+    // solo falta validar que el número local en sí tenga pinta de completo.
     const telefonoLimpio = telefonoWhatsapp.trim()
-    if (telefonoLimpio && telefonoLimpio.replace(/\D/g, '').length < 8) {
-      setError('El número de WhatsApp no parece completo (incluye el indicativo de país, ej. +57 300 123 4567).')
+    if (telefonoLimpio && separarTelefono(telefonoLimpio).numero.length < 6) {
+      setError('El número de WhatsApp no parece completo.')
       return
     }
 
@@ -277,12 +277,7 @@ function EditarUsuarioModal({
         </div>
         <div>
           <label className="block text-slate mb-1">Teléfono (WhatsApp)</label>
-          <input
-            value={telefonoWhatsapp}
-            onChange={(e) => setTelefonoWhatsapp(e.target.value)}
-            placeholder="+57 300 123 4567"
-            className="w-full field field-sm"
-          />
+          <TelefonoInput value={telefonoWhatsapp} onChange={setTelefonoWhatsapp} />
         </div>
         {error && <p className="text-danger">{error}</p>}
         <div className="flex justify-end gap-2 pt-1">
