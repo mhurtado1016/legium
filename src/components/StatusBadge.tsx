@@ -15,6 +15,11 @@ const ESTILOS: Record<string, string> = {
   // Citas
   confirmada: 'badge-success',
   cancelada: 'badge-neutral',
+  // Usuarios
+  activo: 'badge-success',
+  inactivo: 'badge-neutral',
+  administrador: 'badge-accent',
+  miembro: 'badge-neutral',
 }
 
 const ETIQUETAS: Record<string, string> = {
@@ -30,6 +35,10 @@ const ETIQUETAS: Record<string, string> = {
   anulada: 'Anulada',
   confirmada: 'Confirmada',
   cancelada: 'Cancelada',
+  activo: 'Activo',
+  inactivo: 'Inactivo',
+  administrador: 'Administrador',
+  miembro: 'Miembro',
 }
 
 /**

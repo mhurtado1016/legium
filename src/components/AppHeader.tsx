@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/app/agenda', label: 'Agenda' },
   { to: '/app/facturacion', label: 'Facturación' },
   { to: '/app/reportes', label: 'Reportes' },
+  { to: '/app/administracion', label: 'Administración', soloAdmin: true },
 ]
 
 /**
@@ -28,6 +29,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const usuarioMenuRef = useRef<HTMLDivElement>(null)
+  const navItems = NAV_ITEMS.filter((item) => !item.soloAdmin || usuario?.es_administrador)
 
   useEffect(() => {
     function handleClickFuera(e: MouseEvent) {
@@ -60,7 +62,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
           )}
 
           <nav className="hidden md:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const activo = pathname === item.to
               return (
                 <Link
@@ -131,7 +133,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
             {abierto && (
               <div className="card absolute right-0 top-full mt-2 w-56 overflow-hidden py-1 z-10 animate-in">
                 <nav className="flex flex-col text-sm">
-                  {NAV_ITEMS.map((item) => {
+                  {navItems.map((item) => {
                     const activo = pathname === item.to
                     return (
                       <Link

@@ -130,17 +130,38 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   tenant (`fn_siguiente_numero_cobro`), y produce el PDF con pdf-lib —
   sin integración DIAN (sección 9.4).
 
+- `invitar-usuario`: crea un usuario nuevo dentro de la firma del
+  administrador que invita — llamado desde el panel de administración
+  (`/app/administracion`). Verifica con el cliente "anon" que quien llama
+  es `es_administrador` de su firma, y con el cliente `service_role` crea
+  el usuario en `auth.users` (`admin.auth.admin.inviteUserByEmail`, envía
+  el correo de invitación con el mismo mecanismo de Auth que ya usa la
+  recuperación de contraseña, sin secretos nuevos) y su fila en
+  `usuarios`. Requiere `SUPABASE_SERVICE_ROLE_KEY`.
+
 ## Estado actual
 
 Implementado:
 
 **Fase 0**
-- Login con correo/contraseña y recuperación de contraseña.
+- Login con correo/contraseña y recuperación de contraseña — la
+  recuperación redirige a `/nueva-contrasena` (antes esa ruta no
+  existía y la recuperación terminaba en una pantalla en blanco).
 - Enrutamiento protegido (redirige a `/login` sin sesión).
 - Esquema base: `firmas`, `usuarios` (con `es_administrador`, `activo`),
   `configuracion_tenant`, `audit_log` + trigger genérico de auditoría.
 - Función `registrar_firma(nombre_firma, nombre_usuario)`: crea la firma
   y registra al usuario autenticado como su socio fundador.
+- Panel de administración (`/app/administracion`, solo
+  `es_administrador`, punto 1 del portal administrativo): listar
+  usuarios de la firma, invitar uno nuevo por correo (Edge Function
+  `invitar-usuario`), activar/desactivar y cambiar el rol de
+  administrador. Sin guarda contra quedarse sin ningún administrador en
+  la firma (ni en la base de datos ni en la Edge Function); la UI solo
+  impide que un administrador se quite el rol o se desactive a sí
+  mismo, como salvaguarda mínima contra el autobloqueo más obvio.
+  Pendiente: panel de configuración del tenant (datos de facturación,
+  retención de auditoría) y visor de `audit_log`.
 
 **Fase 1 — Módulo 1: Sentencias**
 - Esquema `sentencias_cache`, `consultas_guardadas`, `historial_busqueda`,
@@ -382,10 +403,10 @@ mostrados antes del resumen.
 Con esto quedan implementados los 7 módulos de la especificación
 técnica. Pendiente (ver la especificación completa, sección 14 — Lista
 de tareas de desarrollo, y el resto de "pendientes de definir" en cada
-sección): pantalla de registro de firma, resto de Fase 0 (creación de
-usuarios desde el panel del administrador, panel de configuración del
-tenant), consultas guardadas en la UI, vincular sentencias desde el
-buscador directamente a un caso, botón de suscripción push en la UI,
+sección): pantalla de registro de firma, resto de Fase 0 (panel de
+configuración del tenant, visor de `audit_log`), consultas guardadas
+en la UI, vincular sentencias desde el buscador directamente a un
+caso, botón de suscripción push en la UI,
 extracción de texto para PDF/DOCX, catálogo inicial de plantillas
 globales, exportación de reportes, y los módulos futuros discutidos
 pero no detallados (colaboración de equipo, portal del cliente, alertas
@@ -433,9 +454,11 @@ src/
     agenda.ts          configuración, bloqueos, citas y disponibilidad (Módulo 8)
     facturacion.ts     horas, honorarios fijos y cuentas de cobro (Módulo 6)
     reportes.ts        cartera, casos, plazos y horas por usuario (Módulo 7)
+    administracion.ts  listar, invitar y actualizar usuarios de la firma
   pages/
     LandingPage.tsx    landing público de servicios jurídicos, en "/" (sin sesión)
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
+    NuevaContrasenaPage.tsx fijar contraseña (recuperación o invitación), en "/nueva-contrasena"
     DashboardPage.tsx  dashboard + buscador de sentencias, con detalle expandible en la misma tarjeta (sección 13.3)
     CasosListPage.tsx  listado de casos + alta rápida (sección 5.4)
     CasoDetailPage.tsx ficha de caso: actividad, plazos, documentos, plantillas y facturación (sección 13.5)
@@ -444,6 +467,8 @@ src/
     ReportesPage.tsx   reportes y analítica
     AgendaPage.tsx     citas próximas, reserva manual y configuración/bloqueos
                        para administradores (Módulo 8), en `/app/agenda`
+    AdministracionPage.tsx panel de usuarios de la firma, solo
+                       administradores, en `/app/administracion`
 api/
   proxy-corte.ts       función serverless de Vercel (Node.js) que resuelve el
                        problema de certificado TLS del sitio de la Corte —

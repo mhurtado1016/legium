@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
+import { useUsuario } from './lib/useUsuario'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
+import { NuevaContrasenaPage } from './pages/NuevaContrasenaPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CasosListPage } from './pages/CasosListPage'
 import { CasoDetailPage } from './pages/CasoDetailPage'
@@ -9,6 +11,7 @@ import { PlazosPage } from './pages/PlazosPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { CuentasCobroPage } from './pages/CuentasCobroPage'
 import { ReportesPage } from './pages/ReportesPage'
+import { AdministracionPage } from './pages/AdministracionPage'
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
@@ -28,6 +31,18 @@ function PublicOnlyRoute({ children }: { children: React.ReactElement }) {
   return children
 }
 
+// Mismo criterio de es_administrador que ya usan AgendaPage/AppHeader
+// para mostrar secciones solo a administradores, aplicado a nivel de ruta.
+function AdminOnlyRoute({ children }: { children: React.ReactElement }) {
+  const { session, loading: loadingSesion } = useAuth()
+  const { usuario, loading: loadingUsuario } = useUsuario()
+
+  if (loadingSesion || loadingUsuario) return null
+  if (!session) return <Navigate to="/login" replace />
+  if (!usuario?.es_administrador) return <Navigate to="/app" replace />
+  return children
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -43,6 +58,9 @@ function AppRoutes() {
           </PublicOnlyRoute>
         }
       />
+      {/* Pública: se llega acá desde el enlace del correo de recuperación
+          o de invitación (invitar-usuario), no desde la navegación normal. */}
+      <Route path="/nueva-contrasena" element={<NuevaContrasenaPage />} />
       <Route
         path="/app"
         element={
@@ -97,6 +115,14 @@ function AppRoutes() {
           <ProtectedRoute>
             <ReportesPage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/administracion"
+        element={
+          <AdminOnlyRoute>
+            <AdministracionPage />
+          </AdminOnlyRoute>
         }
       />
     </Routes>
