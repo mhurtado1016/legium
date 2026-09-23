@@ -114,6 +114,18 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   secretos `RESEND_API_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
 - `actualizar-plazos-vencidos`: marca como `vencido` los plazos
   pendientes cuya fecha ya pasó. Configurar como cron diario.
+- `enviar-whatsapp`: envío genérico de WhatsApp (Meta Cloud API) vía el
+  cliente compartido `_shared/whatsapp.ts` — mensaje de texto libre
+  (solo dentro de la ventana de 24h desde el último mensaje del
+  cliente) o de plantilla pre-aprobada (para iniciar conversación fuera
+  de esa ventana). No está atada a ningún flujo todavía: expone el
+  endpoint para que otras acciones de la app (citas, plazos, casos,
+  ...) lo invoquen según lo necesiten, vía `src/lib/whatsapp.ts` desde
+  el frontend o importando `_shared/whatsapp.ts` desde otra Edge
+  Function. Requiere los secretos `WHATSAPP_TOKEN` (token de acceso
+  permanente del System User) y `WHATSAPP_PHONE_NUMBER_ID` (id del
+  número de WhatsApp Business); `WHATSAPP_API_VERSION` es opcional
+  (por defecto `v21.0`).
 
 - `extraer-texto-documento`: extrae texto de una versión de documento
   recién subida para habilitar la búsqueda de contenido (sección 7.3).
@@ -455,6 +467,7 @@ src/
     facturacion.ts     horas, honorarios fijos y cuentas de cobro (Módulo 6)
     reportes.ts        cartera, casos, plazos y horas por usuario (Módulo 7)
     administracion.ts  listar, invitar y actualizar usuarios de la firma
+    whatsapp.ts         envío genérico de WhatsApp (texto o plantilla)
   pages/
     LandingPage.tsx    landing público de servicios jurídicos, en "/" (sin sesión)
     LoginPage.tsx      login + recuperación de contraseña (sección 13.2)
@@ -484,5 +497,11 @@ public/
 supabase/
   migrations/          esquema SQL, en orden de aplicación
   functions/           Edge Functions (Deno)
+    _shared/
+      whatsapp.ts      cliente genérico de WhatsApp Cloud API (Meta),
+                       usado por enviar-whatsapp y disponible para
+                       cualquier otra función que necesite mandar un
+                       WhatsApp
+    enviar-whatsapp/   endpoint genérico de envío de WhatsApp
   seed/                script de datos de prueba
 ```
