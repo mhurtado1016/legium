@@ -55,7 +55,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
         <div className="flex items-center gap-6 min-w-0">
           {left ?? (
             <Link to="/app" className="flex items-center shrink-0">
-              <img src="/logo.svg" alt="Legium" className="h-9 w-auto rounded-md" />
+              <img src="/logo.jpg" alt="Efrata 360" className="h-9 w-auto rounded-[var(--radius-field)]" />
             </Link>
           )}
 

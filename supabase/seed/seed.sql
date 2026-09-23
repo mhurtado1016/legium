@@ -1,11 +1,11 @@
 -- ============================================================
--- Legium — Script de seed
+-- Efrata 360 — Script de seed
 -- Ejecutar en el SQL Editor de Supabase, en un proyecto que ya
 -- tenga aplicadas todas las migraciones de supabase/migrations/.
 --
 -- Precondición: el usuario mhurtado1016@gmail.com ya debe existir en
 -- auth.users (creado desde Authentication → Users, o vía sign up).
--- Este script NO crea usuarios de auth, solo los vincula a Legium.
+-- Este script NO crea usuarios de auth, solo los vincula a Efrata 360.
 -- ============================================================
 
 do $$
@@ -29,7 +29,7 @@ begin
     raise notice 'El usuario ya está vinculado a una firma; se omite la creación de firma/usuario.';
     select firma_id into v_firma_id from usuarios where id = v_usuario_id;
   else
-    insert into firmas (nombre) values ('Despacho de Prueba Legium')
+    insert into firmas (nombre) values ('Despacho de Prueba Efrata 360')
       returning id into v_firma_id;
     -- configuracion_tenant se crea automáticamente vía trigger (0002)
 

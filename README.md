@@ -1,4 +1,4 @@
-# Legium
+# Efrata 360
 
 Plataforma de cumplimiento para abogados. Este repositorio contiene el
 scaffolding inicial (Fase 0 de la especificación técnica): autenticación,

@@ -133,7 +133,7 @@ const CLIENTES_LOGOS = [
 // panel admin (ver DashboardPage.tsx, ContactoConfigSeccion) en cuanto
 // resuelve el fetch en el componente Contacto de abajo.
 const CONTACTO_FALLBACK = {
-  correo: 'contacto@legium.com',
+  correo: 'contacto@efrata360.com',
   telefono: '+57 300 000 0000',
   ciudad: 'Bogotá, Colombia',
 }
@@ -197,7 +197,7 @@ function SiteHeader({
     <header className="sticky top-0 z-30 bg-paper/90 backdrop-blur-sm border-b border-line/70">
       <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
         <a href="#top" className="flex items-center">
-          <img src="/logo.svg" alt="Legium" className="h-12 w-auto" />
+          <img src="/logo.jpg" alt="Efrata 360" className="h-12 w-auto rounded-[var(--radius-field)]" />
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-slate">
@@ -324,7 +324,7 @@ function HeroImage() {
     <div className="relative aspect-[2/1] md:aspect-auto md:absolute md:inset-0">
       <img
         src="/hero/01-equipo.jpg"
-        alt="Equipo de Legium"
+        alt="Equipo de Efrata 360"
         className="absolute inset-0 h-full w-full object-cover object-left md:object-center"
       />
       <div
@@ -441,7 +441,7 @@ function FotoGrupalEquipo() {
   return (
     <img
       src="/equipo/foto-grupal.jpg"
-      alt="Equipo de Legium"
+      alt="Equipo de Efrata 360"
       onError={() => setError(true)}
       className="w-full max-w-3xl mx-auto rounded-[var(--radius-card)] block"
     />
@@ -662,7 +662,7 @@ function SiteFooter() {
     <footer className="border-t border-line/70 bg-paper-sunken">
       <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <img src="/logo.svg" alt="Legium" className="h-11 w-auto mb-2" />
+          <img src="/logo.jpg" alt="Efrata 360" className="h-11 w-auto rounded-[var(--radius-field)] mb-2" />
           <p className="text-sm text-slate">Claridad jurídica para decisiones que importan.</p>
         </div>
         <div className="flex items-center gap-6 text-sm text-slate">
@@ -679,7 +679,7 @@ function SiteFooter() {
       </div>
       <div className="border-t border-line/70">
         <p className="mx-auto max-w-6xl px-6 py-4 text-xs text-slate">
-          © {new Date().getFullYear()} Legium. Todos los derechos reservados.
+          © {new Date().getFullYear()} Efrata 360. Todos los derechos reservados.
         </p>
       </div>
     </footer>

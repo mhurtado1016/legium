@@ -22,7 +22,7 @@ const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails('mailto:soporte@legium.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+  webpush.setVapidDetails('mailto:soporte@efrata360.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 }
 
 Deno.serve(async (req) => {
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Legium <notificaciones@legium.app>',
+            from: 'Efrata 360 <notificaciones@efrata360.com>',
             to: responsable.email,
             subject: `Plazo próximo a vencer: ${plazo.titulo}`,
             text: `El plazo "${plazo.titulo}" vence el ${new Date(plazo.fecha_vencimiento).toLocaleDateString('es-CO')}.`,
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
 
         for (const sub of subs ?? []) {
           const payload = JSON.stringify({
-            title: 'Legium',
+            title: 'Efrata 360',
             body: `Plazo próximo a vencer: ${plazo.titulo}`,
           })
           try {

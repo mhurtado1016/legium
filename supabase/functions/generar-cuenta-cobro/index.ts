@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
     let y = 800
 
-    page.drawText(config?.nombre_facturacion || 'Legium', { x: 50, y, size: 16, font: fontBold })
+    page.drawText(config?.nombre_facturacion || 'Efrata 360', { x: 50, y, size: 16, font: fontBold })
     y -= 18
     if (config?.identificacion_fiscal) {
       page.drawText(`NIT/ID: ${config.identificacion_fiscal}`, { x: 50, y, size: 10, font })

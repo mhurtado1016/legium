@@ -76,7 +76,7 @@ function envolverCorreo(eyebrow: string, titulo: string, contenidoHtml: string) 
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:${PAPER_RAISED};border:1px solid ${LINE};border-radius:12px;">
             <tr>
               <td style="padding:28px 32px 20px;border-bottom:1px solid ${LINE};">
-                <span style="font-size:20px;font-weight:700;letter-spacing:0.02em;color:${INK};">LEGIUM</span>
+                <span style="font-size:20px;font-weight:700;letter-spacing:0.02em;color:${INK};">EFRATA 360</span>
               </td>
             </tr>
             <tr>
@@ -95,7 +95,7 @@ function envolverCorreo(eyebrow: string, titulo: string, contenidoHtml: string) 
             <tr>
               <td style="padding:18px 32px 26px;border-top:1px solid ${LINE};">
                 <p style="margin:0;font-size:12px;color:${SLATE};">
-                  Legium — Claridad jurídica para decisiones que importan.
+                  Efrata 360 — Claridad jurídica para decisiones que importan.
                 </p>
               </td>
             </tr>
@@ -131,7 +131,7 @@ function correoConfirmacionCliente(datos: { nombre: string; cuando: string; tipo
   const text =
     `Hola ${nombre},\n\n` +
     `Tu consulta quedó agendada para el ${cuando} (${tipoTexto}).\n\n` +
-    `Si necesitas reprogramarla, contáctanos respondiendo este correo.\n\n— Legium`
+    `Si necesitas reprogramarla, contáctanos respondiendo este correo.\n\n— Efrata 360`
   return { html, text }
 }
 
@@ -171,7 +171,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:soporte@legium.app'
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:soporte@efrata360.com'
 
 // web-push valida el formato de la vapid key al configurarla y lanza de
 // forma síncrona si está mal formada — sin este try/catch eso tumbaba
@@ -261,7 +261,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       await enviarCorreo(
         cita.correo_cliente,
-        'Confirmación de tu consulta con Legium',
+        'Confirmación de tu consulta con Efrata 360',
         correoConfirmacionCliente({ nombre: cita.nombre_cliente, cuando, tipoTexto }),
       )
     } catch (err) {

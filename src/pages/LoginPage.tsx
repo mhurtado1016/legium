@@ -47,7 +47,7 @@ export function LoginPage() {
 
       <div className="relative w-full max-w-sm">
         <div className="flex justify-center mb-8">
-          <img src="/logo.svg" alt="Legium" className="h-14 w-auto rounded-lg shadow-[var(--shadow-card)]" />
+          <img src="/logo.jpg" alt="Efrata 360" className="h-14 w-auto rounded-[var(--radius-field)] shadow-[var(--shadow-card)]" />
         </div>
 
         <div className="card shadow-[var(--shadow-raised)] p-8">
@@ -100,7 +100,7 @@ export function LoginPage() {
           {mode === 'recuperar-enviado' && (
             <div className="space-y-4 text-center">
               <p className="text-sm text-ink">
-                Si el correo existe en Legium, se envió un enlace de recuperación.
+                Si el correo existe en Efrata 360, se envió un enlace de recuperación.
               </p>
               <button type="button" onClick={() => setMode('login')} className="link text-sm">
                 Volver a ingresar
