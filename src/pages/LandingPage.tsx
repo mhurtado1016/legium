@@ -413,6 +413,62 @@ function Equipo() {
   )
 }
 
+// Posición aproximada (en % del ancho/alto de la foto real) de cada
+// integrante — medida sobre la imagen con una cuadrícula de referencia.
+// left/width/cx/cy: zona de hover y centro del foco de color (cuerpo
+// completo). boxLeft/boxWidth/boxTop/boxBottom: recuadro tipo "escáner"
+// alrededor de cabeza/hombros para la tarjeta flotante.
+const INTEGRANTES_FOTO = [
+  {
+    nombre: 'William Puello',
+    cargo: 'Abogado Especialista · Socio',
+    left: 0,
+    width: 27,
+    cx: 14,
+    cy: 47,
+    boxLeft: 2,
+    boxWidth: 24,
+    boxTop: 5,
+    boxBottom: 40,
+  },
+  {
+    nombre: 'Melissa Martinez',
+    cargo: 'Economista Especialista · Socio',
+    left: 19,
+    width: 29,
+    cx: 33,
+    cy: 60,
+    boxLeft: 20,
+    boxWidth: 27,
+    boxTop: 26,
+    boxBottom: 59,
+  },
+  {
+    nombre: 'Grety Puello',
+    cargo: 'Abogada Espec. Laboral y SST · Socio',
+    left: 46,
+    width: 30,
+    cx: 61,
+    cy: 60,
+    boxLeft: 48,
+    boxWidth: 27,
+    boxTop: 24,
+    boxBottom: 59,
+  },
+  {
+    nombre: 'Manuel Hurtado',
+    cargo: 'Ingeniero de software · Socio',
+    left: 74,
+    width: 26,
+    cx: 87,
+    cy: 46,
+    boxLeft: 76,
+    boxWidth: 23,
+    boxTop: 4,
+    boxBottom: 39,
+  },
+]
+
 // Marcador visual de "foto pendiente" — un cuadro ancho con borde
 // punteado en vez de una foto de stock genérica que podría pasar por el
 // equipo real sin serlo. Reemplazar por
@@ -420,6 +476,7 @@ function Equipo() {
 // rounded-[var(--radius-card)] object-cover" /> cuando haya una foto real.
 function FotoGrupalEquipo() {
   const [error, setError] = useState(false)
+  const [activo, setActivo] = useState<number | null>(null)
 
   if (error) {
     return (
@@ -434,17 +491,136 @@ function FotoGrupalEquipo() {
     )
   }
 
-  // Sin aspect-ratio ni object-fit forzados: la foto real no es tan ancha
-  // como el placeholder (antes en 21:9) y quedaba recortada. Se limita
-  // solo el ancho máximo y el navegador calcula el alto según la
-  // proporción real de la imagen, mostrándola completa.
+  const integrante = activo !== null ? INTEGRANTES_FOTO[activo] : null
+
+  // Foco de color: la foto se muestra a color; al pasar el mouse sobre un
+  // integrante se superpone una copia en blanco y negro con un "hueco"
+  // (radial-gradient usado como máscara) centrado en esa persona, de modo
+  // que solo ella queda a color y el resto se ve en blanco y negro.
   return (
-    <img
-      src="/equipo/foto-grupal.jpg"
-      alt="Equipo de Efrata 360"
-      onError={() => setError(true)}
-      className="w-full max-w-3xl mx-auto rounded-[var(--radius-card)] block"
-    />
+    <div className="w-full max-w-3xl mx-auto" onClick={() => setActivo(null)}>
+      <div className="relative">
+        {/* Capa de imagen, recortada con bordes redondeados */}
+        <div className="relative rounded-[var(--radius-card)] overflow-hidden">
+          <img
+            src="/equipo/foto-grupal.jpg"
+            alt="Equipo de Efrata 360"
+            onError={() => setError(true)}
+            className="w-full block select-none"
+            draggable={false}
+          />
+          <img
+            src="/equipo/foto-grupal.jpg"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 ease-out"
+            style={{
+              filter: 'grayscale(1)',
+              opacity: integrante ? 1 : 0,
+              maskImage: integrante
+                ? `radial-gradient(ellipse 28% 60% at ${integrante.cx}% ${integrante.cy}%, transparent 0%, transparent 55%, black 100%)`
+                : undefined,
+              WebkitMaskImage: integrante
+                ? `radial-gradient(ellipse 28% 60% at ${integrante.cx}% ${integrante.cy}%, transparent 0%, transparent 55%, black 100%)`
+                : undefined,
+            }}
+          />
+        </div>
+
+        {/* Capa de interacción (zonas de hover, HUD y tarjetas flotantes),
+            sin recorte, para que las tarjetas puedan asomarse fuera del
+            recuadro redondeado sin cortarse. */}
+        <div className="absolute inset-0">
+          {INTEGRANTES_FOTO.map((p, i) => {
+            const isActivo = activo === i
+            return (
+              <div key={p.nombre} className="absolute inset-y-0" style={{ left: `${p.left}%`, width: `${p.width}%` }}>
+                {/* Recuadro tipo "escáner" alrededor de cabeza/hombros */}
+                <div
+                  className="absolute transition-opacity duration-300 ease-out"
+                  style={{
+                    left: `${((p.boxLeft - p.left) / p.width) * 100}%`,
+                    width: `${(p.boxWidth / p.width) * 100}%`,
+                    top: `${p.boxTop}%`,
+                    bottom: `${100 - p.boxBottom}%`,
+                    opacity: isActivo ? 1 : 0,
+                  }}
+                >
+                  {(
+                    [
+                      'top-0 left-0 border-t-2 border-l-2',
+                      'top-0 right-0 border-t-2 border-r-2',
+                      'bottom-0 left-0 border-b-2 border-l-2',
+                      'bottom-0 right-0 border-b-2 border-r-2',
+                    ] as const
+                  ).map((pos) => (
+                    <span key={pos} className={`absolute h-3.5 w-3.5 border-[var(--color-accent)] ${pos}`} />
+                  ))}
+                  <span className="absolute -top-1.5 -right-1.5 h-2 w-2 rounded-full bg-[var(--color-accent)] shadow-[0_0_0_3px_rgba(150,112,43,0.25)] animate-pulse" />
+                </div>
+
+                {/* Línea guía hacia la tarjeta flotante */}
+                <div
+                  className="absolute w-px bg-gradient-to-b from-[var(--color-accent)]/70 to-[var(--color-accent)]/0 transition-opacity duration-300 ease-out"
+                  style={{
+                    left: `${((p.cx - p.left) / p.width) * 100}%`,
+                    top: `${p.boxBottom}%`,
+                    bottom: '9%',
+                    opacity: isActivo ? 1 : 0,
+                  }}
+                />
+
+                {/* Zona interactiva (hover / foco / tap) */}
+                <button
+                  type="button"
+                  aria-label={`${p.nombre} — ${p.cargo}`}
+                  className="absolute inset-0 focus:outline-none"
+                  onMouseEnter={() => setActivo(i)}
+                  onMouseLeave={() => setActivo((cur) => (cur === i ? null : cur))}
+                  onFocus={() => setActivo(i)}
+                  onBlur={() => setActivo((cur) => (cur === i ? null : cur))}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setActivo(i)
+                  }}
+                />
+              </div>
+            )
+          })}
+
+          {/* Tarjeta flotante con la info del integrante activo */}
+          {INTEGRANTES_FOTO.map((p, i) => (
+            <div
+              key={p.nombre}
+              className="absolute bottom-[6%] w-[200px] rounded-lg border border-[var(--color-accent)]/50
+                bg-[var(--color-ink)]/85 backdrop-blur-md px-4 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.4)]
+                transition-all duration-300 ease-out pointer-events-none"
+              style={{
+                // clamp() mantiene la tarjeta centrada sobre la persona pero
+                // sin salirse del contenedor en pantallas angostas (móvil).
+                left: `clamp(104px, ${p.cx}%, calc(100% - 104px))`,
+                opacity: activo === i ? 1 : 0,
+                transform: `translate(-50%, ${activo === i ? '0' : '6px'})`,
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                  Perfil · 0{i + 1}
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-white leading-tight">{p.nombre}</p>
+              <p className="text-[11px] text-white/65 uppercase tracking-wide">{p.cargo}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className="mt-4 text-center text-xs text-slate/60">
+        Toca o pasa el mouse sobre cada integrante del equipo para conocerlo
+      </p>
+    </div>
   )
 }
 
