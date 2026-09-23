@@ -15,6 +15,8 @@ import {
   X,
   ArrowRight,
   CheckCircle2,
+  Check,
+  ChevronRight,
   Loader2,
   ImagePlus,
   Code2,
@@ -38,57 +40,131 @@ const GRUPOS_SERVICIOS = [
         icon: Scale,
         titulo: 'Derecho Civil',
         descripcion:
-          'Contratos, responsabilidad civil, propiedad y procesos declarativos o ejecutivos.',
+          'Protegemos tus contratos, tu propiedad y tus intereses frente a conflictos civiles, con una estrategia clara desde el inicio.',
+        descripcionAmplia:
+          'Los conflictos relacionados con contratos, propiedad o responsabilidad civil pueden comprometer tanto tu patrimonio personal como la operación de tu empresa. En Efrata360 analizamos el origen del conflicto, evaluamos los riesgos reales y definimos la ruta más adecuada para resolverlo: un acuerdo, un proceso judicial o una acción preventiva antes de que el problema escale.',
+        beneficios: [
+          'Revisión y estructuración de contratos para prevenir conflictos.',
+          'Representación en procesos declarativos y ejecutivos.',
+          'Defensa del patrimonio ante reclamaciones de responsabilidad civil.',
+          'Acompañamiento en disputas sobre propiedad y bienes.',
+        ],
       },
       {
         icon: Building2,
-        titulo: 'Derecho Comercial y Corporativo',
+        titulo: 'Derecho Corporativo y Comercial',
         descripcion:
-          'Constitución de sociedades, contratos mercantiles, gobierno corporativo y cumplimiento.',
+          'Acompañamos la creación, operación y cumplimiento legal de tu empresa, desde la constitución hasta las decisiones societarias.',
+        descripcionAmplia:
+          'Toda empresa enfrenta decisiones legales que afectan directamente su operación: constituir una sociedad, redactar contratos mercantiles o definir reglas de gobierno corporativo. En Efrata360 estructuramos estos procesos con una visión empresarial, no solo jurídica, para que cada decisión legal responda también a los objetivos reales de tu negocio.',
+        beneficios: [
+          'Constitución y estructuración legal de sociedades.',
+          'Redacción y revisión de contratos mercantiles.',
+          'Definición de reglas de gobierno corporativo.',
+          'Acompañamiento en cumplimiento normativo empresarial.',
+        ],
       },
       {
         icon: Briefcase,
         titulo: 'Derecho Laboral',
         descripcion:
-          'Contratación, terminaciones, procesos ante el Ministerio del Trabajo y litigios laborales.',
+          'Gestionamos la relación laboral de tu empresa para reducir riesgos legales, desde la contratación hasta la desvinculación.',
+        descripcionAmplia:
+          'Las relaciones laborales generan obligaciones legales en cada etapa: contratación, cambios internos, terminaciones o procesos ante el Ministerio del Trabajo. En Efrata360 acompañamos estas decisiones dentro del marco legal vigente, reduciendo el riesgo de litigios y protegiendo tanto a la empresa como a sus colaboradores.',
+        beneficios: [
+          'Estructuración de contratos y políticas laborales.',
+          'Acompañamiento en procesos de terminación laboral.',
+          'Representación ante el Ministerio del Trabajo.',
+          'Defensa en litigios laborales.',
+        ],
       },
       {
         icon: Landmark,
         titulo: 'Litigios y Arbitraje',
-        descripcion: 'Representación en procesos judiciales y arbitrales, de la demanda al fallo.',
+        descripcion:
+          'Te representamos ante jueces y tribunales arbitrales, con una estrategia clara de principio a fin.',
+        descripcionAmplia:
+          'Cuando un conflicto no se resuelve por la vía directa, se necesita una representación firme ante la justicia ordinaria o un tribunal arbitral. En Efrata360 asumimos estos procesos —civiles, comerciales, laborales o administrativos— con una estrategia definida desde el inicio y seguimiento constante de cada término hasta llegar a una resolución.',
+        beneficios: [
+          'Representación judicial de principio a fin.',
+          'Actuación ante tribunales de arbitraje.',
+          'Seguimiento permanente de términos y decisiones procesales.',
+          'Estrategia adaptada a cada tipo de conflicto.',
+        ],
       },
       {
         icon: Users,
         titulo: 'Derecho de Familia',
-        descripcion: 'Divorcios, custodia, alimentos, sucesiones y demás procesos de familia.',
+        descripcion:
+          'Acompañamos procesos de familia con un enfoque humano y jurídico, cuidando el resultado legal y el bienestar de cada cliente.',
+        descripcionAmplia:
+          'Los procesos de familia —divorcios, custodia, alimentos o sucesiones— involucran decisiones legales con un fuerte componente personal. En Efrata360 los abordamos con claridad jurídica y atención a la situación de cada cliente, buscando acuerdos viables cuando es posible y una defensa firme cuando el proceso lo requiere.',
+        beneficios: [
+          'Trámite de procesos de divorcio y custodia.',
+          'Definición y cobro de cuotas alimentarias.',
+          'Acompañamiento en procesos de sucesión.',
+          'Representación en otros procesos de familia.',
+        ],
       },
       {
         icon: FileText,
-        titulo: 'Derecho Administrativo',
+        titulo: 'Derecho Administrativo y Contratación Estatal',
         descripcion:
-          'Contratación estatal, procesos ante entidades públicas y acciones constitucionales.',
+          'Asesoramos a empresas y personas en su relación con el Estado, desde la contratación pública hasta acciones constitucionales.',
+        descripcionAmplia:
+          'Relacionarse con el Estado —participar en procesos de contratación pública, responder ante una entidad administrativa o interponer una acción constitucional— exige conocer reglas distintas a las del derecho privado. En Efrata360 guiamos estos procesos para proteger tus derechos frente a la administración pública.',
+        beneficios: [
+          'Acompañamiento en procesos de contratación estatal.',
+          'Representación ante entidades públicas.',
+          'Trámite de acciones constitucionales (tutela, cumplimiento, popular).',
+          'Asesoría en el relacionamiento con el Estado.',
+        ],
       },
     ],
   },
   {
-    titulo: 'Desarrollo de software',
+    titulo: 'Tecnología y transformación digital',
     items: [
       {
         icon: Code2,
-        titulo: 'Desarrollo a la medida',
+        titulo: 'Desarrollo de Software a la Medida',
         descripcion:
-          'Aplicaciones web y sistemas internos diseñados alrededor de los procesos reales de tu negocio.',
+          'Creamos aplicaciones y sistemas diseñados alrededor de los procesos reales de tu empresa, no al revés.',
+        descripcionAmplia:
+          'El software genérico obliga a las empresas a adaptar sus procesos a herramientas que no fueron pensadas para ellas. En Efrata360 hacemos el camino inverso: diseñamos aplicaciones web y sistemas internos a partir de cómo funciona realmente tu negocio, combinando conocimiento técnico con la comprensión legal y empresarial que ya tenemos de organizaciones como la tuya.',
+        beneficios: [
+          'Aplicaciones web adaptadas a tus procesos internos.',
+          'Sistemas de gestión diseñados a la medida de tu operación.',
+          'Desarrollo guiado por conocimiento legal y empresarial, no solo técnico.',
+          'Acompañamiento desde el diseño hasta la implementación.',
+        ],
       },
       {
         icon: Workflow,
-        titulo: 'Automatización de procesos',
+        titulo: 'Automatización de Procesos Empresariales',
         descripcion:
-          'Herramientas que eliminan tareas manuales repetitivas y aceleran la operación diaria.',
+          'Eliminamos tareas manuales repetitivas para que tu equipo dedique tiempo a decisiones que realmente lo requieren.',
+        descripcionAmplia:
+          'Muchas horas de trabajo se pierden en tareas repetitivas que no agregan valor: cargar datos, generar reportes o hacer seguimientos manuales. En Efrata360 identificamos estos cuellos de botella dentro de tu operación y desarrollamos herramientas que los automatizan, liberando tiempo del equipo y reduciendo el margen de error humano.',
+        beneficios: [
+          'Identificación de tareas manuales automatizables.',
+          'Desarrollo de herramientas a medida para procesos internos.',
+          'Reducción de errores operativos.',
+          'Mayor disponibilidad de tiempo del equipo para tareas estratégicas.',
+        ],
       },
       {
         icon: Plug,
-        titulo: 'Integraciones y APIs',
-        descripcion: 'Conectamos tus sistemas, datos y plataformas para que trabajen como uno solo.',
+        titulo: 'Integraciones de Sistemas y Datos',
+        descripcion: 'Conectamos tus plataformas y bases de datos para que la información fluya sin duplicar trabajo.',
+        descripcionAmplia:
+          'Cuando los sistemas de una empresa no se comunican entre sí, la información se duplica, se pierde o llega tarde a quien la necesita. En Efrata360 conectamos tus plataformas, bases de datos y herramientas mediante integraciones y APIs, para que compartan información de forma automática y consistente.',
+        beneficios: [
+          'Conexión entre plataformas y sistemas existentes.',
+          'Sincronización automática de información entre áreas.',
+          'Desarrollo de integraciones vía API.',
+          'Reducción de trabajo duplicado y errores de datos.',
+        ],
       },
     ],
   },
@@ -123,7 +199,7 @@ const METODOLOGIA = [
 // a faltar (404 → onError), LogoCliente cae a una caja placeholder en vez
 // de inventar una marca.
 const CLIENTES_LOGOS = [
-  { src: '/clientes/logo-life.jpg', alt: 'Life' },
+  { src: '/clientes/logo-life.png', alt: 'Life' },
   { src: '/clientes/logo-logistic.png', alt: 'Logistic' },
   { src: '/clientes/logo-petro.png', alt: 'Petro' },
 ]
@@ -359,7 +435,11 @@ function Metodologia() {
   )
 }
 
+type ServicioItem = (typeof GRUPOS_SERVICIOS)[number]['items'][number]
+
 function AreasPractica() {
+  const [servicioActivo, setServicioActivo] = useState<ServicioItem | null>(null)
+
   return (
     <section id="servicios" className="border-t border-line/70">
       <div className="mx-auto max-w-6xl px-6 py-20">
@@ -378,20 +458,83 @@ function AreasPractica() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {grupo.items.map((item) => (
-                  <div key={item.titulo} className="card card-interactive p-6">
-                    <span className="inline-flex items-center justify-center h-11 w-11 rounded-[var(--radius-field)] bg-[var(--color-accent-soft)] mb-5">
-                      <item.icon size={20} strokeWidth={1.75} className="text-[var(--color-accent-strong)]" />
-                    </span>
-                    <h4 className="text-base font-semibold mb-2 tracking-tight">{item.titulo}</h4>
-                    <p className="text-sm text-slate leading-relaxed">{item.descripcion}</p>
-                  </div>
+                  <button
+                    key={item.titulo}
+                    type="button"
+                    onClick={() => setServicioActivo(item)}
+                    className="card card-interactive p-6 text-left"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-5">
+                      <span className="inline-flex items-center justify-center h-11 w-11 rounded-[var(--radius-field)] bg-[var(--color-accent-soft)]">
+                        <item.icon size={20} strokeWidth={1.75} className="text-[var(--color-accent-strong)]" />
+                      </span>
+                      <ChevronRight size={18} strokeWidth={1.75} className="mt-1.5 text-slate/50 shrink-0" />
+                    </div>
+                    <h4 className="text-base font-semibold mb-2 tracking-tight line-clamp-2 min-h-12">{item.titulo}</h4>
+                    <p className="text-sm text-slate leading-relaxed line-clamp-3">{item.descripcion}</p>
+                  </button>
                 ))}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <ServicioModal item={servicioActivo} onClose={() => setServicioActivo(null)} />
     </section>
+  )
+}
+
+// Modal centrado en vez de acordeón dentro de la tarjeta: al expandir en el
+// propio grid, la fila entera se estiraba para igualar la tarjeta abierta y
+// dejaba huecos vacíos junto a ella. El modal deja el grid intacto.
+function ServicioModal({ item, onClose }: { item: ServicioItem | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!item) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [item, onClose])
+
+  if (!item) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
+
+      <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] p-7 animate-in">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="absolute top-5 right-5 p-1.5 -m-1.5 rounded-md text-slate hover:text-ink hover:bg-paper-sunken transition-colors"
+        >
+          <X size={18} />
+        </button>
+
+        <span className="inline-flex items-center justify-center h-11 w-11 rounded-[var(--radius-field)] bg-[var(--color-accent-soft)] mb-5">
+          <item.icon size={20} strokeWidth={1.75} className="text-[var(--color-accent-strong)]" />
+        </span>
+
+        <h3 className="text-xl font-semibold tracking-tight mb-3 pr-8">{item.titulo}</h3>
+        <p className="text-sm text-slate leading-relaxed">{item.descripcionAmplia}</p>
+
+        <ul className="mt-5 flex flex-col gap-2.5">
+          {item.beneficios.map((beneficio) => (
+            <li key={beneficio} className="flex items-start gap-2 text-sm text-ink">
+              <Check size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-[var(--color-accent-strong)]" />
+              {beneficio}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   )
 }
 
