@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, Eye, History, X } from 'lucide-react'
+import { ArrowLeft, Download, Eye, History, Loader2, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
@@ -586,7 +586,7 @@ function DocumentosSeccion({
   const [historialAbierto, setHistorialAbierto] = useState<string | null>(null)
   const [versiones, setVersiones] = useState<DocumentoVersion[]>([])
   const [previsualizando, setPrevisualizando] = useState<{
-    url: string
+    storagePath: string
     mimeType: string | null
     nombre: string
   } | null>(null)
@@ -651,9 +651,11 @@ function DocumentosSeccion({
   // embebido (iframe/<img> dentro de DocumentoPreviewModal), nunca una
   // pestaña nueva. Descargar a disco solo queda disponible como enlace
   // secundario ya dentro del modal (ver DocumentoPreviewModal más abajo).
-  async function handleVer(storagePath: string, mimeType: string | null, nombre: string) {
-    const url = await urlDescarga(storagePath)
-    setPrevisualizando({ url, mimeType, nombre })
+  // Abre el modal de inmediato (sin esperar la signed URL) para que el
+  // spinner de carga sea visible desde el primer click; la propia URL se
+  // resuelve dentro del modal.
+  function handleVer(storagePath: string, mimeType: string | null, nombre: string) {
+    setPrevisualizando({ storagePath, mimeType, nombre })
   }
 
   const documentosFiltrados = busqueda
@@ -927,16 +929,20 @@ function DocumentosSeccion({
 // honesta de "previsualizar" sin subir el archivo a un servicio externo —
 // se avisa y se deja la descarga como única vía.
 function DocumentoPreviewModal({
-  url,
+  storagePath,
   mimeType,
   nombre,
   onClose,
 }: {
-  url: string
+  storagePath: string
   mimeType: string | null
   nombre: string
   onClose: () => void
 }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [archivoListo, setArchivoListo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -949,8 +955,32 @@ function DocumentoPreviewModal({
     }
   }, [onClose])
 
+  // Resuelve la signed URL acá (no antes de abrir el modal) para que el
+  // spinner sea visible desde el primer click, sin ese hueco de "no pasó
+  // nada" mientras se espera la respuesta de Supabase.
+  useEffect(() => {
+    let cancelado = false
+    setUrl(null)
+    setArchivoListo(false)
+    setError(null)
+    urlDescarga(storagePath)
+      .then((u) => {
+        if (!cancelado) setUrl(u)
+      })
+      .catch(() => {
+        if (!cancelado) setError('No se pudo cargar el documento.')
+      })
+    return () => {
+      cancelado = true
+    }
+  }, [storagePath])
+
   const esPdf = mimeType === 'application/pdf'
   const esImagen = mimeType?.startsWith('image/') ?? false
+  // Para tipos sin visor embebido no hay nada que "cargar" en el iframe/img
+  // — el spinner solo debe esperar a la signed URL, no a un onLoad que
+  // nunca va a llegar.
+  const cargando = !error && (!url || ((esPdf || esImagen) && !archivoListo))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -960,15 +990,17 @@ function DocumentoPreviewModal({
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
           <p className="font-medium text-sm text-ink truncate">{nombre}</p>
           <div className="flex items-center gap-3 shrink-0">
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
-            >
-              <Download size={14} strokeWidth={1.75} />
-              Descargar
-            </a>
+            {url && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
+              >
+                <Download size={14} strokeWidth={1.75} />
+                Descargar
+              </a>
+            )}
             <button
               onClick={onClose}
               aria-label="Cerrar"
@@ -979,14 +1011,39 @@ function DocumentoPreviewModal({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 bg-paper-sunken">
-          {esPdf && <iframe src={url} title={nombre} className="w-full h-full border-0" />}
-          {esImagen && (
-            <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
-              <img src={url} alt={nombre} className="max-w-full max-h-full object-contain" />
+        <div className="relative flex-1 min-h-0 bg-paper-sunken">
+          {cargando && (
+            <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-slate">
+              <Loader2 size={18} className="animate-spin" strokeWidth={1.75} />
+              Cargando documento…
             </div>
           )}
-          {!esPdf && !esImagen && (
+
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-danger px-6 text-center">
+              {error}
+            </div>
+          )}
+
+          {url && esPdf && (
+            <iframe
+              src={url}
+              title={nombre}
+              onLoad={() => setArchivoListo(true)}
+              className={`w-full h-full border-0 transition-opacity ${archivoListo ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
+          {url && esImagen && (
+            <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
+              <img
+                src={url}
+                alt={nombre}
+                onLoad={() => setArchivoListo(true)}
+                className={`max-w-full max-h-full object-contain transition-opacity ${archivoListo ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </div>
+          )}
+          {url && !esPdf && !esImagen && (
             <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center px-6">
               <p className="text-sm text-slate">
                 Este tipo de archivo no se puede previsualizar en el navegador.
