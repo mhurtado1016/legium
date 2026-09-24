@@ -647,15 +647,10 @@ function DocumentosSeccion({
     setHistorialAbierto(documentoId)
   }
 
-  async function handleDescargar(storagePath: string) {
-    const url = await urlDescarga(storagePath)
-    window.open(url, '_blank')
-  }
-
-  // "Ver" abre el documento en un visor dentro del sitio (iframe para PDF,
-  // <img> para imágenes) en vez de navegar a una pestaña nueva o forzar la
-  // descarga — lo que sí sigue haciendo "Descargar" (handleDescargar) para
-  // quien realmente necesite guardar el archivo.
+  // Único punto de entrada para abrir un documento: siempre el visor
+  // embebido (iframe/<img> dentro de DocumentoPreviewModal), nunca una
+  // pestaña nueva. Descargar a disco solo queda disponible como enlace
+  // secundario ya dentro del modal (ver DocumentoPreviewModal más abajo).
   async function handleVer(storagePath: string, mimeType: string | null, nombre: string) {
     const url = await urlDescarga(storagePath)
     setPrevisualizando({ url, mimeType, nombre })
@@ -792,18 +787,6 @@ function DocumentosSeccion({
                   </td>
                   <td>
                     <div className="flex items-center justify-end gap-3 text-xs whitespace-nowrap">
-                      {d.ultima_version && (
-                        <button
-                          onClick={() =>
-                            d.ultima_version && handleDescargar(d.ultima_version.storage_path)
-                          }
-                          aria-label="Descargar"
-                          title="Descargar"
-                          className="text-slate hover:text-ink transition-colors"
-                        >
-                          <Download size={14} strokeWidth={1.75} />
-                        </button>
-                      )}
                       <button onClick={() => handleVerHistorial(d.id)} className="link">
                         historial
                       </button>
@@ -823,10 +806,6 @@ function DocumentosSeccion({
                               className="underline hover:text-ink"
                             >
                               ver
-                            </button>{' '}
-                            ·{' '}
-                            <button onClick={() => handleDescargar(v.storage_path)} className="underline hover:text-ink">
-                              descargar
                             </button>
                           </li>
                         ))}
@@ -873,15 +852,6 @@ function DocumentosSeccion({
               {d.ultima_version ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO') : '—'}
             </CardRow>
             <CardActions>
-              {d.ultima_version && (
-                <button
-                  onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
-                  className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
-                >
-                  <Download size={14} strokeWidth={1.75} />
-                  Descargar
-                </button>
-              )}
               <button onClick={() => handleVerHistorial(d.id)} className="link">
                 historial
               </button>
@@ -896,10 +866,6 @@ function DocumentosSeccion({
                       className="underline hover:text-ink"
                     >
                       ver
-                    </button>{' '}
-                    ·{' '}
-                    <button onClick={() => handleDescargar(v.storage_path)} className="underline hover:text-ink">
-                      descargar
                     </button>
                   </li>
                 ))}
