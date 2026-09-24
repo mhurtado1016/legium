@@ -526,8 +526,8 @@ function NuevoPlazoForm({
     // alignment terminaba superponiendo los checkboxes sobre el campo de
     // fecha en pantallas angostas.
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
-      <div className="flex flex-wrap gap-3">
-        <div className="flex-1 min-w-[10rem]">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+        <div className="sm:flex-1 sm:min-w-[10rem]">
           <label className="block text-slate mb-1">Título</label>
           <input
             value={titulo}
@@ -541,7 +541,7 @@ function NuevoPlazoForm({
             type="date"
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            className="field field-sm"
+            className="w-full sm:w-auto field field-sm"
           />
         </div>
       </div>
