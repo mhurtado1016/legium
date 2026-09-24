@@ -48,7 +48,7 @@ const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
 const SECCIONES = [
   { id: 'datos', label: 'Datos' },
   { id: 'responsable', label: 'Responsable' },
-  { id: 'actividad', label: 'Actividad' },
+  { id: 'actividad', label: 'Bitácora' },
   { id: 'sentencias', label: 'Sentencias' },
   { id: 'plazos', label: 'Plazos' },
   { id: 'documentos', label: 'Documentos' },
@@ -265,7 +265,7 @@ export function CasoDetailPage() {
           </section>
 
           <section id="actividad" className="card p-6">
-            <h2 className="font-display text-base font-semibold mb-2">Actividad</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Bitácora</h2>
             <p className="text-sm text-slate mb-3">
               Bitácora cronológica del caso. Deja constancia de gestiones, llamadas, reuniones
               o decisiones importantes para que quede un historial consultable por todo el
@@ -284,7 +284,7 @@ export function CasoDetailPage() {
             </form>
             <ul className="text-sm divide-y divide-line card overflow-hidden">
               {actividad.map((a) => (
-                <li key={a.id} className="px-4 py-2.5">
+                <li key={a.id} className="px-4 py-2.5 break-words">
                   <span className="text-slate">
                     {new Date(a.created_at).toLocaleDateString('es-CO')} —{' '}
                   </span>
@@ -520,43 +520,52 @@ function NuevoPlazoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 text-sm">
-      <div>
-        <label className="block text-slate mb-1">Título</label>
-        <input
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          className="field field-sm"
-        />
+    // Fila de campos (con label encima) y fila de checkboxes (sin label)
+    // van separadas en vez de un único flex-wrap con items-end: al mezclar
+    // ítems de alturas distintas en la misma línea, el cross-axis
+    // alignment terminaba superponiendo los checkboxes sobre el campo de
+    // fecha en pantallas angostas.
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
+      <div className="flex flex-wrap gap-3">
+        <div className="flex-1 min-w-[10rem]">
+          <label className="block text-slate mb-1">Título</label>
+          <input
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            className="w-full field field-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-slate mb-1">Vence</label>
+          <input
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            className="field field-sm"
+          />
+        </div>
       </div>
-      <div>
-        <label className="block text-slate mb-1">Vence</label>
-        <input
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className="field field-sm"
-        />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={notificarApp} onChange={(e) => setNotificarApp(e.target.checked)} />
+          App
+        </label>
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={notificarEmail} onChange={(e) => setNotificarEmail(e.target.checked)} />
+          Email
+        </label>
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={notificarPush} onChange={(e) => setNotificarPush(e.target.checked)} />
+          Push
+        </label>
+        <button
+          type="submit"
+          disabled={guardando}
+          className="btn-primary btn-sm sm:ml-auto"
+        >
+          {guardando ? 'Guardando…' : 'Agregar plazo'}
+        </button>
       </div>
-      <label className="flex items-center gap-1">
-        <input type="checkbox" checked={notificarApp} onChange={(e) => setNotificarApp(e.target.checked)} />
-        App
-      </label>
-      <label className="flex items-center gap-1">
-        <input type="checkbox" checked={notificarEmail} onChange={(e) => setNotificarEmail(e.target.checked)} />
-        Email
-      </label>
-      <label className="flex items-center gap-1">
-        <input type="checkbox" checked={notificarPush} onChange={(e) => setNotificarPush(e.target.checked)} />
-        Push
-      </label>
-      <button
-        type="submit"
-        disabled={guardando}
-        className="btn-primary btn-sm"
-      >
-        {guardando ? 'Guardando…' : 'Agregar plazo'}
-      </button>
     </form>
   )
 }
