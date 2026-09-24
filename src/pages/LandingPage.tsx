@@ -32,6 +32,30 @@ const NAV_ITEMS = [
   { href: '#contacto', label: 'Contacto' },
 ]
 
+// Enlaces de "compartir" (footer): destino fijo (URL canónica del landing),
+// no dependen de dónde haga scroll el usuario, así que se arman una sola
+// vez acá en vez de calcularlos en cada render.
+const URL_SITIO = 'https://efrata360.com/'
+const TEXTO_COMPARTIR = 'Efrata 360 — Despacho de abogados en Bogotá'
+const COMPARTIR_LINKS = [
+  {
+    label: 'WhatsApp',
+    href: `https://wa.me/?text=${encodeURIComponent(`${TEXTO_COMPARTIR} ${URL_SITIO}`)}`,
+  },
+  {
+    label: 'LinkedIn',
+    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(URL_SITIO)}`,
+  },
+  {
+    label: 'Facebook',
+    href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL_SITIO)}`,
+  },
+  {
+    label: 'X',
+    href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(URL_SITIO)}&text=${encodeURIComponent(TEXTO_COMPARTIR)}`,
+  },
+]
+
 const GRUPOS_SERVICIOS = [
   {
     titulo: 'Legal',
@@ -447,7 +471,7 @@ function Metodologia() {
 type ServicioItem = (typeof GRUPOS_SERVICIOS)[number]['items'][number]
 
 function AreasPractica() {
-  const [servicioActivo, setServicioActivo] = useState<ServicioItem | null>(null)
+  const [servicioActivoTitulo, setServicioActivoTitulo] = useState<string | null>(null)
 
   return (
     <section id="servicios" className="border-t border-line/70">
@@ -470,7 +494,7 @@ function AreasPractica() {
                   <button
                     key={item.titulo}
                     type="button"
-                    onClick={() => setServicioActivo(item)}
+                    onClick={() => setServicioActivoTitulo(item.titulo)}
                     className="card card-interactive p-6 text-left"
                   >
                     <div className="flex items-start justify-between gap-3 mb-5">
@@ -489,7 +513,23 @@ function AreasPractica() {
         </div>
       </div>
 
-      <ServicioModal item={servicioActivo} onClose={() => setServicioActivo(null)} />
+      {/* Los 9 modales quedan siempre montados (uno por servicio, visibilidad
+          controlada por CSS/atributo "hidden") en vez de montar solo el
+          activo — así descripcionAmplia y beneficios de cada servicio están
+          presentes en el HTML (y en el prerender) desde el primer render,
+          no solo tras un click. Es el mismo patrón de acordeón/tab que
+          Google indexa igual que contenido visible, aplicado a un modal en
+          vez de un panel inline. Sin esto, ese texto — la mayor parte del
+          contenido real del landing — nunca llegaba a un crawler que no
+          simula clics. */}
+      {GRUPOS_SERVICIOS.flatMap((grupo) => grupo.items).map((item) => (
+        <ServicioModal
+          key={item.titulo}
+          item={item}
+          abierto={servicioActivoTitulo === item.titulo}
+          onClose={() => setServicioActivoTitulo(null)}
+        />
+      ))}
     </section>
   )
 }
@@ -497,9 +537,17 @@ function AreasPractica() {
 // Modal centrado en vez de acordeón dentro de la tarjeta: al expandir en el
 // propio grid, la fila entera se estiraba para igualar la tarjeta abierta y
 // dejaba huecos vacíos junto a ella. El modal deja el grid intacto.
-function ServicioModal({ item, onClose }: { item: ServicioItem | null; onClose: () => void }) {
+function ServicioModal({
+  item,
+  abierto,
+  onClose,
+}: {
+  item: ServicioItem
+  abierto: boolean
+  onClose: () => void
+}) {
   useEffect(() => {
-    if (!item) return
+    if (!abierto) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
@@ -509,12 +557,16 @@ function ServicioModal({ item, onClose }: { item: ServicioItem | null; onClose: 
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = ''
     }
-  }, [item, onClose])
-
-  if (!item) return null
+  }, [abierto, onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div
+      hidden={!abierto}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-hidden={!abierto}
+    >
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
 
       <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] p-7 animate-in">
@@ -664,16 +716,15 @@ function FotoGrupalEquipo() {
             className="w-full block select-none"
             draggable={false}
           />
-          <img
-            src="/equipo/foto-grupal.jpg"
-            alt=""
+          {/* Capa puramente decorativa (blanco y negro con "hueco" de color)
+              — un <div> con background-image en vez de <img alt=""> para
+              que checkers SEO no la cuenten como una imagen de contenido
+              sin descripción ALT; es un efecto visual, no contenido. */}
+          <div
             aria-hidden="true"
-            width={1427}
-            height={1102}
-            loading="lazy"
-            draggable={false}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 ease-out"
+            className="absolute inset-0 w-full h-full bg-cover bg-center pointer-events-none transition-opacity duration-300 ease-out"
             style={{
+              backgroundImage: 'url(/equipo/foto-grupal.jpg)',
               filter: 'grayscale(1)',
               opacity: integrante ? 1 : 0,
               maskImage: integrante
@@ -1010,21 +1061,38 @@ function SiteFooter() {
           <p className="text-sm text-slate">Claridad jurídica para decisiones que importan.</p>
         </div>
         <div className="flex items-center gap-6 text-sm text-slate">
+          {/* Texto distinto al de la nav del header (aunque el destino sea
+              el mismo) para no repetir el mismo texto ancla en varios
+              enlaces — señal que los checkers de SEO marcan como debilidad. */}
           <a href="#servicios" className="hover:text-ink transition-colors">
-            Áreas de práctica
+            Nuestros servicios
           </a>
           <a href="#contacto" className="hover:text-ink transition-colors">
-            Contacto
+            Escríbenos
           </a>
           <Link to="/login" className="hover:text-ink transition-colors">
-            Ingresar
+            Acceder
           </Link>
         </div>
       </div>
       <div className="border-t border-line/70">
-        <p className="mx-auto max-w-6xl px-6 py-4 text-xs text-slate">
-          © {new Date().getFullYear()} Efrata 360. Todos los derechos reservados.
-        </p>
+        <div className="mx-auto max-w-6xl px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <p className="text-xs text-slate">© {new Date().getFullYear()} Efrata 360. Todos los derechos reservados.</p>
+          <div className="flex items-center gap-4 text-xs text-slate">
+            <span className="text-slate/60">Compartir:</span>
+            {COMPARTIR_LINKS.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-ink transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </footer>
   )
