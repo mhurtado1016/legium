@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, X } from 'lucide-react'
+import { ArrowLeft, Download, Eye, History, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
@@ -786,9 +786,25 @@ function DocumentosSeccion({
                       : '—'}
                   </td>
                   <td>
-                    <div className="flex items-center justify-end gap-3 text-xs whitespace-nowrap">
-                      <button onClick={() => handleVerHistorial(d.id)} className="link">
-                        historial
+                    <div className="flex items-center justify-end gap-4 text-xs whitespace-nowrap">
+                      {d.ultima_version && (
+                        <button
+                          onClick={() =>
+                            d.ultima_version &&
+                            handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
+                          }
+                          className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                        >
+                          <Eye size={14} strokeWidth={1.75} />
+                          Ver
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleVerHistorial(d.id)}
+                        className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
+                      >
+                        <History size={14} strokeWidth={1.75} />
+                        Historial
                       </button>
                     </div>
                   </td>
@@ -796,16 +812,19 @@ function DocumentosSeccion({
                 {historialAbierto === d.id && (
                   <tr>
                     <td colSpan={5} className="bg-paper-sunken">
-                      <ul className="text-slate space-y-1 py-1">
+                      <ul className="text-slate space-y-1.5 py-2">
                         {versiones.map((v) => (
-                          <li key={v.id}>
-                            v{v.version_numero} — {v.nombre_archivo} —{' '}
-                            {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                          <li key={v.id} className="flex items-center gap-2 flex-wrap">
+                            <span>
+                              v{v.version_numero} — {v.nombre_archivo} —{' '}
+                              {new Date(v.created_at).toLocaleDateString('es-CO')}
+                            </span>
                             <button
                               onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
-                              className="underline hover:text-ink"
+                              className="flex items-center gap-1 text-ink hover:text-accent transition-colors"
                             >
-                              ver
+                              <Eye size={13} strokeWidth={1.75} />
+                              Ver
                             </button>
                           </li>
                         ))}
@@ -852,20 +871,39 @@ function DocumentosSeccion({
               {d.ultima_version ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO') : '—'}
             </CardRow>
             <CardActions>
-              <button onClick={() => handleVerHistorial(d.id)} className="link">
-                historial
+              {d.ultima_version && (
+                <button
+                  onClick={() =>
+                    d.ultima_version &&
+                    handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
+                  }
+                  className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                >
+                  <Eye size={14} strokeWidth={1.75} />
+                  Ver
+                </button>
+              )}
+              <button
+                onClick={() => handleVerHistorial(d.id)}
+                className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
+              >
+                <History size={14} strokeWidth={1.75} />
+                Historial
               </button>
             </CardActions>
             {historialAbierto === d.id && (
-              <ul className="text-slate text-xs space-y-1 pt-2 border-t border-line">
+              <ul className="text-slate text-xs space-y-2 pt-2 border-t border-line">
                 {versiones.map((v) => (
-                  <li key={v.id}>
-                    v{v.version_numero} — {v.nombre_archivo} — {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                  <li key={v.id} className="flex items-center gap-2 flex-wrap">
+                    <span>
+                      v{v.version_numero} — {v.nombre_archivo} — {new Date(v.created_at).toLocaleDateString('es-CO')}
+                    </span>
                     <button
                       onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
-                      className="underline hover:text-ink"
+                      className="flex items-center gap-1 text-ink hover:text-accent transition-colors"
                     >
-                      ver
+                      <Eye size={13} strokeWidth={1.75} />
+                      Ver
                     </button>
                   </li>
                 ))}
