@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Download, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
@@ -585,6 +585,11 @@ function DocumentosSeccion({
   const [busqueda, setBusqueda] = useState('')
   const [historialAbierto, setHistorialAbierto] = useState<string | null>(null)
   const [versiones, setVersiones] = useState<DocumentoVersion[]>([])
+  const [previsualizando, setPrevisualizando] = useState<{
+    url: string
+    mimeType: string | null
+    nombre: string
+  } | null>(null)
   const [plantillaId, setPlantillaId] = useState('')
   const [variablesManuales, setVariablesManuales] = useState<Record<string, string>>({})
   const [generando, setGenerando] = useState(false)
@@ -645,6 +650,15 @@ function DocumentosSeccion({
   async function handleDescargar(storagePath: string) {
     const url = await urlDescarga(storagePath)
     window.open(url, '_blank')
+  }
+
+  // "Ver" abre el documento en un visor dentro del sitio (iframe para PDF,
+  // <img> para imágenes) en vez de navegar a una pestaña nueva o forzar la
+  // descarga — lo que sí sigue haciendo "Descargar" (handleDescargar) para
+  // quien realmente necesite guardar el archivo.
+  async function handleVer(storagePath: string, mimeType: string | null, nombre: string) {
+    const url = await urlDescarga(storagePath)
+    setPrevisualizando({ url, mimeType, nombre })
   }
 
   const documentosFiltrados = busqueda
@@ -759,7 +773,10 @@ function DocumentosSeccion({
                   <td>
                     {d.ultima_version ? (
                       <button
-                        onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
+                        onClick={() =>
+                          d.ultima_version &&
+                          handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
+                        }
                         className="hover:text-accent transition-colors"
                       >
                         v{d.ultima_version.version_numero}
@@ -774,12 +791,23 @@ function DocumentosSeccion({
                       : '—'}
                   </td>
                   <td>
-                    <button
-                      onClick={() => handleVerHistorial(d.id)}
-                      className="link"
-                    >
-                      historial
-                    </button>
+                    <div className="flex items-center justify-end gap-3 text-xs whitespace-nowrap">
+                      {d.ultima_version && (
+                        <button
+                          onClick={() =>
+                            d.ultima_version && handleDescargar(d.ultima_version.storage_path)
+                          }
+                          aria-label="Descargar"
+                          title="Descargar"
+                          className="text-slate hover:text-ink transition-colors"
+                        >
+                          <Download size={14} strokeWidth={1.75} />
+                        </button>
+                      )}
+                      <button onClick={() => handleVerHistorial(d.id)} className="link">
+                        historial
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 {historialAbierto === d.id && (
@@ -790,6 +818,13 @@ function DocumentosSeccion({
                           <li key={v.id}>
                             v{v.version_numero} — {v.nombre_archivo} —{' '}
                             {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                            <button
+                              onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
+                              className="underline hover:text-ink"
+                            >
+                              ver
+                            </button>{' '}
+                            ·{' '}
                             <button onClick={() => handleDescargar(v.storage_path)} className="underline hover:text-ink">
                               descargar
                             </button>
@@ -822,7 +857,10 @@ function DocumentosSeccion({
             <CardRow label="Versión">
               {d.ultima_version ? (
                 <button
-                  onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
+                  onClick={() =>
+                    d.ultima_version &&
+                    handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
+                  }
                   className="hover:text-accent transition-colors"
                 >
                   v{d.ultima_version.version_numero}
@@ -835,6 +873,15 @@ function DocumentosSeccion({
               {d.ultima_version ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO') : '—'}
             </CardRow>
             <CardActions>
+              {d.ultima_version && (
+                <button
+                  onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
+                  className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
+                >
+                  <Download size={14} strokeWidth={1.75} />
+                  Descargar
+                </button>
+              )}
               <button onClick={() => handleVerHistorial(d.id)} className="link">
                 historial
               </button>
@@ -844,6 +891,13 @@ function DocumentosSeccion({
                 {versiones.map((v) => (
                   <li key={v.id}>
                     v{v.version_numero} — {v.nombre_archivo} — {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                    <button
+                      onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
+                      className="underline hover:text-ink"
+                    >
+                      ver
+                    </button>{' '}
+                    ·{' '}
                     <button onClick={() => handleDescargar(v.storage_path)} className="underline hover:text-ink">
                       descargar
                     </button>
@@ -855,6 +909,92 @@ function DocumentosSeccion({
         ))}
         {documentosFiltrados.length === 0 && <CardEmpty>Sin documentos todavía.</CardEmpty>}
       </CardList>
+
+      {previsualizando && (
+        <DocumentoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
+      )}
+    </div>
+  )
+}
+
+// Visor dentro del sitio: PDF e imágenes se muestran embebidos (iframe /
+// <img>), sin navegar a otra pestaña ni forzar una descarga. Para tipos que
+// ningún navegador renderiza de forma nativa (Word, etc.) no hay forma
+// honesta de "previsualizar" sin subir el archivo a un servicio externo —
+// se avisa y se deja la descarga como única vía.
+function DocumentoPreviewModal({
+  url,
+  mimeType,
+  nombre,
+  onClose,
+}: {
+  url: string
+  mimeType: string | null
+  nombre: string
+  onClose: () => void
+}) {
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
+
+  const esPdf = mimeType === 'application/pdf'
+  const esImagen = mimeType?.startsWith('image/') ?? false
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
+
+      <div className="relative w-full max-w-4xl h-[85vh] flex flex-col rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] animate-in overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
+          <p className="font-medium text-sm text-ink truncate">{nombre}</p>
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
+            >
+              <Download size={14} strokeWidth={1.75} />
+              Descargar
+            </a>
+            <button
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="p-1.5 -m-1.5 rounded-md text-slate hover:text-ink hover:bg-paper-sunken transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0 bg-paper-sunken">
+          {esPdf && <iframe src={url} title={nombre} className="w-full h-full border-0" />}
+          {esImagen && (
+            <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
+              <img src={url} alt={nombre} className="max-w-full max-h-full object-contain" />
+            </div>
+          )}
+          {!esPdf && !esImagen && (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center px-6">
+              <p className="text-sm text-slate">
+                Este tipo de archivo no se puede previsualizar en el navegador.
+              </p>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary btn-sm">
+                <Download size={14} strokeWidth={1.75} />
+                Descargar para verlo
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
