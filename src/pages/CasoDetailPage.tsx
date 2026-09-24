@@ -264,7 +264,7 @@ export function CasoDetailPage() {
             </div>
           </section>
 
-          <section id="actividad">
+          <section id="actividad" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Actividad</h2>
             <p className="text-sm text-slate mb-3">
               Bitácora cronológica del caso. Deja constancia de gestiones, llamadas, reuniones
@@ -295,7 +295,7 @@ export function CasoDetailPage() {
             </ul>
           </section>
 
-          <section id="sentencias">
+          <section id="sentencias" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Sentencias vinculadas</h2>
             <p className="text-sm text-slate mb-3">
               Sentencias del buscador jurisprudencial que se relacionan con este caso, útiles
@@ -324,7 +324,7 @@ export function CasoDetailPage() {
             </ul>
           </section>
 
-          <section id="plazos">
+          <section id="plazos" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Plazos</h2>
             <p className="text-sm text-slate mb-3">
               Fechas límite del caso, ya sean términos procesales, vencimientos contractuales u
@@ -364,7 +364,7 @@ export function CasoDetailPage() {
             </ul>
           </section>
 
-          <section id="documentos">
+          <section id="documentos" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Documentos</h2>
             <p className="text-sm text-slate mb-3">
               Archivos del caso: escritos, pruebas, contratos o cualquier documento generado a
@@ -384,7 +384,7 @@ export function CasoDetailPage() {
             )}
           </section>
 
-          <section id="facturacion">
+          <section id="facturacion" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Facturación</h2>
             <p className="text-sm text-slate mb-3">
               Control del cobro del caso: define un honorario fijo o registra las horas
