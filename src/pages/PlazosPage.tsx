@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { diasRestantes, listarPlazos, marcarCumplido, type EstadoPlazo, type Plazo } from '../lib/plazos'
 
@@ -56,7 +57,7 @@ export function PlazosPage() {
           </select>
         </div>
 
-        <div className="card overflow-hidden overflow-x-auto">
+        <div className="hidden md:block card overflow-hidden">
           <table className="table-modern">
             <thead>
               <tr>
@@ -111,6 +112,40 @@ export function PlazosPage() {
             </tbody>
           </table>
         </div>
+
+        <CardList>
+          {plazos.map((p) => {
+            const dias = diasRestantes(p.fecha_vencimiento)
+            const urgente = p.estado !== 'cumplido' && dias < 3
+            return (
+              <DataCard key={p.id} urgente={urgente}>
+                <CardHeader>
+                  <span className="font-medium text-ink">{p.titulo}</span>
+                  <StatusBadge estado={p.estado} />
+                </CardHeader>
+                <CardRow label="Vence en">
+                  <span className={urgente ? 'inline-flex items-center gap-1.5 font-medium text-danger' : ''}>
+                    {urgente && <AlertTriangle size={14} strokeWidth={1.75} />}
+                    {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
+                  </span>
+                </CardRow>
+                <CardRow label="Caso">
+                  <Link to={`/app/casos/${p.caso_id}`} className="hover:text-accent transition-colors">
+                    {p.casos?.titulo ?? '—'}
+                  </Link>
+                </CardRow>
+                {p.estado !== 'cumplido' && (
+                  <CardActions>
+                    <button onClick={() => handleCumplido(p.id)} className="link">
+                      marcar cumplido
+                    </button>
+                  </CardActions>
+                )}
+              </DataCard>
+            )
+          })}
+          {plazos.length === 0 && <CardEmpty>No hay plazos con este filtro.</CardEmpty>}
+        </CardList>
       </main>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Wallet, AlertTriangle, CircleDollarSign } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import {
   obtenerCartera,
   obtenerCasosPorEstado,
@@ -137,7 +138,7 @@ export function ReportesPage() {
 
         <section>
           <h2 className="eyebrow mb-3">Horas por usuario</h2>
-          <div className="card overflow-hidden overflow-x-auto">
+          <div className="hidden md:block card overflow-hidden">
             <table className="table-modern">
               <thead>
                 <tr>
@@ -164,6 +165,19 @@ export function ReportesPage() {
               </tbody>
             </table>
           </div>
+
+          <CardList>
+            {horasPorUsuario.map((h) => (
+              <DataCard key={h.usuario_id}>
+                <CardHeader>
+                  <span className="font-medium text-ink">{h.nombre ?? '—'}</span>
+                </CardHeader>
+                <CardRow label="Horas registradas">{h.horas_totales}</CardRow>
+                <CardRow label="Horas facturadas">{h.horas_facturadas}</CardRow>
+              </DataCard>
+            ))}
+            {horasPorUsuario.length === 0 && <CardEmpty>Sin horas registradas en este período.</CardEmpty>}
+          </CardList>
         </section>
       </main>
     </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { FolderKanban, FolderOpen, Clock3, CheckCircle2, AlertTriangle, Plus, ArrowRightLeft } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
@@ -312,7 +313,7 @@ export function CasosListPage() {
           />
         )}
 
-        <div className="card overflow-hidden overflow-x-auto">
+        <div className="hidden md:block card overflow-hidden">
           <table className="table-modern">
             <thead>
               <tr>
@@ -371,6 +372,36 @@ export function CasosListPage() {
             </tbody>
           </table>
         </div>
+
+        <CardList>
+          {casos.map((c) => (
+            <DataCard key={c.id}>
+              <CardHeader>
+                <Link to={`/app/casos/${c.id}`} className="font-medium text-ink hover:text-accent transition-colors">
+                  {c.titulo}
+                </Link>
+                <StatusBadge estado={c.estado} />
+              </CardHeader>
+              <CardRow label="Cliente">{c.clientes?.nombre ?? '—'}</CardRow>
+              <CardRow label="Tipo">
+                <span className="capitalize">{c.tipo}</span>
+              </CardRow>
+              <CardRow label="Radicado">{c.numero_radicado ?? '—'}</CardRow>
+              <CardRow label="Creado">{new Date(c.created_at).toLocaleDateString('es-CO')}</CardRow>
+              <CardRow label="Responsable">{c.usuarios?.nombre ?? '—'}</CardRow>
+              <CardActions>
+                <button
+                  onClick={() => setCasoATrasladar(c)}
+                  className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                >
+                  <ArrowRightLeft size={14} strokeWidth={1.75} />
+                  Transferir
+                </button>
+              </CardActions>
+            </DataCard>
+          ))}
+          {casos.length === 0 && <CardEmpty>No hay casos con este filtro.</CardEmpty>}
+        </CardList>
 
         {casoATrasladar && (
           <TrasladarCasoModal

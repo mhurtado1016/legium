@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Loader2, Plus, UserCog } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
 import { StatusBadge } from '../components/StatusBadge'
 import { TelefonoInput } from '../components/TelefonoInput'
@@ -67,7 +68,8 @@ export function AdministracionPage() {
             Cargando…
           </p>
         ) : (
-          <div className="card overflow-hidden overflow-x-auto">
+          <>
+          <div className="hidden md:block card overflow-hidden">
             <table className="table-modern">
               <thead>
                 <tr>
@@ -129,6 +131,46 @@ export function AdministracionPage() {
               </tbody>
             </table>
           </div>
+
+          <CardList>
+            {usuarios.map((u) => {
+              const esUnoMismo = u.id === usuario?.id
+              return (
+                <DataCard key={u.id}>
+                  <CardHeader>
+                    <span className="font-medium text-ink">{u.nombre ?? '—'}</span>
+                    <StatusBadge estado={u.activo ? 'activo' : 'inactivo'} />
+                  </CardHeader>
+                  <CardRow label="Correo">{u.email ?? '—'}</CardRow>
+                  <CardRow label="WhatsApp">{u.telefono_whatsapp ?? '—'}</CardRow>
+                  <CardRow label="Rol">
+                    <StatusBadge estado={u.es_administrador ? 'administrador' : 'miembro'} />
+                  </CardRow>
+                  <CardActions>
+                    <button onClick={() => setEditando(u)} className="link">
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleCambio(u.id, { es_administrador: !u.es_administrador })}
+                      disabled={esUnoMismo}
+                      className="link disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:no-underline"
+                    >
+                      {u.es_administrador ? 'Quitar admin' : 'Hacer admin'}
+                    </button>
+                    <button
+                      onClick={() => handleCambio(u.id, { activo: !u.activo })}
+                      disabled={esUnoMismo}
+                      className="link disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:no-underline"
+                    >
+                      {u.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                  </CardActions>
+                </DataCard>
+              )
+            })}
+            {usuarios.length === 0 && <CardEmpty>No hay usuarios registrados.</CardEmpty>}
+          </CardList>
+          </>
         )}
       </main>
 

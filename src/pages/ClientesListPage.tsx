@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AppHeader } from '../components/AppHeader'
+import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
 import { TelefonoInput } from '../components/TelefonoInput'
 import { actualizarCliente, listarClientes, type Cliente } from '../lib/casos'
@@ -56,7 +57,8 @@ export function ClientesListPage() {
         {cargando ? (
           <p className="text-sm text-slate">Cargando…</p>
         ) : (
-          <div className="card overflow-hidden overflow-x-auto">
+          <>
+          <div className="hidden md:block card overflow-hidden">
             <table className="table-modern">
               <thead>
                 <tr>
@@ -95,6 +97,29 @@ export function ClientesListPage() {
               </tbody>
             </table>
           </div>
+
+          <CardList>
+            {clientes.map((c) => (
+              <DataCard key={c.id}>
+                <CardHeader>
+                  <span className="font-medium text-ink">{c.nombre}</span>
+                  <span className="text-xs text-slate capitalize shrink-0">
+                    {c.tipo === 'empresa' ? 'Empresa' : 'Persona natural'}
+                  </span>
+                </CardHeader>
+                <CardRow label="Identificación">{c.identificacion ?? '—'}</CardRow>
+                <CardRow label="Correo">{c.email ?? '—'}</CardRow>
+                <CardRow label="WhatsApp">{c.telefono ?? '—'}</CardRow>
+                <CardActions>
+                  <button onClick={() => setEditando(c)} className="link">
+                    Editar
+                  </button>
+                </CardActions>
+              </DataCard>
+            ))}
+            {clientes.length === 0 && <CardEmpty>No hay clientes con este filtro.</CardEmpty>}
+          </CardList>
+          </>
         )}
       </main>
 

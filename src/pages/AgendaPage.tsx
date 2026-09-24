@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Bell, BellOff, Loader2, Trash2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
 import { SelectorFranja } from '../components/SelectorFranja'
 import { StatusBadge } from '../components/StatusBadge'
@@ -151,7 +152,8 @@ function CitasSeccion({ refrescar }: { refrescar: number }) {
           Cargando…
         </p>
       ) : (
-        <div className="card overflow-hidden overflow-x-auto">
+        <>
+        <div className="hidden md:block card overflow-hidden">
           <table className="table-modern">
             <thead>
               <tr>
@@ -195,6 +197,34 @@ function CitasSeccion({ refrescar }: { refrescar: number }) {
             </tbody>
           </table>
         </div>
+
+        <CardList>
+          {citas.map((c) => (
+            <DataCard key={c.id} className={c.estado === 'cancelada' ? 'opacity-60' : ''}>
+              <CardHeader>
+                <div>
+                  <p className="font-medium text-ink">{c.nombre_cliente}</p>
+                  <p className="text-xs text-slate">{c.correo_cliente}</p>
+                </div>
+                <StatusBadge estado={c.estado} />
+              </CardHeader>
+              <CardRow label="Fecha">{formatoFechaCorta(c.fecha)}</CardRow>
+              <CardRow label="Hora">{formatoHora12(c.hora_inicio)}</CardRow>
+              <CardRow label="Tipo">
+                <span className="capitalize">{c.tipo_sesion}</span>
+              </CardRow>
+              {c.estado === 'confirmada' && (
+                <CardActions>
+                  <button onClick={() => handleCancelar(c.id)} className="link">
+                    cancelar
+                  </button>
+                </CardActions>
+              )}
+            </DataCard>
+          ))}
+          {citas.length === 0 && <CardEmpty>No hay citas próximas.</CardEmpty>}
+        </CardList>
+        </>
       )}
     </section>
   )
@@ -367,7 +397,8 @@ function ConfiguracionSeccion() {
             <NuevoBloqueoForm onCreado={(b) => setBloqueos((prev) => [b, ...prev])} />
 
             {cargandoBloqueos ? null : (
-              <div className="card overflow-hidden overflow-x-auto mt-4">
+              <>
+              <div className="hidden md:block card overflow-hidden mt-4">
                 <table className="table-modern">
                   <thead>
                     <tr>
@@ -408,6 +439,31 @@ function ConfiguracionSeccion() {
                   </tbody>
                 </table>
               </div>
+
+              <CardList>
+                {bloqueos.map((b) => (
+                  <DataCard key={b.id}>
+                    <CardHeader>
+                      <span className="font-medium text-ink">
+                        {formatoFechaCorta(b.fecha_inicio)} – {formatoFechaCorta(b.fecha_fin)}
+                      </span>
+                      <button
+                        onClick={() => handleEliminarBloqueo(b.id)}
+                        aria-label="Eliminar bloqueo"
+                        className="shrink-0 text-slate hover:text-danger transition-colors"
+                      >
+                        <Trash2 size={16} strokeWidth={1.75} />
+                      </button>
+                    </CardHeader>
+                    <CardRow label="Horario">
+                      {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
+                    </CardRow>
+                    <CardRow label="Motivo">{b.motivo || '—'}</CardRow>
+                  </DataCard>
+                ))}
+                {bloqueos.length === 0 && <CardEmpty>No hay bloqueos registrados.</CardEmpty>}
+              </CardList>
+              </>
             )}
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AppHeader } from '../components/AppHeader'
+import { CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
 import {
   actualizarEstadoCuentaCobro,
@@ -64,7 +65,7 @@ export function CuentasCobroPage() {
           </select>
         </div>
 
-        <div className="card overflow-hidden overflow-x-auto">
+        <div className="hidden md:block card overflow-hidden">
           <table className="table-modern">
             <thead>
               <tr>
@@ -115,6 +116,42 @@ export function CuentasCobroPage() {
             </tbody>
           </table>
         </div>
+
+        <CardList>
+          {cuentas.map((c) => (
+            <DataCard key={c.id}>
+              <CardHeader>
+                <button
+                  onClick={() => handleDescargar(c.storage_path)}
+                  className="font-medium text-ink hover:text-accent transition-colors text-left"
+                >
+                  {c.numero}
+                </button>
+                <StatusBadge estado={c.estado} />
+              </CardHeader>
+              <CardRow label="Caso">{c.casos?.titulo ?? '—'}</CardRow>
+              <CardRow label="Cliente">{c.clientes?.nombre ?? '—'}</CardRow>
+              <CardRow label="Total">
+                <span className="font-medium">${c.total.toLocaleString('es-CO')}</span>
+              </CardRow>
+              <label className="block pt-1 border-t border-line">
+                <span className="block text-xs text-slate mb-1">Cambiar estado</span>
+                <select
+                  value={c.estado}
+                  onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
+                  className="field field-sm w-full"
+                >
+                  {ESTADOS.map((e) => (
+                    <option key={e} value={e}>
+                      {e}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </DataCard>
+          ))}
+          {cuentas.length === 0 && <CardEmpty>No hay cuentas de cobro con este filtro.</CardEmpty>}
+        </CardList>
       </main>
     </div>
   )

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -738,7 +739,7 @@ function DocumentosSeccion({
         className="field field-sm mb-3 w-full max-w-xs"
       />
 
-      <div className="card overflow-hidden overflow-x-auto">
+      <div className="hidden md:block card overflow-hidden">
         <table className="table-modern">
           <thead>
             <tr>
@@ -810,6 +811,50 @@ function DocumentosSeccion({
           </tbody>
         </table>
       </div>
+
+      <CardList>
+        {documentosFiltrados.map((d) => (
+          <DataCard key={d.id}>
+            <CardHeader>
+              <span className="font-medium text-ink">{d.nombre}</span>
+            </CardHeader>
+            <CardRow label="Categoría">{d.categorias_documento?.nombre ?? '—'}</CardRow>
+            <CardRow label="Versión">
+              {d.ultima_version ? (
+                <button
+                  onClick={() => d.ultima_version && handleDescargar(d.ultima_version.storage_path)}
+                  className="hover:text-accent transition-colors"
+                >
+                  v{d.ultima_version.version_numero}
+                </button>
+              ) : (
+                '—'
+              )}
+            </CardRow>
+            <CardRow label="Actualizado">
+              {d.ultima_version ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO') : '—'}
+            </CardRow>
+            <CardActions>
+              <button onClick={() => handleVerHistorial(d.id)} className="link">
+                historial
+              </button>
+            </CardActions>
+            {historialAbierto === d.id && (
+              <ul className="text-slate text-xs space-y-1 pt-2 border-t border-line">
+                {versiones.map((v) => (
+                  <li key={v.id}>
+                    v{v.version_numero} — {v.nombre_archivo} — {new Date(v.created_at).toLocaleDateString('es-CO')} —{' '}
+                    <button onClick={() => handleDescargar(v.storage_path)} className="underline hover:text-ink">
+                      descargar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DataCard>
+        ))}
+        {documentosFiltrados.length === 0 && <CardEmpty>Sin documentos todavía.</CardEmpty>}
+      </CardList>
     </div>
   )
 }
