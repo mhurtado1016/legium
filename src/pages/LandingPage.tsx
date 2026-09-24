@@ -199,9 +199,9 @@ const METODOLOGIA = [
 // a faltar (404 → onError), LogoCliente cae a una caja placeholder en vez
 // de inventar una marca.
 const CLIENTES_LOGOS = [
-  { src: '/clientes/logo-life.png', alt: 'Life' },
-  { src: '/clientes/logo-logistic.png', alt: 'Logistic' },
-  { src: '/clientes/logo-petro.png', alt: 'Petro' },
+  { src: '/clientes/logo-life.png', alt: 'Life', width: 445, height: 235 },
+  { src: '/clientes/logo-logistic.png', alt: 'Logistic', width: 320, height: 320 },
+  { src: '/clientes/logo-petro.png', alt: 'Petro', width: 300, height: 90 },
 ]
 
 // Valores mostrados mientras se carga configuracion_contacto (o si la
@@ -273,7 +273,13 @@ function SiteHeader({
     <header className="sticky top-0 z-30 bg-paper/90 backdrop-blur-sm border-b border-line/70">
       <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
         <a href="#top" className="flex items-center">
-          <img src="/logo.jpg" alt="Efrata 360" className="h-12 w-auto rounded-[var(--radius-field)]" />
+          <img
+            src="/logo.jpg"
+            alt="Efrata 360"
+            width={600}
+            height={164}
+            className="h-12 w-auto rounded-[var(--radius-field)]"
+          />
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-slate">
@@ -401,6 +407,9 @@ function HeroImage() {
       <img
         src="/hero/01-equipo.jpg"
         alt="Equipo de Efrata 360"
+        width={1840}
+        height={576}
+        fetchPriority="high"
         className="absolute inset-0 h-full w-full object-cover object-left md:object-center"
       />
       <div
@@ -648,6 +657,9 @@ function FotoGrupalEquipo() {
           <img
             src="/equipo/foto-grupal.jpg"
             alt="Equipo de Efrata 360"
+            width={1427}
+            height={1102}
+            loading="lazy"
             onError={() => setError(true)}
             className="w-full block select-none"
             draggable={false}
@@ -656,6 +668,9 @@ function FotoGrupalEquipo() {
             src="/equipo/foto-grupal.jpg"
             alt=""
             aria-hidden="true"
+            width={1427}
+            height={1102}
+            loading="lazy"
             draggable={false}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 ease-out"
             style={{
@@ -776,7 +791,7 @@ function Clientes() {
         </p>
         <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-8">
           {CLIENTES_LOGOS.map((logo) => (
-            <LogoCliente key={logo.src} src={logo.src} alt={logo.alt} />
+            <LogoCliente key={logo.src} src={logo.src} alt={logo.alt} width={logo.width} height={logo.height} />
           ))}
         </div>
       </div>
@@ -784,7 +799,7 @@ function Clientes() {
   )
 }
 
-function LogoCliente({ src, alt }: { src: string; alt: string }) {
+function LogoCliente({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) {
   const [error, setError] = useState(false)
 
   if (error) {
@@ -799,6 +814,9 @@ function LogoCliente({ src, alt }: { src: string; alt: string }) {
     <img
       src={src}
       alt={alt}
+      width={width}
+      height={height}
+      loading="lazy"
       onError={() => setError(true)}
       className="h-20 w-auto mx-auto object-contain grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition"
     />
@@ -981,7 +999,14 @@ function SiteFooter() {
     <footer className="border-t border-line/70 bg-paper-sunken">
       <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <img src="/logo.jpg" alt="Efrata 360" className="h-11 w-auto rounded-[var(--radius-field)] mb-2" />
+          <img
+            src="/logo.jpg"
+            alt="Efrata 360"
+            width={600}
+            height={164}
+            loading="lazy"
+            className="h-11 w-auto rounded-[var(--radius-field)] mb-2"
+          />
           <p className="text-sm text-slate">Claridad jurídica para decisiones que importan.</p>
         </div>
         <div className="flex items-center gap-6 text-sm text-slate">
