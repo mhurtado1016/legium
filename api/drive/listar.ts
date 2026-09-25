@@ -145,6 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       conectado: true,
       carpetaEncontrada: true,
+      carpetaId: carpeta.id,
       carpetaNombre: carpeta.name,
       archivos: archivosData.files ?? [],
     })

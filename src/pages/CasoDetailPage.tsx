@@ -34,7 +34,7 @@ import {
   type DocumentoVersion,
 } from '../lib/documentos'
 import { generarDocumentoDesdePlantilla, listarPlantillas, type Plantilla } from '../lib/plantillas'
-import { listarArchivosDrive, type EstadoArchivosDrive } from '../lib/drive'
+import { listarArchivosDrive, subirArchivoDrive, type ArchivoDrive, type EstadoArchivosDrive } from '../lib/drive'
 import {
   definirHonorarioFijo,
   generarCuentaCobro,
@@ -380,17 +380,10 @@ export function CasoDetailPage() {
                 categorias={categorias}
                 documentos={documentos}
                 plantillas={plantillas}
+                numeroRadicado={caso.numero_radicado}
                 onCambio={cargar}
               />
             )}
-
-            <div className="mt-8 pt-6 border-t border-line">
-              <h3 className="font-display text-sm font-semibold mb-2">Google Drive</h3>
-              <p className="text-sm text-slate mb-3">
-                Archivos de la carpeta de Drive del despacho cuyo nombre incluye el número de radicado de este caso.
-              </p>
-              <DriveSeccion numeroRadicado={caso.numero_radicado} />
-            </div>
           </section>
 
           <section id="facturacion" className="card p-6">
@@ -579,6 +572,10 @@ function NuevoPlazoForm({
   )
 }
 
+type PreviewState =
+  | { tipo: 'sistema'; storagePath: string; mimeType: string | null; nombre: string }
+  | { tipo: 'drive'; fileId: string; mimeType: string; nombre: string; webViewLink: string }
+
 function DocumentosSeccion({
   casoId,
   firmaId,
@@ -586,6 +583,7 @@ function DocumentosSeccion({
   categorias,
   documentos,
   plantillas,
+  numeroRadicado,
   onCambio,
 }: {
   casoId: string
@@ -594,6 +592,7 @@ function DocumentosSeccion({
   categorias: CategoriaDocumento[]
   documentos: Documento[]
   plantillas: Plantilla[]
+  numeroRadicado: string | null
   onCambio: () => void
 }) {
   const [categoriaId, setCategoriaId] = useState(categorias[0]?.id ?? '')
@@ -603,14 +602,55 @@ function DocumentosSeccion({
   const [busqueda, setBusqueda] = useState('')
   const [historialAbierto, setHistorialAbierto] = useState<string | null>(null)
   const [versiones, setVersiones] = useState<DocumentoVersion[]>([])
-  const [previsualizando, setPrevisualizando] = useState<{
-    storagePath: string
-    mimeType: string | null
-    nombre: string
-  } | null>(null)
+  const [previsualizando, setPrevisualizando] = useState<PreviewState | null>(null)
   const [plantillaId, setPlantillaId] = useState('')
   const [variablesManuales, setVariablesManuales] = useState<Record<string, string>>({})
   const [generando, setGenerando] = useState(false)
+
+  // Google Drive: mismo caso, buscado por número de radicado (ver
+  // src/lib/drive.ts) — se muestra mezclado con los documentos del
+  // sistema en una sola lista, no como sección aparte.
+  const [estadoDrive, setEstadoDrive] = useState<EstadoArchivosDrive | null>(null)
+  const [cargandoDrive, setCargandoDrive] = useState(false)
+  const [errorDrive, setErrorDrive] = useState<string | null>(null)
+  const [subiendoDrive, setSubiendoDrive] = useState(false)
+
+  async function cargarDrive() {
+    if (!numeroRadicado) {
+      setEstadoDrive(null)
+      return
+    }
+    setCargandoDrive(true)
+    setErrorDrive(null)
+    try {
+      setEstadoDrive(await listarArchivosDrive(numeroRadicado))
+    } catch (err) {
+      setErrorDrive(err instanceof Error ? err.message : 'No se pudo consultar Google Drive.')
+    } finally {
+      setCargandoDrive(false)
+    }
+  }
+
+  useEffect(() => {
+    cargarDrive()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numeroRadicado])
+
+  async function handleSubirDrive(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivoDrive = e.target.files?.[0]
+    e.target.value = ''
+    if (!archivoDrive || !estadoDrive?.carpetaId) return
+    setSubiendoDrive(true)
+    setError(null)
+    try {
+      await subirArchivoDrive(estadoDrive.carpetaId, archivoDrive)
+      await cargarDrive()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo subir el archivo a Google Drive.')
+    } finally {
+      setSubiendoDrive(false)
+    }
+  }
 
   const plantillaSeleccionada = plantillas.find((p) => p.id === plantillaId)
   const camposManuales = plantillaSeleccionada?.variables.filter((v) => v.manual) ?? []
@@ -673,12 +713,49 @@ function DocumentosSeccion({
   // spinner de carga sea visible desde el primer click; la propia URL se
   // resuelve dentro del modal.
   function handleVer(storagePath: string, mimeType: string | null, nombre: string) {
-    setPrevisualizando({ storagePath, mimeType, nombre })
+    setPrevisualizando({ tipo: 'sistema', storagePath, mimeType, nombre })
+  }
+
+  function handleVerDrive(archivo: ArchivoDrive) {
+    setPrevisualizando({
+      tipo: 'drive',
+      fileId: archivo.id,
+      mimeType: archivo.mimeType,
+      nombre: archivo.name,
+      webViewLink: archivo.webViewLink,
+    })
   }
 
   const documentosFiltrados = busqueda
     ? documentos.filter((d) => d.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     : documentos
+
+  const archivosDriveFiltrados = (
+    busqueda
+      ? (estadoDrive?.archivos ?? []).filter((a) => a.name.toLowerCase().includes(busqueda.toLowerCase()))
+      : estadoDrive?.archivos ?? []
+  )
+
+  // Une documentos del sistema y de Drive en una sola lista ordenada por
+  // fecha, con un tipo común para poder recorrerla de una — cada fila
+  // decide su columna de "categoría"/versión y sus acciones según origen.
+  type ItemDocumentacion =
+    | { key: string; origen: 'sistema'; fecha: string | null; doc: Documento }
+    | { key: string; origen: 'drive'; fecha: string | null; archivo: ArchivoDrive }
+
+  const itemsUnificados: ItemDocumentacion[] = [
+    ...documentosFiltrados.map(
+      (d): ItemDocumentacion => ({
+        key: `sistema-${d.id}`,
+        origen: 'sistema',
+        fecha: d.ultima_version?.created_at ?? null,
+        doc: d,
+      }),
+    ),
+    ...archivosDriveFiltrados.map(
+      (a): ItemDocumentacion => ({ key: `drive-${a.id}`, origen: 'drive', fecha: a.modifiedTime, archivo: a }),
+    ),
+  ].sort((a, b) => (b.fecha ? new Date(b.fecha).getTime() : 0) - (a.fecha ? new Date(a.fecha).getTime() : 0))
 
   return (
     <div>
@@ -756,7 +833,30 @@ function DocumentosSeccion({
         >
           {subiendo ? 'Subiendo…' : '+ Subir documento'}
         </button>
+
+        {estadoDrive?.carpetaEncontrada && (
+          <label className={'btn-secondary btn-sm' + (subiendoDrive ? ' opacity-60 pointer-events-none' : '')}>
+            {subiendoDrive ? (
+              <>
+                <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                Subiendo a Drive…
+              </>
+            ) : (
+              '+ Subir a Google Drive'
+            )}
+            <input type="file" onChange={handleSubirDrive} disabled={subiendoDrive} className="hidden" />
+          </label>
+        )}
       </form>
+
+      {!cargandoDrive && numeroRadicado && !errorDrive && estadoDrive && !estadoDrive.carpetaEncontrada && (
+        <p className="text-xs text-slate mb-4">
+          {estadoDrive.conectado
+            ? `No se encontró en Google Drive ninguna carpeta cuyo nombre incluya "${numeroRadicado}".`
+            : 'Google Drive no está conectado. Un administrador puede hacerlo desde Administración.'}
+        </p>
+      )}
+      {errorDrive && <p className="text-xs text-danger mb-4">{errorDrive}</p>}
 
       {error && <p className="text-sm text-danger mb-3">{error}</p>}
 
@@ -780,81 +880,123 @@ function DocumentosSeccion({
             </tr>
           </thead>
           <tbody>
-            {documentosFiltrados.map((d) => (
-              <Fragment key={d.id}>
-                <tr>
-                  <td className="font-medium text-ink">{d.nombre}</td>
-                  <td>{d.categorias_documento?.nombre ?? '—'}</td>
-                  <td>
-                    {d.ultima_version ? (
-                      <button
-                        onClick={() =>
-                          d.ultima_version &&
-                          handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
-                        }
-                        className="hover:text-accent transition-colors"
-                      >
-                        v{d.ultima_version.version_numero}
-                      </button>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="text-slate">
-                    {d.ultima_version
-                      ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO')
-                      : '—'}
-                  </td>
-                  <td>
-                    <div className="flex items-center justify-end gap-4 text-xs whitespace-nowrap">
-                      {d.ultima_version && (
+            {itemsUnificados.map((item) =>
+              item.origen === 'sistema' ? (
+                <Fragment key={item.key}>
+                  <tr>
+                    <td className="font-medium text-ink">{item.doc.nombre}</td>
+                    <td>{item.doc.categorias_documento?.nombre ?? '—'}</td>
+                    <td>
+                      {item.doc.ultima_version ? (
                         <button
                           onClick={() =>
-                            d.ultima_version &&
-                            handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
+                            item.doc.ultima_version &&
+                            handleVer(
+                              item.doc.ultima_version.storage_path,
+                              item.doc.ultima_version.mime_type,
+                              item.doc.ultima_version.nombre_archivo,
+                            )
                           }
-                          className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                          className="hover:text-accent transition-colors"
                         >
-                          <Eye size={14} strokeWidth={1.75} />
-                          Ver
+                          v{item.doc.ultima_version.version_numero}
                         </button>
+                      ) : (
+                        '—'
                       )}
+                    </td>
+                    <td className="text-slate">
+                      {item.doc.ultima_version
+                        ? new Date(item.doc.ultima_version.created_at).toLocaleDateString('es-CO')
+                        : '—'}
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-4 text-xs whitespace-nowrap">
+                        {item.doc.ultima_version && (
+                          <button
+                            onClick={() =>
+                              item.doc.ultima_version &&
+                              handleVer(
+                                item.doc.ultima_version.storage_path,
+                                item.doc.ultima_version.mime_type,
+                                item.doc.ultima_version.nombre_archivo,
+                              )
+                            }
+                            className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                          >
+                            <Eye size={14} strokeWidth={1.75} />
+                            Ver
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleVerHistorial(item.doc.id)}
+                          className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
+                        >
+                          <History size={14} strokeWidth={1.75} />
+                          Historial
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {historialAbierto === item.doc.id && (
+                    <tr>
+                      <td colSpan={5} className="bg-paper-sunken">
+                        <ul className="text-slate space-y-1.5 py-2">
+                          {versiones.map((v) => (
+                            <li key={v.id} className="flex items-center gap-2 flex-wrap">
+                              <span>
+                                v{v.version_numero} — {v.nombre_archivo} —{' '}
+                                {new Date(v.created_at).toLocaleDateString('es-CO')}
+                              </span>
+                              <button
+                                onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
+                                className="flex items-center gap-1 text-ink hover:text-accent transition-colors"
+                              >
+                                <Eye size={13} strokeWidth={1.75} />
+                                Ver
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ) : (
+                <tr key={item.key}>
+                  <td className="font-medium text-ink">
+                    <button onClick={() => handleVerDrive(item.archivo)} className="flex items-center gap-2 hover:text-accent transition-colors text-left">
+                      <img src={item.archivo.iconLink} alt="" className="h-4 w-4 shrink-0" />
+                      {item.archivo.name}
+                    </button>
+                  </td>
+                  <td className="text-slate">Google Drive</td>
+                  <td className="text-slate">—</td>
+                  <td className="text-slate">{new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}</td>
+                  <td>
+                    <div className="flex items-center justify-end gap-4 text-xs whitespace-nowrap">
                       <button
-                        onClick={() => handleVerHistorial(d.id)}
+                        onClick={() => handleVerDrive(item.archivo)}
+                        className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                      >
+                        <Eye size={14} strokeWidth={1.75} />
+                        Ver
+                      </button>
+                      <a
+                        href={item.archivo.webViewLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
                       >
-                        <History size={14} strokeWidth={1.75} />
-                        Historial
-                      </button>
+                        <ExternalLink size={14} strokeWidth={1.75} />
+                        Abrir en Drive
+                      </a>
                     </div>
                   </td>
                 </tr>
-                {historialAbierto === d.id && (
-                  <tr>
-                    <td colSpan={5} className="bg-paper-sunken">
-                      <ul className="text-slate space-y-1.5 py-2">
-                        {versiones.map((v) => (
-                          <li key={v.id} className="flex items-center gap-2 flex-wrap">
-                            <span>
-                              v{v.version_numero} — {v.nombre_archivo} —{' '}
-                              {new Date(v.created_at).toLocaleDateString('es-CO')}
-                            </span>
-                            <button
-                              onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
-                              className="flex items-center gap-1 text-ink hover:text-accent transition-colors"
-                            >
-                              <Eye size={13} strokeWidth={1.75} />
-                              Ver
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-            {documentosFiltrados.length === 0 && (
+              ),
+            )}
+            {itemsUnificados.length === 0 && (
               <tr>
                 <td colSpan={5} className="py-6 text-slate text-center">
                   Sin documentos todavía.
@@ -866,158 +1008,119 @@ function DocumentosSeccion({
       </div>
 
       <CardList>
-        {documentosFiltrados.map((d) => (
-          <DataCard key={d.id}>
-            <CardHeader>
-              <span className="font-medium text-ink">{d.nombre}</span>
-            </CardHeader>
-            <CardRow label="Categoría">{d.categorias_documento?.nombre ?? '—'}</CardRow>
-            <CardRow label="Versión">
-              {d.ultima_version ? (
+        {itemsUnificados.map((item) =>
+          item.origen === 'sistema' ? (
+            <DataCard key={item.key}>
+              <CardHeader>
+                <span className="font-medium text-ink">{item.doc.nombre}</span>
+              </CardHeader>
+              <CardRow label="Categoría">{item.doc.categorias_documento?.nombre ?? '—'}</CardRow>
+              <CardRow label="Versión">
+                {item.doc.ultima_version ? (
+                  <button
+                    onClick={() =>
+                      item.doc.ultima_version &&
+                      handleVer(
+                        item.doc.ultima_version.storage_path,
+                        item.doc.ultima_version.mime_type,
+                        item.doc.ultima_version.nombre_archivo,
+                      )
+                    }
+                    className="hover:text-accent transition-colors"
+                  >
+                    v{item.doc.ultima_version.version_numero}
+                  </button>
+                ) : (
+                  '—'
+                )}
+              </CardRow>
+              <CardRow label="Actualizado">
+                {item.doc.ultima_version ? new Date(item.doc.ultima_version.created_at).toLocaleDateString('es-CO') : '—'}
+              </CardRow>
+              <CardActions>
+                {item.doc.ultima_version && (
+                  <button
+                    onClick={() =>
+                      item.doc.ultima_version &&
+                      handleVer(
+                        item.doc.ultima_version.storage_path,
+                        item.doc.ultima_version.mime_type,
+                        item.doc.ultima_version.nombre_archivo,
+                      )
+                    }
+                    className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                  >
+                    <Eye size={14} strokeWidth={1.75} />
+                    Ver
+                  </button>
+                )}
                 <button
-                  onClick={() =>
-                    d.ultima_version &&
-                    handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
-                  }
-                  className="hover:text-accent transition-colors"
+                  onClick={() => handleVerHistorial(item.doc.id)}
+                  className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
                 >
-                  v{d.ultima_version.version_numero}
+                  <History size={14} strokeWidth={1.75} />
+                  Historial
                 </button>
-              ) : (
-                '—'
+              </CardActions>
+              {historialAbierto === item.doc.id && (
+                <ul className="text-slate text-xs space-y-2 pt-2 border-t border-line">
+                  {versiones.map((v) => (
+                    <li key={v.id} className="flex items-center gap-2 flex-wrap">
+                      <span>
+                        v{v.version_numero} — {v.nombre_archivo} — {new Date(v.created_at).toLocaleDateString('es-CO')}
+                      </span>
+                      <button
+                        onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
+                        className="flex items-center gap-1 text-ink hover:text-accent transition-colors"
+                      >
+                        <Eye size={13} strokeWidth={1.75} />
+                        Ver
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </CardRow>
-            <CardRow label="Actualizado">
-              {d.ultima_version ? new Date(d.ultima_version.created_at).toLocaleDateString('es-CO') : '—'}
-            </CardRow>
-            <CardActions>
-              {d.ultima_version && (
+            </DataCard>
+          ) : (
+            <DataCard key={item.key}>
+              <CardHeader>
+                <span className="font-medium text-ink flex items-center gap-2">
+                  <img src={item.archivo.iconLink} alt="" className="h-4 w-4 shrink-0" />
+                  {item.archivo.name}
+                </span>
+              </CardHeader>
+              <CardRow label="Categoría">Google Drive</CardRow>
+              <CardRow label="Actualizado">{new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}</CardRow>
+              <CardActions>
                 <button
-                  onClick={() =>
-                    d.ultima_version &&
-                    handleVer(d.ultima_version.storage_path, d.ultima_version.mime_type, d.ultima_version.nombre_archivo)
-                  }
+                  onClick={() => handleVerDrive(item.archivo)}
                   className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
                 >
                   <Eye size={14} strokeWidth={1.75} />
                   Ver
                 </button>
-              )}
-              <button
-                onClick={() => handleVerHistorial(d.id)}
-                className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
-              >
-                <History size={14} strokeWidth={1.75} />
-                Historial
-              </button>
-            </CardActions>
-            {historialAbierto === d.id && (
-              <ul className="text-slate text-xs space-y-2 pt-2 border-t border-line">
-                {versiones.map((v) => (
-                  <li key={v.id} className="flex items-center gap-2 flex-wrap">
-                    <span>
-                      v{v.version_numero} — {v.nombre_archivo} — {new Date(v.created_at).toLocaleDateString('es-CO')}
-                    </span>
-                    <button
-                      onClick={() => handleVer(v.storage_path, v.mime_type, v.nombre_archivo)}
-                      className="flex items-center gap-1 text-ink hover:text-accent transition-colors"
-                    >
-                      <Eye size={13} strokeWidth={1.75} />
-                      Ver
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DataCard>
-        ))}
-        {documentosFiltrados.length === 0 && <CardEmpty>Sin documentos todavía.</CardEmpty>}
+                <a
+                  href={item.archivo.webViewLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
+                >
+                  <ExternalLink size={14} strokeWidth={1.75} />
+                  Abrir en Drive
+                </a>
+              </CardActions>
+            </DataCard>
+          ),
+        )}
+        {itemsUnificados.length === 0 && <CardEmpty>Sin documentos todavía.</CardEmpty>}
       </CardList>
 
-      {previsualizando && (
+      {previsualizando?.tipo === 'sistema' && (
         <DocumentoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
       )}
-    </div>
-  )
-}
-
-// Cuenta de Drive única y compartida para todo el despacho (conectada
-// desde Administración, ver src/lib/drive.ts): no hay una carpeta
-// vinculada explícitamente por caso, se busca por coincidencia de
-// nombre contra numero_radicado.
-function DriveSeccion({ numeroRadicado }: { numeroRadicado: string | null }) {
-  const [estado, setEstado] = useState<EstadoArchivosDrive | null>(null)
-  const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!numeroRadicado) {
-      setEstado(null)
-      return
-    }
-    let cancelado = false
-    setCargando(true)
-    setError(null)
-    listarArchivosDrive(numeroRadicado)
-      .then((r) => {
-        if (!cancelado) setEstado(r)
-      })
-      .catch((err) => {
-        if (!cancelado) setError(err instanceof Error ? err.message : 'No se pudo consultar Google Drive.')
-      })
-      .finally(() => {
-        if (!cancelado) setCargando(false)
-      })
-    return () => {
-      cancelado = true
-    }
-  }, [numeroRadicado])
-
-  if (!numeroRadicado) {
-    return <p className="text-sm text-slate">Definí el número de radicado en "Datos" para ver aquí sus archivos.</p>
-  }
-  if (cargando) {
-    return (
-      <p className="text-sm text-slate flex items-center gap-2">
-        <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-        Buscando en Google Drive…
-      </p>
-    )
-  }
-  if (error) return <p className="text-sm text-danger">{error}</p>
-  if (!estado?.conectado) {
-    return <p className="text-sm text-slate">Google Drive no está conectado. Un administrador puede hacerlo desde Administración.</p>
-  }
-  if (!estado.carpetaEncontrada) {
-    return (
-      <p className="text-sm text-slate">
-        No se encontró en Drive ninguna carpeta cuyo nombre incluya "{numeroRadicado}".
-      </p>
-    )
-  }
-
-  return (
-    <div>
-      <p className="text-xs text-slate mb-2">
-        Carpeta: <span className="font-medium text-ink">{estado.carpetaNombre}</span>
-      </p>
-      <ul className="divide-y divide-line">
-        {estado.archivos.map((a) => (
-          <li key={a.id} className="flex items-center gap-2.5 py-2">
-            <img src={a.iconLink} alt="" className="h-4 w-4 shrink-0" />
-            <a
-              href={a.webViewLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-ink hover:text-accent transition-colors truncate flex-1 min-w-0"
-            >
-              {a.name}
-            </a>
-            <ExternalLink size={13} strokeWidth={1.75} className="text-slate shrink-0" />
-          </li>
-        ))}
-        {estado.archivos.length === 0 && <li className="py-3 text-sm text-slate">La carpeta está vacía.</li>}
-      </ul>
+      {previsualizando?.tipo === 'drive' && (
+        <DriveArchivoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
+      )}
     </div>
   )
 }
@@ -1153,6 +1256,83 @@ function DocumentoPreviewModal({
               </a>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Visor de un archivo de Google Drive: a diferencia de DocumentoPreviewModal
+// no hay signed URL que resolver — el propio visor embebido de Drive
+// (iframe a /preview) sirve para PDF, imágenes, Office y varios tipos más
+// sin que nuestro código tenga que distinguir el mimeType.
+function DriveArchivoPreviewModal({
+  fileId,
+  nombre,
+  webViewLink,
+  onClose,
+}: {
+  fileId: string
+  mimeType: string
+  nombre: string
+  webViewLink: string
+  onClose: () => void
+}) {
+  const [cargado, setCargado] = useState(false)
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
+
+      <div className="relative w-full max-w-4xl h-[85vh] flex flex-col rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] animate-in overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
+          <p className="font-medium text-sm text-ink truncate">{nombre}</p>
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href={webViewLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
+            >
+              <ExternalLink size={14} strokeWidth={1.75} />
+              Abrir en Drive
+            </a>
+            <button
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="p-1.5 -m-1.5 rounded-md text-slate hover:text-ink hover:bg-paper-sunken transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative flex-1 min-h-0 bg-paper-sunken">
+          {!cargado && (
+            <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-slate">
+              <Loader2 size={18} className="animate-spin" strokeWidth={1.75} />
+              Cargando documento…
+            </div>
+          )}
+          <iframe
+            src={`https://drive.google.com/file/d/${fileId}/preview`}
+            title={nombre}
+            onLoad={() => setCargado(true)}
+            allow="autoplay"
+            className={`w-full h-full border-0 transition-opacity ${cargado ? 'opacity-100' : 'opacity-0'}`}
+          />
         </div>
       </div>
     </div>
