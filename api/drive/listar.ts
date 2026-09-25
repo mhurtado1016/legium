@@ -77,6 +77,10 @@ function escaparParaQueryDrive(texto: string) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type')
+  // Sin esto, el navegador puede reusar una respuesta anterior (304 Not
+  // Modified) después de subir/eliminar un archivo — la lista se ve
+  // "vieja" aunque el cambio en Drive ya se haya hecho de verdad.
+  res.setHeader('Cache-Control', 'no-store')
   if (req.method === 'OPTIONS') {
     res.status(200).end()
     return

@@ -17,6 +17,7 @@ const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type')
+  res.setHeader('Cache-Control', 'no-store')
   if (req.method === 'OPTIONS') {
     res.status(200).end()
     return
