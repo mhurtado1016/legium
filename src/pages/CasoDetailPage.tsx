@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, Eye, History, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Download, ExternalLink, Eye, History, Loader2, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
@@ -34,6 +34,7 @@ import {
   type DocumentoVersion,
 } from '../lib/documentos'
 import { generarDocumentoDesdePlantilla, listarPlantillas, type Plantilla } from '../lib/plantillas'
+import { listarArchivosDrive, type EstadoArchivosDrive } from '../lib/drive'
 import {
   definirHonorarioFijo,
   generarCuentaCobro,
@@ -52,6 +53,7 @@ const SECCIONES = [
   { id: 'sentencias', label: 'Sentencias' },
   { id: 'plazos', label: 'Plazos' },
   { id: 'documentos', label: 'Documentos' },
+  { id: 'drive', label: 'Google Drive' },
   { id: 'facturacion', label: 'Facturación' },
 ]
 
@@ -382,6 +384,14 @@ export function CasoDetailPage() {
                 onCambio={cargar}
               />
             )}
+          </section>
+
+          <section id="drive" className="card p-6">
+            <h2 className="font-display text-base font-semibold mb-2">Google Drive</h2>
+            <p className="text-sm text-slate mb-3">
+              Archivos de la carpeta de Drive del despacho cuyo nombre incluye el número de radicado de este caso.
+            </p>
+            <DriveSeccion numeroRadicado={caso.numero_radicado} />
           </section>
 
           <section id="facturacion" className="card p-6">
@@ -928,6 +938,87 @@ function DocumentosSeccion({
       {previsualizando && (
         <DocumentoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
       )}
+    </div>
+  )
+}
+
+// Cuenta de Drive única y compartida para todo el despacho (conectada
+// desde Administración, ver src/lib/drive.ts): no hay una carpeta
+// vinculada explícitamente por caso, se busca por coincidencia de
+// nombre contra numero_radicado.
+function DriveSeccion({ numeroRadicado }: { numeroRadicado: string | null }) {
+  const [estado, setEstado] = useState<EstadoArchivosDrive | null>(null)
+  const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!numeroRadicado) {
+      setEstado(null)
+      return
+    }
+    let cancelado = false
+    setCargando(true)
+    setError(null)
+    listarArchivosDrive(numeroRadicado)
+      .then((r) => {
+        if (!cancelado) setEstado(r)
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err instanceof Error ? err.message : 'No se pudo consultar Google Drive.')
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false)
+      })
+    return () => {
+      cancelado = true
+    }
+  }, [numeroRadicado])
+
+  if (!numeroRadicado) {
+    return <p className="text-sm text-slate">Definí el número de radicado en "Datos" para ver aquí sus archivos.</p>
+  }
+  if (cargando) {
+    return (
+      <p className="text-sm text-slate flex items-center gap-2">
+        <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+        Buscando en Google Drive…
+      </p>
+    )
+  }
+  if (error) return <p className="text-sm text-danger">{error}</p>
+  if (!estado?.conectado) {
+    return <p className="text-sm text-slate">Google Drive no está conectado. Un administrador puede hacerlo desde Administración.</p>
+  }
+  if (!estado.carpetaEncontrada) {
+    return (
+      <p className="text-sm text-slate">
+        No se encontró en Drive ninguna carpeta cuyo nombre incluya "{numeroRadicado}".
+      </p>
+    )
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-slate mb-2">
+        Carpeta: <span className="font-medium text-ink">{estado.carpetaNombre}</span>
+      </p>
+      <ul className="divide-y divide-line">
+        {estado.archivos.map((a) => (
+          <li key={a.id} className="flex items-center gap-2.5 py-2">
+            <img src={a.iconLink} alt="" className="h-4 w-4 shrink-0" />
+            <a
+              href={a.webViewLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-ink hover:text-accent transition-colors truncate flex-1 min-w-0"
+            >
+              {a.name}
+            </a>
+            <ExternalLink size={13} strokeWidth={1.75} className="text-slate shrink-0" />
+          </li>
+        ))}
+        {estado.archivos.length === 0 && <li className="py-3 text-sm text-slate">La carpeta está vacía.</li>}
+      </ul>
     </div>
   )
 }

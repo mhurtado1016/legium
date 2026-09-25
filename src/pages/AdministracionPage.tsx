@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Loader2, Plus, UserCog } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { CheckCircle2, HardDrive, Loader2, Plus, UserCog } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
@@ -8,6 +9,7 @@ import { TelefonoInput } from '../components/TelefonoInput'
 import { useUsuario } from '../lib/useUsuario'
 import { actualizarUsuario, invitarUsuario, listarUsuarios, type UsuarioAdmin } from '../lib/administracion'
 import { separarTelefono } from '../lib/paisesTelefono'
+import { estadoConexionDrive, iniciarConexionDrive } from '../lib/drive'
 
 /**
  * Panel de administración — gestión de usuarios de la firma (punto 1 del
@@ -61,6 +63,8 @@ export function AdministracionPage() {
             Invitar usuario
           </button>
         </div>
+
+        <IntegracionDriveSeccion />
 
         {cargando ? (
           <p className="text-sm text-slate flex items-center gap-2">
@@ -195,6 +199,102 @@ export function AdministracionPage() {
         />
       )}
     </div>
+  )
+}
+
+// Conexión de Drive: una sola cuenta compartida para todo el despacho
+// (no por usuario), usada en el detalle de caso para listar la carpeta
+// cuyo nombre contiene el número de radicado (ver api/drive/*.ts).
+function IntegracionDriveSeccion() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [estado, setEstado] = useState<{ conectado: boolean; cuentaEmail: string | null } | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [conectando, setConectando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const resultadoRedireccion = searchParams.get('drive')
+
+  async function cargar() {
+    setCargando(true)
+    try {
+      setEstado(await estadoConexionDrive())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo consultar el estado de Google Drive.')
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  useEffect(() => {
+    cargar()
+    if (resultadoRedireccion) {
+      const params = new URLSearchParams(searchParams)
+      params.delete('drive')
+      setSearchParams(params, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleConectar() {
+    setConectando(true)
+    setError(null)
+    try {
+      await iniciarConexionDrive()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar la conexión con Google Drive.')
+      setConectando(false)
+    }
+  }
+
+  return (
+    <section className="card p-4">
+      <div className="flex items-center gap-2 mb-1">
+        <HardDrive size={16} strokeWidth={1.75} className="text-slate" />
+        <h2 className="font-display text-sm font-semibold">Google Drive</h2>
+      </div>
+      <p className="text-sm text-slate mb-3">
+        Cuenta compartida del despacho: el detalle de cada caso muestra los archivos de la carpeta de Drive cuyo
+        nombre incluye el número de radicado.
+      </p>
+
+      {resultadoRedireccion === 'conectado' && (
+        <p className="flex items-center gap-1.5 text-sm text-success mb-3">
+          <CheckCircle2 size={14} strokeWidth={1.75} />
+          Cuenta conectada correctamente.
+        </p>
+      )}
+      {resultadoRedireccion === 'error' && (
+        <p className="text-sm text-danger mb-3">No se pudo conectar la cuenta de Google Drive. Intentá de nuevo.</p>
+      )}
+      {error && <p className="text-sm text-danger mb-3">{error}</p>}
+
+      {cargando ? (
+        <p className="text-sm text-slate flex items-center gap-2">
+          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+          Cargando…
+        </p>
+      ) : (
+        <div className="flex items-center gap-3 flex-wrap">
+          {estado?.conectado && (
+            <span className="flex items-center gap-1.5 text-sm text-slate">
+              <CheckCircle2 size={14} strokeWidth={1.75} className="text-success" />
+              Conectado como <span className="font-medium text-ink">{estado.cuentaEmail ?? '—'}</span>
+            </span>
+          )}
+          <button type="button" onClick={handleConectar} disabled={conectando} className="btn-secondary btn-sm">
+            {conectando ? (
+              <>
+                <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                Redirigiendo…
+              </>
+            ) : estado?.conectado ? (
+              'Reconectar / cambiar cuenta'
+            ) : (
+              'Conectar Google Drive'
+            )}
+          </button>
+        </div>
+      )}
+    </section>
   )
 }
 

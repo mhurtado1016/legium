@@ -288,6 +288,28 @@ Implementado:
   (mismo par de llaves, generado una sola vez con
   `npx web-push generate-vapid-keys`).
 
+**Integración con Google Drive**
+- Detalle de caso (`/app/casos/:id`, sección "Google Drive"): lista los
+  archivos de la carpeta de Drive cuyo nombre incluye el
+  `numero_radicado` del caso. Una sola cuenta de Google, compartida para
+  todo el despacho (no una por usuario ni una carpeta vinculada
+  explícitamente por caso) — se conecta una vez desde Administración
+  ("Conectar Google Drive").
+- Requiere crear un proyecto en [Google Cloud Console](https://console.cloud.google.com/),
+  habilitar la Google Drive API y crear una credencial OAuth 2.0 de tipo
+  "Aplicación web" con el URI de redirección
+  `https://<dominio>/api/drive/callback` (scope usado:
+  `drive.readonly`). El Client ID/Secret resultantes van como variables
+  de entorno del proyecto en Vercel: `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET` (server-side) y `VITE_GOOGLE_CLIENT_ID`
+  (cliente, mismo Client ID — no es secreto, solo identifica la app en
+  la pantalla de consentimiento).
+- El refresh token de la cuenta conectada se guarda en
+  `integraciones_drive` (una fila por firma) sin políticas RLS para
+  `authenticated`: solo lo tocan `api/drive/callback.ts` y
+  `api/drive/listar.ts` con `SUPABASE_SERVICE_ROLE_KEY`, nunca llega al
+  cliente.
+
 **Landing público — servicios jurídicos**
 - La ruta `/` ya no es el dashboard: es un landing público (sin sesión)
   para ofertar los servicios jurídicos del despacho — `LandingPage.tsx`,
@@ -494,6 +516,14 @@ api/
                        landing — ver la nota de Módulo 8 más arriba
   _lib/
     plantillasCorreo.ts plantillas HTML/texto de los correos de notificar-cita.ts
+  drive/
+    callback.ts        intercambia el code de OAuth de Google por tokens y
+                       guarda el refresh_token en integraciones_drive — ver
+                       la nota de integración con Google Drive más arriba
+    estado.ts          si la firma del que llama tiene una cuenta de Drive
+                       conectada (sin exponer el refresh_token)
+    listar.ts          busca la carpeta de Drive por numero_radicado y lista
+                       sus archivos
 public/
   sw.js                service worker para notificaciones push
 supabase/
