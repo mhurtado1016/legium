@@ -61,11 +61,16 @@ async function obtenerAccessTokenDrive(): Promise<string> {
 // que el navegador de quien mira esté logueado con una cuenta de
 // Google que tenga acceso, y nuestros usuarios no tienen por qué tener
 // una — el acceso real a la Unidad compartida lo tiene solo la cuenta
-// de servicio. Por eso se pide el contenido directo (alt=media) con el
-// access_token de la cuenta de servicio pegado en la URL.
+// de servicio.
+//
+// Pasa por api/drive/ver.ts (nuestro backend) en vez de pedirle el
+// archivo directo a Google con el access_token en la query: el visor
+// de PDF nativo de iOS/Safari re-solicita esas URLs de una forma que
+// Google interpreta como tráfico automatizado y responde con su
+// página de bloqueo en vez del archivo.
 export async function urlVerArchivoDrive(fileId: string): Promise<string> {
-  const accessToken = await obtenerAccessTokenDrive()
-  return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&access_token=${encodeURIComponent(accessToken)}`
+  const token = await tokenSesion()
+  return `/api/drive/ver?fileId=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`
 }
 
 // Sube directo del navegador a Drive (protocolo resumable de la Drive

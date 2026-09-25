@@ -1168,8 +1168,8 @@ function DocumentoPreviewModal({
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
 
       <div className="relative w-full max-w-4xl h-[85vh] flex flex-col rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] animate-in overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
-          <p className="font-medium text-sm text-ink truncate">{nombre}</p>
+        <div className="flex items-start justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
+          <p className="font-medium text-sm text-ink break-words min-w-0">{nombre}</p>
           <div className="flex items-center gap-3 shrink-0">
             {url && (
               <a
@@ -1303,8 +1303,8 @@ function DriveArchivoPreviewModal({
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
 
       <div className="relative w-full max-w-4xl h-[85vh] flex flex-col rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] animate-in overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
-          <p className="font-medium text-sm text-ink truncate">{nombre}</p>
+        <div className="flex items-start justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
+          <p className="font-medium text-sm text-ink break-words min-w-0">{nombre}</p>
           <div className="flex items-center gap-3 shrink-0">
             {url && (
               <a
