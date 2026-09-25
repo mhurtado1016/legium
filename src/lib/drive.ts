@@ -78,3 +78,17 @@ export async function subirArchivoDrive(carpetaId: string, archivo: File): Promi
     throw new Error(detalle?.error?.message || 'No se pudo completar la subida a Google Drive')
   }
 }
+
+// A diferencia de subirArchivoDrive, esto pasa por el backend
+// (api/drive/eliminar.ts) en vez de exponer un token al navegador: un
+// DELETE no tiene el problema de tamaño que motivó la subida directa.
+export async function eliminarArchivoDrive(fileId: string): Promise<void> {
+  const token = await tokenSesion()
+  const res = await fetch('/api/drive/eliminar', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileId }),
+  })
+  const data = await res.json()
+  if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo eliminar el archivo de Google Drive')
+}

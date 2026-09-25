@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, ExternalLink, Eye, History, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Download, ExternalLink, Eye, History, Loader2, Trash2, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { StatusBadge } from '../components/StatusBadge'
@@ -24,17 +24,20 @@ import {
 } from '../lib/casos'
 import { crearPlazo, listarPlazos, marcarCumplido, type Plazo } from '../lib/plazos'
 import {
-  listarCategorias,
   listarDocumentos,
   listarVersiones,
-  subirDocumento,
   urlDescarga,
-  type CategoriaDocumento,
   type Documento,
   type DocumentoVersion,
 } from '../lib/documentos'
 import { generarDocumentoDesdePlantilla, listarPlantillas, type Plantilla } from '../lib/plantillas'
-import { listarArchivosDrive, subirArchivoDrive, type ArchivoDrive, type EstadoArchivosDrive } from '../lib/drive'
+import {
+  eliminarArchivoDrive,
+  listarArchivosDrive,
+  subirArchivoDrive,
+  type ArchivoDrive,
+  type EstadoArchivosDrive,
+} from '../lib/drive'
 import {
   definirHonorarioFijo,
   generarCuentaCobro,
@@ -70,7 +73,6 @@ export function CasoDetailPage() {
   const [sentencias, setSentencias] = useState<CasoSentencia[]>([])
   const [plazos, setPlazos] = useState<Plazo[]>([])
   const [documentos, setDocumentos] = useState<Documento[]>([])
-  const [categorias, setCategorias] = useState<CategoriaDocumento[]>([])
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
   const [registrosTiempo, setRegistrosTiempo] = useState<RegistroTiempo[]>([])
   const [honorarioFijo, setHonorarioFijo] = useState<HonorarioFijo | null>(null)
@@ -80,7 +82,7 @@ export function CasoDetailPage() {
 
   async function cargar() {
     if (!id) return
-    const [c, uf, t, a, s, p, d, cat, plant, rt, hf] = await Promise.all([
+    const [c, uf, t, a, s, p, d, plant, rt, hf] = await Promise.all([
       obtenerCaso(id),
       listarUsuariosFirma(),
       listarTraslados(id),
@@ -88,7 +90,6 @@ export function CasoDetailPage() {
       listarSentenciasVinculadas(id),
       listarPlazos({ caso_id: id }),
       listarDocumentos(id),
-      listarCategorias(),
       listarPlantillas(),
       listarRegistrosTiempo(id),
       obtenerHonorarioFijo(id),
@@ -101,7 +102,6 @@ export function CasoDetailPage() {
     setSentencias(s)
     setPlazos(p)
     setDocumentos(d)
-    setCategorias(cat)
     setPlantillas(plant)
     setRegistrosTiempo(rt)
     setHonorarioFijo(hf)
@@ -368,16 +368,12 @@ export function CasoDetailPage() {
           <section id="documentos" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Documentación</h2>
             <p className="text-sm text-slate mb-3">
-              Archivos del caso: escritos, pruebas, contratos o cualquier documento generado a
-              partir de una plantilla. Cada archivo se organiza por categoría y mantiene un
-              historial de versiones.
+              Archivos del caso: escritos, pruebas, contratos, documentos generados a partir de una
+              plantilla, y los de la carpeta de Google Drive del despacho.
             </p>
             {usuario && (
               <DocumentosSeccion
                 casoId={caso.id}
-                firmaId={usuario.firma_id}
-                usuarioId={usuario.id}
-                categorias={categorias}
                 documentos={documentos}
                 plantillas={plantillas}
                 numeroRadicado={caso.numero_radicado}
@@ -578,26 +574,17 @@ type PreviewState =
 
 function DocumentosSeccion({
   casoId,
-  firmaId,
-  usuarioId,
-  categorias,
   documentos,
   plantillas,
   numeroRadicado,
   onCambio,
 }: {
   casoId: string
-  firmaId: string
-  usuarioId: string
-  categorias: CategoriaDocumento[]
   documentos: Documento[]
   plantillas: Plantilla[]
   numeroRadicado: string | null
   onCambio: () => void
 }) {
-  const [categoriaId, setCategoriaId] = useState(categorias[0]?.id ?? '')
-  const [archivo, setArchivo] = useState<File | null>(null)
-  const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [historialAbierto, setHistorialAbierto] = useState<string | null>(null)
@@ -614,6 +601,7 @@ function DocumentosSeccion({
   const [cargandoDrive, setCargandoDrive] = useState(false)
   const [errorDrive, setErrorDrive] = useState<string | null>(null)
   const [subiendoDrive, setSubiendoDrive] = useState(false)
+  const [eliminandoDriveId, setEliminandoDriveId] = useState<string | null>(null)
 
   async function cargarDrive() {
     if (!numeroRadicado) {
@@ -662,6 +650,20 @@ function DocumentosSeccion({
     }
   }
 
+  async function handleEliminarDrive(archivo: ArchivoDrive) {
+    if (!window.confirm(`¿Eliminar "${archivo.name}" de Google Drive? Esta acción no se puede deshacer.`)) return
+    setEliminandoDriveId(archivo.id)
+    setError(null)
+    try {
+      await eliminarArchivoDrive(archivo.id)
+      await cargarDrive()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el archivo de Google Drive.')
+    } finally {
+      setEliminandoDriveId(null)
+    }
+  }
+
   const plantillaSeleccionada = plantillas.find((p) => p.id === plantillaId)
   const camposManuales = plantillaSeleccionada?.variables.filter((v) => v.manual) ?? []
 
@@ -679,29 +681,6 @@ function DocumentosSeccion({
       setError(err instanceof Error ? err.message : 'No se pudo generar el documento.')
     } finally {
       setGenerando(false)
-    }
-  }
-
-  async function handleSubir(e: FormEvent) {
-    e.preventDefault()
-    if (!archivo || !categoriaId) return
-    setError(null)
-    setSubiendo(true)
-    try {
-      await subirDocumento({
-        file: archivo,
-        firmaId,
-        casoId,
-        usuarioId,
-        categoriaId,
-        nombre: archivo.name,
-      })
-      setArchivo(null)
-      onCambio()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo subir el documento.')
-    } finally {
-      setSubiendo(false)
     }
   }
 
@@ -813,39 +792,9 @@ function DocumentosSeccion({
         </form>
       )}
 
-      <form onSubmit={handleSubir} className="flex flex-wrap items-end gap-3 text-sm mb-4">
-        <div>
-          <label className="block text-slate mb-1">Categoría</label>
-          <select
-            value={categoriaId}
-            onChange={(e) => setCategoriaId(e.target.value)}
-            className="field field-sm"
-          >
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-slate mb-1">Archivo</label>
-          <input
-            type="file"
-            onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-            className="text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={subiendo || !archivo}
-          className="btn-primary btn-sm"
-        >
-          {subiendo ? 'Subiendo…' : '+ Subir documento'}
-        </button>
-
-        {estadoDrive?.carpetaEncontrada && (
-          <label className={'btn-secondary btn-sm' + (subiendoDrive ? ' opacity-60 pointer-events-none' : '')}>
+      {estadoDrive?.carpetaEncontrada && (
+        <div className="mb-4">
+          <label className={'btn-primary btn-sm' + (subiendoDrive ? ' opacity-60 pointer-events-none' : '')}>
             {subiendoDrive ? (
               <>
                 <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
@@ -856,8 +805,8 @@ function DocumentosSeccion({
             )}
             <input type="file" onChange={handleSubirDrive} disabled={subiendoDrive} className="hidden" />
           </label>
-        )}
-      </form>
+        </div>
+      )}
 
       {!cargandoDrive && numeroRadicado && !errorDrive && estadoDrive && !estadoDrive.carpetaEncontrada && (
         <p className="text-xs text-slate mb-4">
@@ -883,7 +832,6 @@ function DocumentosSeccion({
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Categoría</th>
               <th>Versión</th>
               <th>Actualizado</th>
               <th />
@@ -895,7 +843,6 @@ function DocumentosSeccion({
                 <Fragment key={item.key}>
                   <tr>
                     <td className="font-medium text-ink">{item.doc.nombre}</td>
-                    <td>{item.doc.categorias_documento?.nombre ?? '—'}</td>
                     <td>
                       {item.doc.ultima_version ? (
                         <button
@@ -950,7 +897,7 @@ function DocumentosSeccion({
                   </tr>
                   {historialAbierto === item.doc.id && (
                     <tr>
-                      <td colSpan={5} className="bg-paper-sunken">
+                      <td colSpan={4} className="bg-paper-sunken">
                         <ul className="text-slate space-y-1.5 py-2">
                           {versiones.map((v) => (
                             <li key={v.id} className="flex items-center gap-2 flex-wrap">
@@ -980,7 +927,6 @@ function DocumentosSeccion({
                       {item.archivo.name}
                     </button>
                   </td>
-                  <td className="text-slate">Google Drive</td>
                   <td className="text-slate">—</td>
                   <td className="text-slate">{new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}</td>
                   <td>
@@ -1001,6 +947,18 @@ function DocumentosSeccion({
                         <ExternalLink size={14} strokeWidth={1.75} />
                         Abrir en Drive
                       </a>
+                      <button
+                        onClick={() => handleEliminarDrive(item.archivo)}
+                        disabled={eliminandoDriveId === item.archivo.id}
+                        className="flex items-center gap-1.5 text-slate hover:text-danger transition-colors disabled:opacity-50"
+                      >
+                        {eliminandoDriveId === item.archivo.id ? (
+                          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                        ) : (
+                          <Trash2 size={14} strokeWidth={1.75} />
+                        )}
+                        Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1008,7 +966,7 @@ function DocumentosSeccion({
             )}
             {itemsUnificados.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 text-slate text-center">
+                <td colSpan={4} className="py-6 text-slate text-center">
                   Sin documentos todavía.
                 </td>
               </tr>
@@ -1024,7 +982,6 @@ function DocumentosSeccion({
               <CardHeader>
                 <span className="font-medium text-ink">{item.doc.nombre}</span>
               </CardHeader>
-              <CardRow label="Categoría">{item.doc.categorias_documento?.nombre ?? '—'}</CardRow>
               <CardRow label="Versión">
                 {item.doc.ultima_version ? (
                   <button
@@ -1099,7 +1056,6 @@ function DocumentosSeccion({
                   {item.archivo.name}
                 </span>
               </CardHeader>
-              <CardRow label="Categoría">Google Drive</CardRow>
               <CardRow label="Actualizado">{new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}</CardRow>
               <CardActions>
                 <button
@@ -1118,6 +1074,18 @@ function DocumentosSeccion({
                   <ExternalLink size={14} strokeWidth={1.75} />
                   Abrir en Drive
                 </a>
+                <button
+                  onClick={() => handleEliminarDrive(item.archivo)}
+                  disabled={eliminandoDriveId === item.archivo.id}
+                  className="flex items-center gap-1.5 text-slate hover:text-danger transition-colors disabled:opacity-50"
+                >
+                  {eliminandoDriveId === item.archivo.id ? (
+                    <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Trash2 size={14} strokeWidth={1.75} />
+                  )}
+                  Eliminar
+                </button>
               </CardActions>
             </DataCard>
           ),
