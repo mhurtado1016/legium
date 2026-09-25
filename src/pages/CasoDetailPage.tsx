@@ -618,14 +618,17 @@ function DocumentosSeccion({
   async function cargarDrive() {
     if (!numeroRadicado) {
       setEstadoDrive(null)
-      return
+      return null
     }
     setCargandoDrive(true)
     setErrorDrive(null)
     try {
-      setEstadoDrive(await listarArchivosDrive(numeroRadicado))
+      const r = await listarArchivosDrive(numeroRadicado)
+      setEstadoDrive(r)
+      return r
     } catch (err) {
       setErrorDrive(err instanceof Error ? err.message : 'No se pudo consultar Google Drive.')
+      return null
     } finally {
       setCargandoDrive(false)
     }
@@ -639,11 +642,18 @@ function DocumentosSeccion({
   async function handleSubirDrive(e: React.ChangeEvent<HTMLInputElement>) {
     const archivoDrive = e.target.files?.[0]
     e.target.value = ''
-    if (!archivoDrive || !estadoDrive?.carpetaId) return
+    if (!archivoDrive) return
     setSubiendoDrive(true)
     setError(null)
     try {
-      await subirArchivoDrive(estadoDrive.carpetaId, archivoDrive)
+      // Vuelve a buscar la carpeta justo antes de subir en vez de confiar
+      // en el carpetaId que ya estaba en estado: si alguien reorganizó
+      // Drive (ej. la movió a una Unidad compartida) mientras la página
+      // seguía abierta, ese id queda obsoleto y Drive responde "File not
+      // found" en vez de un error claro.
+      const actual = await cargarDrive()
+      if (!actual?.carpetaId) throw new Error('No se encontró la carpeta de Drive de este caso.')
+      await subirArchivoDrive(actual.carpetaId, archivoDrive)
       await cargarDrive()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir el archivo a Google Drive.')
