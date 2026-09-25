@@ -52,8 +52,7 @@ const SECCIONES = [
   { id: 'actividad', label: 'Bitácora' },
   { id: 'sentencias', label: 'Sentencias' },
   { id: 'plazos', label: 'Plazos' },
-  { id: 'documentos', label: 'Documentos' },
-  { id: 'drive', label: 'Google Drive' },
+  { id: 'documentos', label: 'Documentación' },
   { id: 'facturacion', label: 'Facturación' },
 ]
 
@@ -367,7 +366,7 @@ export function CasoDetailPage() {
           </section>
 
           <section id="documentos" className="card p-6">
-            <h2 className="font-display text-base font-semibold mb-2">Documentos</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Documentación</h2>
             <p className="text-sm text-slate mb-3">
               Archivos del caso: escritos, pruebas, contratos o cualquier documento generado a
               partir de una plantilla. Cada archivo se organiza por categoría y mantiene un
@@ -384,14 +383,14 @@ export function CasoDetailPage() {
                 onCambio={cargar}
               />
             )}
-          </section>
 
-          <section id="drive" className="card p-6">
-            <h2 className="font-display text-base font-semibold mb-2">Google Drive</h2>
-            <p className="text-sm text-slate mb-3">
-              Archivos de la carpeta de Drive del despacho cuyo nombre incluye el número de radicado de este caso.
-            </p>
-            <DriveSeccion numeroRadicado={caso.numero_radicado} />
+            <div className="mt-8 pt-6 border-t border-line">
+              <h3 className="font-display text-sm font-semibold mb-2">Google Drive</h3>
+              <p className="text-sm text-slate mb-3">
+                Archivos de la carpeta de Drive del despacho cuyo nombre incluye el número de radicado de este caso.
+              </p>
+              <DriveSeccion numeroRadicado={caso.numero_radicado} />
+            </div>
           </section>
 
           <section id="facturacion" className="card p-6">
