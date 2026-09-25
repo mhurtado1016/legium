@@ -121,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const qCarpeta = `mimeType='application/vnd.google-apps.folder' and trashed=false and name contains '${escaparParaQueryDrive(radicado)}'`
     const carpetaRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qCarpeta)}&fields=files(id,name)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qCarpeta)}&fields=files(id,name)&pageSize=5&supportsAllDrives=true&includeItemsFromAllDrives=true&corpora=allDrives`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     )
     const carpetaData = await carpetaRes.json()
@@ -135,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const qArchivos = `'${carpeta.id}' in parents and trashed=false`
     const archivosRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qArchivos)}&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)&orderBy=modifiedTime desc&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(qArchivos)}&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)&orderBy=modifiedTime desc&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true&corpora=allDrives`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     )
     const archivosData = await archivosRes.json()

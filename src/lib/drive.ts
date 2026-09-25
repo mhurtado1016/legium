@@ -56,7 +56,7 @@ export async function subirArchivoDrive(carpetaId: string, archivo: File): Promi
   if (!tokenRes.ok || !tokenData.ok) throw new Error(tokenData.error || 'No se pudo autorizar la subida a Google Drive')
   const accessToken = tokenData.accessToken as string
 
-  const iniciarRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
+  const iniciarRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
