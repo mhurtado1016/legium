@@ -269,12 +269,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ---------- Aviso a administradores ----------
-    const { data: admins } = await admin.from('usuarios').select('id, nombre, email').eq('es_administrador', true)
+    const { data: admins } = await admin
+      .from('usuarios')
+      .select('id, nombre, email, firma_id')
+      .eq('es_administrador', true)
 
     let pushEnviados = 0
     let correosAdminEnviados = 0
 
     for (const adminUsuario of admins ?? []) {
+      try {
+        await admin.from('notificaciones').insert({
+          firma_id: adminUsuario.firma_id,
+          usuario_id: adminUsuario.id,
+          titulo: 'Nueva cita agendada',
+          cuerpo: `${cita.nombre_cliente} — ${cuando} (${tipoTexto})`,
+          enlace: '/app/agenda',
+        })
+      } catch (err) {
+        console.error(`Error creando notificación en el sitio para admin ${adminUsuario.id}:`, err)
+      }
+
       if (adminUsuario.email) {
         try {
           await enviarCorreo(

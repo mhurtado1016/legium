@@ -41,12 +41,17 @@ Deno.serve(async (req) => {
   if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500 })
 
   let enviadas = 0
+  // Un mismo plazo puede tener filas separadas por canal ('app' y 'push' a
+  // la vez); evita duplicar la campanita en el sitio si ambas se procesan
+  // en la misma corrida.
+  const notificacionAppCreada = new Set<string>()
 
   for (const n of pendientes ?? []) {
     const plazo = n.plazos as {
       titulo: string
       fecha_vencimiento: string
       responsable_id: string
+      caso_id: string
     }
     if (!plazo) continue
 
@@ -100,7 +105,18 @@ Deno.serve(async (req) => {
         }
       }
 
-      // canal 'app': no requiere envío, el frontend consulta `plazos` directamente.
+      // canal 'app' o 'push': además del push, queda un registro en la
+      // campanita de notificaciones del sitio.
+      if ((n.canal === 'app' || n.canal === 'push') && !notificacionAppCreada.has(n.plazo_id)) {
+        notificacionAppCreada.add(n.plazo_id)
+        await admin.from('notificaciones').insert({
+          firma_id: n.firma_id,
+          usuario_id: plazo.responsable_id,
+          titulo: 'Plazo próximo a vencer',
+          cuerpo: plazo.titulo,
+          enlace: `/app/casos/${plazo.caso_id}`,
+        })
+      }
 
       await admin
         .from('plazo_notificaciones')

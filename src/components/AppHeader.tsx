@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { LogOut, Menu, X } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { useUsuario } from '../lib/useUsuario'
+import { NotificationBell } from './NotificationBell'
 
 const NAV_ITEMS = [
   { to: '/app', label: 'Buscador' },
@@ -84,6 +85,8 @@ export function AppHeader({ left }: { left?: ReactNode }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <NotificationBell />
+
           <div className="relative hidden md:block" ref={usuarioMenuRef}>
             <button
               onClick={() => setMenuUsuarioAbierto((v) => !v)}
