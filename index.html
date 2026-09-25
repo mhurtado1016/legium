@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#111318" />
+    <!-- Necesario para que "Agregar a pantalla de inicio" en iOS abra la app
+         en modo standalone (sin barra de Safari): sin esto, navigator.standalone
+         es false y PushManager no queda disponible aunque el ícono ya exista. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Efrata 360" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="description"
       content="Despacho de abogados. Derecho civil, corporativo, laboral, litigios y arbitraje, familia y administrativo, con seguimiento riguroso de cada caso."

@@ -27,6 +27,7 @@ export function PushNotificationGate({ children }: { children: ReactNode }) {
   const { usuario, loading: cargandoUsuario } = useUsuario()
   const [estado, setEstado] = useState<Estado>('verificando')
   const [intentos, setIntentos] = useState(0)
+  const [detalleError, setDetalleError] = useState<string | null>(null)
 
   useEffect(() => {
     if (cargandoUsuario || !usuario) return
@@ -63,6 +64,7 @@ export function PushNotificationGate({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('No se pudo activar las notificaciones push:', err)
       const denegado = typeof Notification !== 'undefined' && Notification.permission === 'denied'
+      setDetalleError(err instanceof Error ? `${err.name}: ${err.message}` : String(err))
       setEstado(denegado ? 'denegado' : 'error')
     }
   }
@@ -133,7 +135,17 @@ export function PushNotificationGate({ children }: { children: ReactNode }) {
                 <>{estado === 'error' ? 'Reintentar activar notificaciones' : 'Activar notificaciones'}</>
               )}
             </button>
-            {estado === 'error' && <p className="text-xs text-danger mt-3">No se pudo activar. Intentá de nuevo.</p>}
+            {estado === 'error' && (
+              <p className="text-xs text-danger mt-3">
+                No se pudo activar. Intentá de nuevo.
+                {detalleError && (
+                  <>
+                    <br />
+                    <span className="text-slate">{detalleError}</span>
+                  </>
+                )}
+              </p>
+            )}
           </>
         )}
       </div>
