@@ -88,12 +88,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const accessToken = await obtenerAccessToken(client_email, private_key)
 
+    // Log temporal: el archivo sigue visible en Drive pese a que el
+    // borrado reporta éxito. Se revisa metadata antes (¿es un shortcut?
+    // ¿capabilities.canDelete?) y se verifica después si de verdad
+    // desapareció, para distinguir "Google dijo que sí pero no borró
+    // nada" de "borró otra cosa" o de un problema de caché/índice.
+    const metaRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true&fields=id,name,mimeType,driveId,parents,trashed,capabilities(canDelete,canTrash)`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    )
+    const metaBody = await metaRes.text()
+    console.log(`drive/eliminar PRE fileId=${fileId} status=${metaRes.status} body=${metaBody}`)
+
     const eliminarRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
       { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } },
     )
+    const eliminarBody = await eliminarRes.text()
+    console.log(`drive/eliminar DELETE fileId=${fileId} status=${eliminarRes.status} body=${eliminarBody || '(vacío)'}`)
+
+    const verifRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true&fields=id,name,trashed`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    )
+    const verifBody = await verifRes.text()
+    console.log(`drive/eliminar POST-CHECK fileId=${fileId} status=${verifRes.status} body=${verifBody}`)
+
     if (!eliminarRes.ok && eliminarRes.status !== 404) {
-      const detalle = await eliminarRes.json().catch(() => null)
+      let detalle: { error?: { message?: string } } | null = null
+      try {
+        detalle = JSON.parse(eliminarBody)
+      } catch {
+        // cuerpo no era JSON
+      }
       throw new Error(detalle?.error?.message || 'No se pudo eliminar el archivo de Google Drive')
     }
 
