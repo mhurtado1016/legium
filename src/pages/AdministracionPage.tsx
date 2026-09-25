@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { CheckCircle2, HardDrive, Loader2, Plus, UserCog } from 'lucide-react'
+import { CheckCircle2, Copy, HardDrive, Loader2, Plus, UserCog } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
@@ -9,7 +8,7 @@ import { TelefonoInput } from '../components/TelefonoInput'
 import { useUsuario } from '../lib/useUsuario'
 import { actualizarUsuario, invitarUsuario, listarUsuarios, type UsuarioAdmin } from '../lib/administracion'
 import { separarTelefono } from '../lib/paisesTelefono'
-import { estadoConexionDrive, iniciarConexionDrive } from '../lib/drive'
+import { estadoCuentaServicioDrive } from '../lib/drive'
 
 /**
  * Panel de administración — gestión de usuarios de la firma (punto 1 del
@@ -202,46 +201,32 @@ export function AdministracionPage() {
   )
 }
 
-// Conexión de Drive: una sola cuenta compartida para todo el despacho
-// (no por usuario), usada en el detalle de caso para listar la carpeta
-// cuyo nombre contiene el número de radicado (ver api/drive/*.ts).
+// Cuenta de servicio de Google, una sola para todo el despacho
+// (GOOGLE_SERVICE_ACCOUNT_KEY en Vercel — ver api/drive/*.ts). No hay
+// nada que "conectar" desde acá: solo hace falta compartir cada carpeta
+// de Drive con el correo de esa cuenta de servicio para que sea visible
+// en el detalle del caso (búsqueda por número de radicado).
 function IntegracionDriveSeccion() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [estado, setEstado] = useState<{ conectado: boolean; cuentaEmail: string | null } | null>(null)
+  const [estado, setEstado] = useState<{ configurado: boolean; cuentaEmail: string | null } | null>(null)
   const [cargando, setCargando] = useState(true)
-  const [conectando, setConectando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const resultadoRedireccion = searchParams.get('drive')
-
-  async function cargar() {
-    setCargando(true)
-    try {
-      setEstado(await estadoConexionDrive())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo consultar el estado de Google Drive.')
-    } finally {
-      setCargando(false)
-    }
-  }
+  const [copiado, setCopiado] = useState(false)
 
   useEffect(() => {
-    cargar()
-    if (resultadoRedireccion) {
-      const params = new URLSearchParams(searchParams)
-      params.delete('drive')
-      setSearchParams(params, { replace: true })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    estadoCuentaServicioDrive()
+      .then(setEstado)
+      .catch((err) => setError(err instanceof Error ? err.message : 'No se pudo consultar el estado de Google Drive.'))
+      .finally(() => setCargando(false))
   }, [])
 
-  async function handleConectar() {
-    setConectando(true)
-    setError(null)
+  async function handleCopiar() {
+    if (!estado?.cuentaEmail) return
     try {
-      await iniciarConexionDrive()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar la conexión con Google Drive.')
-      setConectando(false)
+      await navigator.clipboard.writeText(estado.cuentaEmail)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 1500)
+    } catch {
+      // portapapeles no disponible (ej. sin permiso o contexto no seguro): sin acción, el correo ya se ve en pantalla
     }
   }
 
@@ -252,19 +237,11 @@ function IntegracionDriveSeccion() {
         <h2 className="font-display text-sm font-semibold">Google Drive</h2>
       </div>
       <p className="text-sm text-slate mb-3">
-        Cuenta compartida del despacho: el detalle de cada caso muestra los archivos de la carpeta de Drive cuyo
-        nombre incluye el número de radicado.
+        El detalle de cada caso muestra los archivos de la carpeta de Drive cuyo nombre incluye el número de
+        radicado. Para que una carpeta sea visible, hay que compartirla (permiso de lectura alcanza) con esta
+        cuenta:
       </p>
 
-      {resultadoRedireccion === 'conectado' && (
-        <p className="flex items-center gap-1.5 text-sm text-success mb-3">
-          <CheckCircle2 size={14} strokeWidth={1.75} />
-          Cuenta conectada correctamente.
-        </p>
-      )}
-      {resultadoRedireccion === 'error' && (
-        <p className="text-sm text-danger mb-3">No se pudo conectar la cuenta de Google Drive. Intentá de nuevo.</p>
-      )}
       {error && <p className="text-sm text-danger mb-3">{error}</p>}
 
       {cargando ? (
@@ -272,25 +249,15 @@ function IntegracionDriveSeccion() {
           <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
           Cargando…
         </p>
+      ) : !estado?.configurado ? (
+        <p className="text-sm text-slate">No hay una cuenta de servicio de Google Drive configurada todavía.</p>
       ) : (
-        <div className="flex items-center gap-3 flex-wrap">
-          {estado?.conectado && (
-            <span className="flex items-center gap-1.5 text-sm text-slate">
-              <CheckCircle2 size={14} strokeWidth={1.75} className="text-success" />
-              Conectado como <span className="font-medium text-ink">{estado.cuentaEmail ?? '—'}</span>
-            </span>
-          )}
-          <button type="button" onClick={handleConectar} disabled={conectando} className="btn-secondary btn-sm">
-            {conectando ? (
-              <>
-                <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-                Redirigiendo…
-              </>
-            ) : estado?.conectado ? (
-              'Reconectar / cambiar cuenta'
-            ) : (
-              'Conectar Google Drive'
-            )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <CheckCircle2 size={14} strokeWidth={1.75} className="text-success shrink-0" />
+          <code className="text-sm bg-paper-sunken px-2 py-1 rounded-[var(--radius-field)]">{estado.cuentaEmail}</code>
+          <button type="button" onClick={handleCopiar} className="link flex items-center gap-1 text-xs">
+            <Copy size={12} strokeWidth={1.75} />
+            {copiado ? 'Copiado' : 'Copiar'}
           </button>
         </div>
       )}

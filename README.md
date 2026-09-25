@@ -291,24 +291,26 @@ Implementado:
 **Integración con Google Drive**
 - Detalle de caso (`/app/casos/:id`, sección "Google Drive"): lista los
   archivos de la carpeta de Drive cuyo nombre incluye el
-  `numero_radicado` del caso. Una sola cuenta de Google, compartida para
-  todo el despacho (no una por usuario ni una carpeta vinculada
-  explícitamente por caso) — se conecta una vez desde Administración
-  ("Conectar Google Drive").
+  `numero_radicado` del caso. Autenticación vía cuenta de servicio de
+  Google (no OAuth de un usuario): una sola cuenta para todo el
+  despacho, sin flujo de "conectar" ni tokens que expiren por sesión.
 - Requiere crear un proyecto en [Google Cloud Console](https://console.cloud.google.com/),
-  habilitar la Google Drive API y crear una credencial OAuth 2.0 de tipo
-  "Aplicación web" con el URI de redirección
-  `https://<dominio>/api/drive/callback` (scope usado:
-  `drive.readonly`). El Client ID/Secret resultantes van como variables
-  de entorno del proyecto en Vercel: `GOOGLE_CLIENT_ID`,
-  `GOOGLE_CLIENT_SECRET` (server-side) y `VITE_GOOGLE_CLIENT_ID`
-  (cliente, mismo Client ID — no es secreto, solo identifica la app en
-  la pantalla de consentimiento).
-- El refresh token de la cuenta conectada se guarda en
-  `integraciones_drive` (una fila por firma) sin políticas RLS para
-  `authenticated`: solo lo tocan `api/drive/callback.ts` y
-  `api/drive/listar.ts` con `SUPABASE_SERVICE_ROLE_KEY`, nunca llega al
-  cliente.
+  habilitar la Google Drive API, crear una cuenta de servicio
+  ("Credenciales" → "Crear credenciales" → "Cuenta de servicio") y
+  descargar su clave en formato JSON. El contenido completo de ese JSON
+  va como variable de entorno del proyecto en Vercel:
+  `GOOGLE_SERVICE_ACCOUNT_KEY` (server-side, no lleva prefijo `VITE_`
+  porque no debe llegar al cliente).
+- Una cuenta de servicio no "ve" nada por default: cada carpeta de Drive
+  que deba aparecer en el detalle de un caso hay que compartirla
+  manualmente (permiso de lectura alcanza) con el `client_email` de esa
+  cuenta de servicio, igual que se comparte con cualquier otra cuenta de
+  Google. Administración → "Google Drive" muestra ese correo para
+  copiarlo.
+- `api/drive/listar.ts` arma y firma el JWT de autenticación de cuenta
+  de servicio (RFC 7523) con `node:crypto`, sin dependencias nuevas
+  (mismo criterio que el resto de `api/*.ts`: llamadas REST directas en
+  vez de un SDK).
 
 **Landing público — servicios jurídicos**
 - La ruta `/` ya no es el dashboard: es un landing público (sin sesión)
@@ -517,13 +519,11 @@ api/
   _lib/
     plantillasCorreo.ts plantillas HTML/texto de los correos de notificar-cita.ts
   drive/
-    callback.ts        intercambia el code de OAuth de Google por tokens y
-                       guarda el refresh_token en integraciones_drive — ver
+    estado.ts          si hay una cuenta de servicio de Drive configurada y
+                       su client_email (sin exponer la clave privada) — ver
                        la nota de integración con Google Drive más arriba
-    estado.ts          si la firma del que llama tiene una cuenta de Drive
-                       conectada (sin exponer el refresh_token)
     listar.ts          busca la carpeta de Drive por numero_radicado y lista
-                       sus archivos
+                       sus archivos, autenticado como la cuenta de servicio
 public/
   sw.js                service worker para notificaciones push
 supabase/
