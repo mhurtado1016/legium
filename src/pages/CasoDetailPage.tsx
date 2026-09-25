@@ -843,7 +843,11 @@ function DocumentosSeccion({
               item.origen === 'sistema' ? (
                 <Fragment key={item.key}>
                   <tr>
-                    <td className="font-medium text-ink">{item.doc.nombre}</td>
+                    <td className="font-medium text-ink">
+                      <div className="max-w-xs truncate" title={item.doc.nombre}>
+                        {item.doc.nombre}
+                      </div>
+                    </td>
                     <td>
                       {item.doc.ultima_version ? (
                         <button
@@ -923,9 +927,13 @@ function DocumentosSeccion({
               ) : (
                 <tr key={item.key}>
                   <td className="font-medium text-ink">
-                    <button onClick={() => handleVerDrive(item.archivo)} className="flex items-center gap-2 hover:text-accent transition-colors text-left">
+                    <button
+                      onClick={() => handleVerDrive(item.archivo)}
+                      title={item.archivo.name}
+                      className="flex items-center gap-2 max-w-xs hover:text-accent transition-colors text-left"
+                    >
                       <img src={item.archivo.iconLink} alt="" className="h-4 w-4 shrink-0" />
-                      {item.archivo.name}
+                      <span className="truncate">{item.archivo.name}</span>
                     </button>
                   </td>
                   <td className="text-slate">—</td>
