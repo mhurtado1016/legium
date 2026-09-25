@@ -49,7 +49,7 @@ export function AgendaPage() {
             <h1 className="font-display text-2xl font-semibold tracking-tight">Agenda</h1>
             <p className="text-sm text-slate mt-1">Citas del equipo y disponibilidad para agendar.</p>
           </div>
-          {usuario?.es_administrador && <NotificacionesPushBoton usuario={usuario} />}
+          {usuario && <NotificacionesPushBoton usuario={usuario} />}
         </div>
         <CitasSeccion refrescar={refrescoCitas} />
         <ReservarManualSeccion onReservada={() => setRefrescoCitas((n) => n + 1)} />
@@ -59,10 +59,9 @@ export function AgendaPage() {
   )
 }
 
-// Solo hay a quién avisar (notificar-cita-agendada) si al menos un
-// administrador se suscribió desde su navegador — este botón es ese
-// paso, ausente hasta ahora en toda la app (suscribirsePush() existía
-// en src/lib/plazos.ts pero nada la invocaba).
+// Indicador/reintento manual de la suscripción push. El alta obligatoria
+// ocurre en PushNotificationGate (modal al cargar la app); esto queda
+// como respaldo visible por si la suscripción se pierde sin recargar.
 function NotificacionesPushBoton({ usuario }: { usuario: Usuario }) {
   const [estado, setEstado] = useState<'inactivo' | 'activando' | 'activo' | 'error' | 'no_soportado'>('inactivo')
 

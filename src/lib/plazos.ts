@@ -64,6 +64,15 @@ export function diasRestantes(fechaVencimiento: string) {
   return Math.ceil(ms / (1000 * 60 * 60 * 24))
 }
 
+// applicationServerKey debe ser un BufferSource, no el string base64url tal
+// cual: Firefox y Safari lanzan TypeError si se les pasa el string directo.
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)))
+}
+
 // Registro de suscripción push (sección 6.3, punto 4). Requiere que el
 // service worker (public/sw.js) ya esté registrado y VITE_VAPID_PUBLIC_KEY
 // configurada.
@@ -74,7 +83,7 @@ export async function suscribirsePush(firmaId: string, usuarioId: string) {
   const registration = await navigator.serviceWorker.ready
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: publicKey,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
   })
 
   const json = subscription.toJSON()
