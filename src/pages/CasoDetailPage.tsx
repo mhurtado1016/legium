@@ -981,7 +981,7 @@ function DocumentosSeccion({
           item.origen === 'sistema' ? (
             <DataCard key={item.key}>
               <CardHeader>
-                <span className="font-medium text-ink">{item.doc.nombre}</span>
+                <span className="font-medium text-ink break-words min-w-0">{item.doc.nombre}</span>
               </CardHeader>
               <CardRow label="Versión">
                 {item.doc.ultima_version ? (
@@ -1052,9 +1052,9 @@ function DocumentosSeccion({
           ) : (
             <DataCard key={item.key}>
               <CardHeader>
-                <span className="font-medium text-ink flex items-center gap-2">
+                <span className="font-medium text-ink flex items-center gap-2 min-w-0">
                   <img src={item.archivo.iconLink} alt="" className="h-4 w-4 shrink-0" />
-                  {item.archivo.name}
+                  <span className="break-words min-w-0">{item.archivo.name}</span>
                 </span>
               </CardHeader>
               <CardRow label="Actualizado">{new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}</CardRow>
