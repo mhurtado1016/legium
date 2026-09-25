@@ -92,12 +92,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
       { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } },
     )
+    // Log temporal para diagnosticar por qué el archivo sigue apareciendo
+    // en Drive pese a que el endpoint devuelve éxito — files.delete
+    // debería responder 204 sin cuerpo; cualquier otra cosa es una pista.
+    const cuerpoRespuesta = await eliminarRes.text()
+    console.log(`drive/eliminar fileId=${fileId} status=${eliminarRes.status} body=${cuerpoRespuesta || '(vacío)'}`)
+
     if (!eliminarRes.ok && eliminarRes.status !== 404) {
-      const detalle = await eliminarRes.json().catch(() => null)
+      let detalle: { error?: { message?: string } } | null = null
+      try {
+        detalle = JSON.parse(cuerpoRespuesta)
+      } catch {
+        // cuerpo no era JSON, se ignora y se usa el mensaje genérico
+      }
       throw new Error(detalle?.error?.message || 'No se pudo eliminar el archivo de Google Drive')
     }
 
-    res.status(200).json({ ok: true })
+    res.status(200).json({ ok: true, googleStatus: eliminarRes.status })
   } catch (err) {
     console.error('Error en drive/eliminar:', err)
     res.status(500).json({ ok: false, error: err instanceof Error ? err.message : String(err) })
