@@ -835,7 +835,6 @@ function DocumentosSeccion({
               <th>Nombre</th>
               <th>Versión</th>
               <th>Actualizado</th>
-              <th />
             </tr>
           </thead>
           <tbody>
@@ -843,12 +842,12 @@ function DocumentosSeccion({
               item.origen === 'sistema' ? (
                 <Fragment key={item.key}>
                   <tr>
-                    <td className="font-medium text-ink">
+                    <td className="font-medium text-ink border-b-0 pb-1.5">
                       <div className="max-w-xs truncate" title={item.doc.nombre}>
                         {item.doc.nombre}
                       </div>
                     </td>
-                    <td>
+                    <td className="border-b-0 pb-1.5">
                       {item.doc.ultima_version ? (
                         <button
                           onClick={() =>
@@ -867,13 +866,15 @@ function DocumentosSeccion({
                         '—'
                       )}
                     </td>
-                    <td className="text-slate">
+                    <td className="text-slate border-b-0 pb-1.5">
                       {item.doc.ultima_version
                         ? new Date(item.doc.ultima_version.created_at).toLocaleDateString('es-CO')
                         : '—'}
                     </td>
-                    <td>
-                      <div className="flex items-center justify-end gap-4 text-xs whitespace-nowrap">
+                  </tr>
+                  <tr>
+                    <td colSpan={3} className="pt-0">
+                      <div className="flex items-center gap-4 text-xs flex-wrap">
                         {item.doc.ultima_version && (
                           <button
                             onClick={() =>
@@ -902,7 +903,7 @@ function DocumentosSeccion({
                   </tr>
                   {historialAbierto === item.doc.id && (
                     <tr>
-                      <td colSpan={4} className="bg-paper-sunken">
+                      <td colSpan={3} className="bg-paper-sunken">
                         <ul className="text-slate space-y-1.5 py-2">
                           {versiones.map((v) => (
                             <li key={v.id} className="flex items-center gap-2 flex-wrap">
@@ -925,57 +926,63 @@ function DocumentosSeccion({
                   )}
                 </Fragment>
               ) : (
-                <tr key={item.key}>
-                  <td className="font-medium text-ink">
-                    <button
-                      onClick={() => handleVerDrive(item.archivo)}
-                      title={item.archivo.name}
-                      className="flex items-center gap-2 max-w-xs hover:text-accent transition-colors text-left"
-                    >
-                      <img src={item.archivo.iconLink} alt="" className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{item.archivo.name}</span>
-                    </button>
-                  </td>
-                  <td className="text-slate">—</td>
-                  <td className="text-slate">{new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}</td>
-                  <td>
-                    <div className="flex items-center justify-end gap-4 text-xs whitespace-nowrap">
+                <Fragment key={item.key}>
+                  <tr>
+                    <td className="font-medium text-ink border-b-0 pb-1.5">
                       <button
                         onClick={() => handleVerDrive(item.archivo)}
-                        className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                        title={item.archivo.name}
+                        className="flex items-center gap-2 max-w-xs hover:text-accent transition-colors text-left"
                       >
-                        <Eye size={14} strokeWidth={1.75} />
-                        Ver
+                        <img src={item.archivo.iconLink} alt="" className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.archivo.name}</span>
                       </button>
-                      <a
-                        href={item.archivo.webViewLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
-                      >
-                        <ExternalLink size={14} strokeWidth={1.75} />
-                        Abrir en Drive
-                      </a>
-                      <button
-                        onClick={() => handleEliminarDrive(item.archivo)}
-                        disabled={eliminandoDriveId === item.archivo.id}
-                        className="flex items-center gap-1.5 text-slate hover:text-danger transition-colors disabled:opacity-50"
-                      >
-                        {eliminandoDriveId === item.archivo.id ? (
-                          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-                        ) : (
-                          <Trash2 size={14} strokeWidth={1.75} />
-                        )}
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="text-slate border-b-0 pb-1.5">—</td>
+                    <td className="text-slate border-b-0 pb-1.5">
+                      {new Date(item.archivo.modifiedTime).toLocaleDateString('es-CO')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan={3} className="pt-0">
+                      <div className="flex items-center gap-4 text-xs flex-wrap">
+                        <button
+                          onClick={() => handleVerDrive(item.archivo)}
+                          className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                        >
+                          <Eye size={14} strokeWidth={1.75} />
+                          Ver
+                        </button>
+                        <a
+                          href={item.archivo.webViewLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-slate hover:text-ink transition-colors"
+                        >
+                          <ExternalLink size={14} strokeWidth={1.75} />
+                          Abrir en Drive
+                        </a>
+                        <button
+                          onClick={() => handleEliminarDrive(item.archivo)}
+                          disabled={eliminandoDriveId === item.archivo.id}
+                          className="flex items-center gap-1.5 text-slate hover:text-danger transition-colors disabled:opacity-50"
+                        >
+                          {eliminandoDriveId === item.archivo.id ? (
+                            <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                          ) : (
+                            <Trash2 size={14} strokeWidth={1.75} />
+                          )}
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </Fragment>
               ),
             )}
             {itemsUnificados.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 text-slate text-center">
+                <td colSpan={3} className="py-6 text-slate text-center">
                   Sin documentos todavía.
                 </td>
               </tr>
