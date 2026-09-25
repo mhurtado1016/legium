@@ -35,6 +35,7 @@ import {
   eliminarArchivoDrive,
   listarArchivosDrive,
   subirArchivoDrive,
+  urlVerArchivoDrive,
   type ArchivoDrive,
   type EstadoArchivosDrive,
 } from '../lib/drive'
@@ -1240,12 +1241,16 @@ function DocumentoPreviewModal({
   )
 }
 
-// Visor de un archivo de Google Drive: a diferencia de DocumentoPreviewModal
-// no hay signed URL que resolver — el propio visor embebido de Drive
-// (iframe a /preview) sirve para PDF, imágenes, Office y varios tipos más
-// sin que nuestro código tenga que distinguir el mimeType.
+// Visor de un archivo de Google Drive. El iframe "de vista" normal de
+// Drive (drive.google.com/file/d/.../preview) no sirve acá: depende de
+// que el navegador de quien mira esté logueado con una cuenta de
+// Google con acceso, y el acceso real lo tiene solo la cuenta de
+// servicio — por eso se pide el contenido directo (urlVerArchivoDrive,
+// alt=media con el token de la cuenta de servicio) y se renderiza igual
+// que en DocumentoPreviewModal (PDF/imagen embebidos, resto con enlace).
 function DriveArchivoPreviewModal({
   fileId,
+  mimeType,
   nombre,
   webViewLink,
   onClose,
@@ -1256,7 +1261,9 @@ function DriveArchivoPreviewModal({
   webViewLink: string
   onClose: () => void
 }) {
-  const [cargado, setCargado] = useState(false)
+  const [url, setUrl] = useState<string | null>(null)
+  const [archivoListo, setArchivoListo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -1270,6 +1277,27 @@ function DriveArchivoPreviewModal({
     }
   }, [onClose])
 
+  useEffect(() => {
+    let cancelado = false
+    setUrl(null)
+    setArchivoListo(false)
+    setError(null)
+    urlVerArchivoDrive(fileId)
+      .then((u) => {
+        if (!cancelado) setUrl(u)
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err instanceof Error ? err.message : 'No se pudo cargar el documento.')
+      })
+    return () => {
+      cancelado = true
+    }
+  }, [fileId])
+
+  const esPdf = mimeType === 'application/pdf'
+  const esImagen = mimeType.startsWith('image/')
+  const cargando = !error && (!url || ((esPdf || esImagen) && !archivoListo))
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
@@ -1278,6 +1306,17 @@ function DriveArchivoPreviewModal({
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
           <p className="font-medium text-sm text-ink truncate">{nombre}</p>
           <div className="flex items-center gap-3 shrink-0">
+            {url && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
+              >
+                <Download size={14} strokeWidth={1.75} />
+                Descargar
+              </a>
+            )}
             <a
               href={webViewLink}
               target="_blank"
@@ -1298,19 +1337,48 @@ function DriveArchivoPreviewModal({
         </div>
 
         <div className="relative flex-1 min-h-0 bg-paper-sunken">
-          {!cargado && (
+          {cargando && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-slate">
               <Loader2 size={18} className="animate-spin" strokeWidth={1.75} />
               Cargando documento…
             </div>
           )}
-          <iframe
-            src={`https://drive.google.com/file/d/${fileId}/preview`}
-            title={nombre}
-            onLoad={() => setCargado(true)}
-            allow="autoplay"
-            className={`w-full h-full border-0 transition-opacity ${cargado ? 'opacity-100' : 'opacity-0'}`}
-          />
+
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-danger px-6 text-center">
+              {error}
+            </div>
+          )}
+
+          {url && esPdf && (
+            <iframe
+              src={url}
+              title={nombre}
+              onLoad={() => setArchivoListo(true)}
+              className={`w-full h-full border-0 transition-opacity ${archivoListo ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
+          {url && esImagen && (
+            <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
+              <img
+                src={url}
+                alt={nombre}
+                onLoad={() => setArchivoListo(true)}
+                className={`max-w-full max-h-full object-contain transition-opacity ${archivoListo ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </div>
+          )}
+          {url && !esPdf && !esImagen && (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center px-6">
+              <p className="text-sm text-slate">
+                Este tipo de archivo no se puede previsualizar en el navegador.
+              </p>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary btn-sm">
+                <Download size={14} strokeWidth={1.75} />
+                Descargar para verlo
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>

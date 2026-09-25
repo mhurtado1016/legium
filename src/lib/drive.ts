@@ -43,6 +43,31 @@ export async function estadoCuentaServicioDrive(): Promise<{ configurado: boolea
   return data
 }
 
+// Token de corta duración de la cuenta de servicio — ver la nota de
+// api/drive/token.ts para el trade-off aceptado (queda unos minutos en
+// el navegador, con permiso de lectura+escritura sobre todo lo que la
+// cuenta de servicio pueda tocar).
+async function obtenerAccessTokenDrive(): Promise<string> {
+  const token = await tokenSesion()
+  const tokenRes = await fetch('/api/drive/token', { headers: { Authorization: `Bearer ${token}` } })
+  const tokenData = await tokenRes.json()
+  if (!tokenRes.ok || !tokenData.ok) throw new Error(tokenData.error || 'No se pudo autorizar el acceso a Google Drive')
+  return tokenData.accessToken as string
+}
+
+// URL con el contenido real del archivo, para usar directo como src de
+// un <iframe>/<img>. El link "de vista" normal de Drive
+// (drive.google.com/file/d/.../preview) no sirve para esto: depende de
+// que el navegador de quien mira esté logueado con una cuenta de
+// Google que tenga acceso, y nuestros usuarios no tienen por qué tener
+// una — el acceso real a la Unidad compartida lo tiene solo la cuenta
+// de servicio. Por eso se pide el contenido directo (alt=media) con el
+// access_token de la cuenta de servicio pegado en la URL.
+export async function urlVerArchivoDrive(fileId: string): Promise<string> {
+  const accessToken = await obtenerAccessTokenDrive()
+  return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&access_token=${encodeURIComponent(accessToken)}`
+}
+
 // Sube directo del navegador a Drive (protocolo resumable de la Drive
 // API), sin pasar por nuestro backend: las funciones de Vercel rechazan
 // cualquier request de más de 4.5 MB, insuficiente para escaneos
@@ -50,11 +75,7 @@ export async function estadoCuentaServicioDrive(): Promise<{ configurado: boolea
 // la cuenta de servicio con permiso de escritura — ver la nota de
 // api/drive/token.ts para el trade-off aceptado.
 export async function subirArchivoDrive(carpetaId: string, archivo: File): Promise<void> {
-  const token = await tokenSesion()
-  const tokenRes = await fetch('/api/drive/token', { headers: { Authorization: `Bearer ${token}` } })
-  const tokenData = await tokenRes.json()
-  if (!tokenRes.ok || !tokenData.ok) throw new Error(tokenData.error || 'No se pudo autorizar la subida a Google Drive')
-  const accessToken = tokenData.accessToken as string
+  const accessToken = await obtenerAccessTokenDrive()
 
   const iniciarRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
     method: 'POST',
