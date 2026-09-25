@@ -1,8 +1,15 @@
 // Vercel Serverless Function: elimina un archivo de Google Drive.
 //
+// Mueve el archivo a la papelera (files.update trashed:true) en vez de
+// borrarlo permanentemente (files.delete): el rol de la cuenta de
+// servicio en la Unidad compartida da canTrash pero no canDelete — un
+// intento de borrado permanente devuelve 404 en vez de un error de
+// permisos claro, y el archivo queda intacto. Mover a la papelera
+// además es más seguro (recuperable) que un borrado irreversible.
+//
 // A diferencia de la subida, esto sí pasa por el backend (no expone
-// ningún token al navegador): un DELETE no tiene el problema de tamaño
-// de las subidas grandes, así que no hace falta el trade-off de
+// ningún token al navegador): la operación no tiene el problema de
+// tamaño de las subidas grandes, así que no hace falta el trade-off de
 // seguridad aceptado en api/drive/token.ts.
 
 import { createClient } from '@supabase/supabase-js'
@@ -88,39 +95,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const accessToken = await obtenerAccessToken(client_email, private_key)
 
-    // Log temporal: el archivo sigue visible en Drive pese a que el
-    // borrado reporta éxito. Se revisa metadata antes (¿es un shortcut?
-    // ¿capabilities.canDelete?) y se verifica después si de verdad
-    // desapareció, para distinguir "Google dijo que sí pero no borró
-    // nada" de "borró otra cosa" o de un problema de caché/índice.
-    const metaRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true&fields=id,name,mimeType,driveId,parents,trashed,capabilities(canDelete,canTrash)`,
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    )
-    const metaBody = await metaRes.text()
-    console.log(`drive/eliminar PRE fileId=${fileId} status=${metaRes.status} body=${metaBody}`)
-
-    const eliminarRes = await fetch(
+    const trashRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
-      { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } },
+      {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trashed: true }),
+      },
     )
-    const eliminarBody = await eliminarRes.text()
-    console.log(`drive/eliminar DELETE fileId=${fileId} status=${eliminarRes.status} body=${eliminarBody || '(vacío)'}`)
-
-    const verifRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true&fields=id,name,trashed`,
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    )
-    const verifBody = await verifRes.text()
-    console.log(`drive/eliminar POST-CHECK fileId=${fileId} status=${verifRes.status} body=${verifBody}`)
-
-    if (!eliminarRes.ok && eliminarRes.status !== 404) {
-      let detalle: { error?: { message?: string } } | null = null
-      try {
-        detalle = JSON.parse(eliminarBody)
-      } catch {
-        // cuerpo no era JSON
-      }
+    if (!trashRes.ok && trashRes.status !== 404) {
+      const detalle = await trashRes.json().catch(() => null)
       throw new Error(detalle?.error?.message || 'No se pudo eliminar el archivo de Google Drive')
     }
 
