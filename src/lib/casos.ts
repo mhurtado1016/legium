@@ -154,6 +154,14 @@ export async function crearCaso(
   return data as Caso
 }
 
+export async function actualizarCaso(
+  id: string,
+  cambios: Partial<Pick<Caso, 'titulo' | 'cliente_id' | 'tipo'>>,
+) {
+  const { error } = await supabase.from('casos').update(cambios).eq('id', id)
+  if (error) throw error
+}
+
 export async function actualizarEstadoCaso(id: string, estado: EstadoCaso) {
   const { error } = await supabase.from('casos').update({ estado }).eq('id', id)
   if (error) throw error

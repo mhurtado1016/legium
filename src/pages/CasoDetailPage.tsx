@@ -6,10 +6,12 @@ import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from 
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
+  actualizarCaso,
   actualizarEstadoCaso,
   actualizarNumeroRadicado,
   agregarActividad,
   listarActividad,
+  listarClientes,
   listarSentenciasVinculadas,
   listarTraslados,
   listarUsuariosFirma,
@@ -19,7 +21,9 @@ import {
   type CasoActividad,
   type CasoSentencia,
   type CasoTraslado,
+  type Cliente,
   type EstadoCaso,
+  type TipoCaso,
   type UsuarioFirma,
 } from '../lib/casos'
 import { crearPlazo, listarPlazos, marcarCumplido, type Plazo } from '../lib/plazos'
@@ -68,6 +72,7 @@ export function CasoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { usuario } = useUsuario()
   const [caso, setCaso] = useState<Caso | null>(null)
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [usuariosFirma, setUsuariosFirma] = useState<UsuarioFirma[]>([])
   const [traslados, setTraslados] = useState<CasoTraslado[]>([])
   const [actividad, setActividad] = useState<CasoActividad[]>([])
@@ -80,11 +85,17 @@ export function CasoDetailPage() {
   const [nuevaNota, setNuevaNota] = useState('')
   const [numeroRadicado, setNumeroRadicado] = useState('')
   const [guardandoRadicado, setGuardandoRadicado] = useState(false)
+  const [editandoDatos, setEditandoDatos] = useState(false)
+  const [tituloEdit, setTituloEdit] = useState('')
+  const [clienteIdEdit, setClienteIdEdit] = useState('')
+  const [tipoEdit, setTipoEdit] = useState<TipoCaso>('litigio')
+  const [guardandoDatos, setGuardandoDatos] = useState(false)
 
   async function cargar() {
     if (!id) return
-    const [c, uf, t, a, s, p, d, plant, rt, hf] = await Promise.all([
+    const [c, cli, uf, t, a, s, p, d, plant, rt, hf] = await Promise.all([
       obtenerCaso(id),
+      listarClientes(),
       listarUsuariosFirma(),
       listarTraslados(id),
       listarActividad(id),
@@ -97,6 +108,10 @@ export function CasoDetailPage() {
     ])
     setCaso(c)
     setNumeroRadicado(c.numero_radicado ?? '')
+    setTituloEdit(c.titulo)
+    setClienteIdEdit(c.cliente_id)
+    setTipoEdit(c.tipo)
+    setClientes(cli)
     setUsuariosFirma(uf)
     setTraslados(t)
     setActividad(a)
@@ -130,6 +145,31 @@ export function CasoDetailPage() {
     } finally {
       setGuardandoRadicado(false)
     }
+  }
+
+  async function handleGuardarDatos(e: FormEvent) {
+    e.preventDefault()
+    if (!id || !tituloEdit.trim() || !clienteIdEdit) return
+    setGuardandoDatos(true)
+    try {
+      await actualizarCaso(id, {
+        titulo: tituloEdit.trim(),
+        cliente_id: clienteIdEdit,
+        tipo: tipoEdit,
+      })
+      await cargar()
+      setEditandoDatos(false)
+    } finally {
+      setGuardandoDatos(false)
+    }
+  }
+
+  function handleCancelarEdicionDatos() {
+    if (!caso) return
+    setTituloEdit(caso.titulo)
+    setClienteIdEdit(caso.cliente_id)
+    setTipoEdit(caso.tipo)
+    setEditandoDatos(false)
   }
 
   async function handleTrasladar(nuevoResponsableId: string, motivo: string) {
@@ -189,14 +229,73 @@ export function CasoDetailPage() {
               <StatusBadge estado={caso.estado} />
             </div>
             <p className="text-sm text-slate mb-4">
-              Información básica que identifica el caso: cliente, tipo, estado y, si aplica,
-              el número de radicado judicial. Actualiza el estado y el radicado aquí a medida
-              que el caso avanza.
+              Información básica que identifica el caso: título, cliente, tipo, estado y, si
+              aplica, el número de radicado judicial.
             </p>
-            <p className="text-sm">
-              Cliente: <span className="font-medium">{caso.clientes?.nombre ?? '—'}</span> · Tipo:{' '}
-              <span className="capitalize">{caso.tipo}</span>
-            </p>
+            {editandoDatos ? (
+              <form onSubmit={handleGuardarDatos} className="space-y-3 max-w-md">
+                <div>
+                  <label className="block text-sm text-slate mb-1">Título</label>
+                  <input
+                    value={tituloEdit}
+                    onChange={(e) => setTituloEdit(e.target.value)}
+                    required
+                    className="w-full field field-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate mb-1">Cliente</label>
+                  <select
+                    value={clienteIdEdit}
+                    onChange={(e) => setClienteIdEdit(e.target.value)}
+                    required
+                    className="w-full field field-sm"
+                  >
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-slate mb-1">Tipo</label>
+                  <select
+                    value={tipoEdit}
+                    onChange={(e) => setTipoEdit(e.target.value as TipoCaso)}
+                    className="w-full field field-sm"
+                  >
+                    <option value="litigio">Litigio</option>
+                    <option value="consultoria">Consultoría</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" disabled={guardandoDatos} className="btn-primary btn-sm">
+                    {guardandoDatos ? 'Guardando…' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelarEdicionDatos}
+                    disabled={guardandoDatos}
+                    className="btn-secondary btn-sm"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className="text-sm">
+                Cliente: <span className="font-medium">{caso.clientes?.nombre ?? '—'}</span> · Tipo:{' '}
+                <span className="capitalize">{caso.tipo}</span>{' '}
+                <button
+                  type="button"
+                  onClick={() => setEditandoDatos(true)}
+                  className="link ml-1"
+                >
+                  editar
+                </button>
+              </p>
+            )}
             <label className="block mt-3 max-w-[14rem]">
               <span className="block text-sm text-slate mb-1">Estado</span>
               <select
