@@ -291,8 +291,11 @@ Implementado:
 **Integración con Google Drive**
 - Detalle de caso (`/app/casos/:id`, sección "Google Drive"): lista los
   archivos de la carpeta de Drive cuyo nombre incluye el
-  `numero_radicado` del caso. Autenticación vía cuenta de servicio de
-  Google (no OAuth de un usuario): una sola cuenta para todo el
+  `numero_radicado` del caso. Si no existe ninguna carpeta con ese
+  nombre, la crea automáticamente dentro de
+  `GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID`, con el estándar de nombre
+  "`{numero_radicado} - {titulo}`". Autenticación vía cuenta de servicio
+  de Google (no OAuth de un usuario): una sola cuenta para todo el
   despacho, sin flujo de "conectar" ni tokens que expiren por sesión.
 - Requiere crear un proyecto en [Google Cloud Console](https://console.cloud.google.com/),
   habilitar la Google Drive API, crear una cuenta de servicio
@@ -301,12 +304,24 @@ Implementado:
   va como variable de entorno del proyecto en Vercel:
   `GOOGLE_SERVICE_ACCOUNT_KEY` (server-side, no lleva prefijo `VITE_`
   porque no debe llegar al cliente).
-- Una cuenta de servicio no "ve" nada por default: cada carpeta de Drive
-  que deba aparecer en el detalle de un caso hay que compartirla
-  manualmente (permiso de lectura alcanza) con el `client_email` de esa
-  cuenta de servicio, igual que se comparte con cualquier otra cuenta de
-  Google. Administración → "Google Drive" muestra ese correo para
-  copiarlo.
+- Una cuenta de servicio no "ve" nada por default: hay que compartir con
+  el `client_email` de esa cuenta de servicio, igual que se comparte con
+  cualquier otra cuenta de Google:
+  - La carpeta contenedora donde deben crearse las carpetas de los casos
+    nuevos, con permiso de **Editor** (necesita escritura para poder
+    crear subcarpetas). Su ID va en la variable de entorno
+    `GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID` (la parte de la URL después de
+    `/folders/`).
+  - Cualquier carpeta de un caso ya existente que se haya creado o
+    ubicado fuera de esa carpeta contenedora (permiso de lectura
+    alcanza, si no hace falta subir/eliminar archivos ahí).
+  Administración → "Google Drive" muestra ese correo para copiarlo, y si
+  la carpeta contenedora está configurada.
+- El scope de OAuth pedido es `drive` completo (no `drive.readonly`):
+  hace falta escritura para crear la carpeta cuando no existe. Es el
+  mismo cambio de scope el que habilita también la creación, sin tocar
+  la clave de la cuenta de servicio — el scope se pide en cada JWT, no
+  está fijado en la credencial.
 - `api/drive/listar.ts` arma y firma el JWT de autenticación de cuenta
   de servicio (RFC 7523) con `node:crypto`, sin dependencias nuevas
   (mismo criterio que el resto de `api/*.ts`: llamadas REST directas en
@@ -522,8 +537,10 @@ api/
     estado.ts          si hay una cuenta de servicio de Drive configurada y
                        su client_email (sin exponer la clave privada) — ver
                        la nota de integración con Google Drive más arriba
-    listar.ts          busca la carpeta de Drive por numero_radicado y lista
-                       sus archivos, autenticado como la cuenta de servicio
+    listar.ts          busca la carpeta de Drive por numero_radicado, la crea
+                       en GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID si no existe, y
+                       lista sus archivos, autenticado como la cuenta de
+                       servicio
 public/
   sw.js                service worker para notificaciones push
 supabase/

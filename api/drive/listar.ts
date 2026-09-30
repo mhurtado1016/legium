@@ -1,12 +1,16 @@
 // Vercel Serverless Function: lista los archivos de la carpeta de
-// Google Drive cuyo nombre contiene el número de radicado del caso.
+// Google Drive cuyo nombre contiene el número de radicado del caso. Si
+// no existe ninguna carpeta con ese nombre, la crea dentro de
+// GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID, con el mismo estándar de nombre
+// que usa la búsqueda: "{radicado} - {título del caso}".
 //
 // Autenticación: cuenta de servicio de Google (una sola, compartida para
 // todo el despacho — GOOGLE_SERVICE_ACCOUNT_KEY, el JSON completo que
 // descarga Google Cloud Console al crearla). No hay OAuth de por medio:
-// la cuenta de servicio solo ve las carpetas que alguien comparte
-// explícitamente con su client_email (ver api/drive/estado.ts), igual
-// que se comparte una carpeta con cualquier otra cuenta de Google.
+// la cuenta de servicio solo ve/edita lo que alguien comparte
+// explícitamente con su client_email (ver api/drive/estado.ts) — eso
+// incluye la carpeta padre donde se crean las carpetas nuevas, que debe
+// compartirse con permiso de Editor (no solo lectura).
 
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'node:crypto'
@@ -18,7 +22,10 @@ export const config = {
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
-const SCOPE_DRIVE_LECTURA = 'https://www.googleapis.com/auth/drive.readonly'
+// Antes era 'drive.readonly': ese scope alcanzaba para listar, pero no
+// para crear la carpeta del caso cuando no existe todavía.
+const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive'
+const CARPETA_PADRE_ID = process.env.GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID
 
 interface CredencialesCuentaServicio {
   client_email: string
@@ -46,7 +53,7 @@ async function obtenerAccessToken({ client_email, private_key }: CredencialesCue
   const cuerpo = base64url(
     JSON.stringify({
       iss: client_email,
-      scope: SCOPE_DRIVE_LECTURA,
+      scope: SCOPE_DRIVE,
       aud: 'https://oauth2.googleapis.com/token',
       exp: ahora + 3600,
       iat: ahora,
@@ -87,6 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const radicado = typeof req.query.radicado === 'string' ? req.query.radicado.trim() : ''
+  const titulo = typeof req.query.titulo === 'string' ? req.query.titulo.trim() : ''
   const token = (req.headers.authorization || '').replace(/^Bearer /i, '')
 
   if (!radicado) {
@@ -131,10 +139,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const carpetaData = await carpetaRes.json()
     if (!carpetaRes.ok) throw new Error(carpetaData.error?.message || 'Error consultando Google Drive')
 
-    const carpeta = carpetaData.files?.[0]
+    let carpeta = carpetaData.files?.[0]
+    let carpetaCreada = false
+
     if (!carpeta) {
-      res.status(200).json({ ok: true, conectado: true, carpetaEncontrada: false, archivos: [] })
-      return
+      if (!CARPETA_PADRE_ID) {
+        res.status(200).json({
+          ok: true,
+          conectado: true,
+          carpetaEncontrada: false,
+          carpetaPadreConfigurada: false,
+          archivos: [],
+        })
+        return
+      }
+
+      const nombreNuevaCarpeta = titulo ? `${radicado} - ${titulo}` : radicado
+      const crearRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: JSON.stringify({
+            name: nombreNuevaCarpeta,
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: [CARPETA_PADRE_ID],
+          }),
+        },
+      )
+      const crearData = await crearRes.json()
+      if (!crearRes.ok) throw new Error(crearData.error?.message || 'No se pudo crear la carpeta del caso en Google Drive')
+
+      carpeta = crearData
+      carpetaCreada = true
     }
 
     const qArchivos = `'${carpeta.id}' in parents and trashed=false`
@@ -149,6 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       conectado: true,
       carpetaEncontrada: true,
+      carpetaCreada,
       carpetaId: carpeta.id,
       carpetaNombre: carpeta.name,
       archivos: archivosData.files ?? [],

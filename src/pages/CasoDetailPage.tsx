@@ -477,6 +477,7 @@ export function CasoDetailPage() {
                 documentos={documentos}
                 plantillas={plantillas}
                 numeroRadicado={caso.numero_radicado}
+                tituloCaso={caso.titulo}
                 onCambio={cargar}
               />
             )}
@@ -677,12 +678,14 @@ function DocumentosSeccion({
   documentos,
   plantillas,
   numeroRadicado,
+  tituloCaso,
   onCambio,
 }: {
   casoId: string
   documentos: Documento[]
   plantillas: Plantilla[]
   numeroRadicado: string | null
+  tituloCaso: string
   onCambio: () => void
 }) {
   const [error, setError] = useState<string | null>(null)
@@ -711,7 +714,7 @@ function DocumentosSeccion({
     setCargandoDrive(true)
     setErrorDrive(null)
     try {
-      const r = await listarArchivosDrive(numeroRadicado)
+      const r = await listarArchivosDrive(numeroRadicado, tituloCaso)
       setEstadoDrive(r)
       return r
     } catch (err) {
@@ -725,7 +728,7 @@ function DocumentosSeccion({
   useEffect(() => {
     cargarDrive()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [numeroRadicado])
+  }, [numeroRadicado, tituloCaso])
 
   async function handleSubirDrive(e: React.ChangeEvent<HTMLInputElement>) {
     const archivoDrive = e.target.files?.[0]
@@ -910,9 +913,16 @@ function DocumentosSeccion({
 
       {!cargandoDrive && numeroRadicado && !errorDrive && estadoDrive && !estadoDrive.carpetaEncontrada && (
         <p className="text-xs text-slate mb-4">
-          {estadoDrive.conectado
-            ? `No se encontró en Google Drive ninguna carpeta cuyo nombre incluya "${numeroRadicado}".`
-            : 'Google Drive no está conectado. Un administrador puede hacerlo desde Administración.'}
+          {!estadoDrive.conectado
+            ? 'Google Drive no está conectado. Un administrador puede hacerlo desde Administración.'
+            : estadoDrive.carpetaPadreConfigurada === false
+              ? 'No se pudo crear la carpeta de este caso en Google Drive: falta configurar la carpeta contenedora. Un administrador puede hacerlo desde Administración.'
+              : 'No se encontró ni se pudo crear la carpeta de este caso en Google Drive.'}
+        </p>
+      )}
+      {!cargandoDrive && estadoDrive?.carpetaCreada && (
+        <p className="text-xs text-success mb-4">
+          Se creó la carpeta de este caso en Google Drive: "{estadoDrive.carpetaNombre}".
         </p>
       )}
       {errorDrive && <p className="text-xs text-danger mb-4">{errorDrive}</p>}

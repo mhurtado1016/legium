@@ -207,7 +207,11 @@ export function AdministracionPage() {
 // de Drive con el correo de esa cuenta de servicio para que sea visible
 // en el detalle del caso (búsqueda por número de radicado).
 function IntegracionDriveSeccion() {
-  const [estado, setEstado] = useState<{ configurado: boolean; cuentaEmail: string | null } | null>(null)
+  const [estado, setEstado] = useState<{
+    configurado: boolean
+    cuentaEmail: string | null
+    carpetaPadreConfigurada: boolean
+  } | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
@@ -238,8 +242,8 @@ function IntegracionDriveSeccion() {
       </div>
       <p className="text-sm text-slate mb-3">
         El detalle de cada caso muestra los archivos de la carpeta de Drive cuyo nombre incluye el número de
-        radicado. Para que una carpeta sea visible, hay que compartirla (permiso de lectura alcanza) con esta
-        cuenta:
+        radicado, y la crea automáticamente (como "radicado - título del caso") dentro de la carpeta contenedora si
+        todavía no existe. Esta cuenta necesita permiso de Editor sobre esa carpeta contenedora:
       </p>
 
       {error && <p className="text-sm text-danger mb-3">{error}</p>}
@@ -252,14 +256,26 @@ function IntegracionDriveSeccion() {
       ) : !estado?.configurado ? (
         <p className="text-sm text-slate">No hay una cuenta de servicio de Google Drive configurada todavía.</p>
       ) : (
-        <div className="flex items-center gap-2 flex-wrap">
-          <CheckCircle2 size={14} strokeWidth={1.75} className="text-success shrink-0" />
-          <code className="text-sm bg-paper-sunken px-2 py-1 rounded-[var(--radius-field)]">{estado.cuentaEmail}</code>
-          <button type="button" onClick={handleCopiar} className="link flex items-center gap-1 text-xs">
-            <Copy size={12} strokeWidth={1.75} />
-            {copiado ? 'Copiado' : 'Copiar'}
-          </button>
-        </div>
+        <>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <CheckCircle2 size={14} strokeWidth={1.75} className="text-success shrink-0" />
+            <code className="text-sm bg-paper-sunken px-2 py-1 rounded-[var(--radius-field)]">{estado.cuentaEmail}</code>
+            <button type="button" onClick={handleCopiar} className="link flex items-center gap-1 text-xs">
+              <Copy size={12} strokeWidth={1.75} />
+              {copiado ? 'Copiado' : 'Copiar'}
+            </button>
+          </div>
+          <p className="text-xs text-slate flex items-center gap-1.5">
+            {estado.carpetaPadreConfigurada ? (
+              <>
+                <CheckCircle2 size={12} strokeWidth={1.75} className="text-success shrink-0" />
+                Carpeta contenedora configurada: las carpetas de casos nuevos se crean automáticamente.
+              </>
+            ) : (
+              'Falta configurar GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID: sin eso, las carpetas de casos nuevos no se crean solas.'
+            )}
+          </p>
+        </>
       )}
     </section>
   )

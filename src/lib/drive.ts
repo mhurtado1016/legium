@@ -12,6 +12,8 @@ export interface ArchivoDrive {
 export interface EstadoArchivosDrive {
   conectado: boolean
   carpetaEncontrada: boolean
+  carpetaCreada?: boolean
+  carpetaPadreConfigurada?: boolean
   carpetaId?: string
   carpetaNombre?: string
   archivos: ArchivoDrive[]
@@ -25,9 +27,14 @@ async function tokenSesion() {
   return session.access_token
 }
 
-export async function listarArchivosDrive(radicado: string): Promise<EstadoArchivosDrive> {
+// `titulo` se usa solo si hay que crear la carpeta del caso (no existía
+// ninguna con el radicado en el nombre): el estándar de nombre es
+// "{radicado} - {título}", ver api/drive/listar.ts.
+export async function listarArchivosDrive(radicado: string, titulo?: string): Promise<EstadoArchivosDrive> {
   const token = await tokenSesion()
-  const res = await fetch(`/api/drive/listar?radicado=${encodeURIComponent(radicado)}`, {
+  const params = new URLSearchParams({ radicado })
+  if (titulo) params.set('titulo', titulo)
+  const res = await fetch(`/api/drive/listar?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   const data = await res.json()
@@ -35,7 +42,11 @@ export async function listarArchivosDrive(radicado: string): Promise<EstadoArchi
   return data as EstadoArchivosDrive
 }
 
-export async function estadoCuentaServicioDrive(): Promise<{ configurado: boolean; cuentaEmail: string | null }> {
+export async function estadoCuentaServicioDrive(): Promise<{
+  configurado: boolean
+  cuentaEmail: string | null
+  carpetaPadreConfigurada: boolean
+}> {
   const token = await tokenSesion()
   const res = await fetch('/api/drive/estado', { headers: { Authorization: `Bearer ${token}` } })
   const data = await res.json()

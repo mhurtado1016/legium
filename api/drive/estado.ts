@@ -40,13 +40,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: userData } = await comoUsuario.auth.getUser()
     if (!userData?.user) throw new Error('Sesión inválida')
 
+    const carpetaPadreConfigurada = !!process.env.GOOGLE_DRIVE_CASOS_PARENT_FOLDER_ID
+
     const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
     if (!raw) {
-      res.status(200).json({ ok: true, configurado: false, cuentaEmail: null })
+      res.status(200).json({ ok: true, configurado: false, cuentaEmail: null, carpetaPadreConfigurada })
       return
     }
     const { client_email } = JSON.parse(raw)
-    res.status(200).json({ ok: true, configurado: !!client_email, cuentaEmail: client_email ?? null })
+    res.status(200).json({ ok: true, configurado: !!client_email, cuentaEmail: client_email ?? null, carpetaPadreConfigurada })
   } catch (err) {
     console.error('Error en drive/estado:', err)
     res.status(500).json({ ok: false, error: err instanceof Error ? err.message : String(err) })
