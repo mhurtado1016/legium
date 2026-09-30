@@ -744,22 +744,27 @@ function DocumentosSeccion({
 
   // Migra a Drive los documentos que ya están en el bucket de Supabase
   // (subidos antes de que existiera la integración, o mientras Drive
-  // estaba desconectado) pero todavía no aparecen en la carpeta del
-  // caso — comparando por nombre de archivo. Una vez subida a Drive,
-  // la copia del sistema (bucket + fila de documentos/versiones) se
-  // borra por completo: de ahí en adelante ese archivo vive solo en
-  // Drive, para no dejarlo duplicado ni con un enlace roto en la tabla.
-  // Corre al entrar al caso o cuando cambia la lista de
-  // documentos/archivos de Drive; cada versión se intenta como máximo
-  // una vez por carga de página, para no reintentar en bucle si falla.
+  // estaba desconectado). Una vez subida a Drive, la copia del sistema
+  // (bucket + fila de documentos/versiones) se borra por completo: de
+  // ahí en adelante ese archivo vive solo en Drive, para no dejarlo
+  // duplicado ni con un enlace roto en la tabla.
+  // Corre al entrar al caso o cuando cambia la lista de documentos;
+  // cada versión se intenta como máximo una vez por carga de página,
+  // para no reintentar en bucle si falla.
+  //
+  // A propósito NO se descarta un documento solo porque Drive ya tenga
+  // un archivo con el mismo nombre: dos documentos distintos con el
+  // mismo nombre (algo común, ej. "Demanda ejecutiva.pdf" subida
+  // directo a Drive por alguien y también por el sistema) hacían que
+  // esto nunca sincronizara nada — se veía como si la función no
+  // funcionara. El propio borrado tras subir evita que un documento ya
+  // migrado se vuelva a intentar.
   useEffect(() => {
     if (!estadoDrive?.carpetaEncontrada || !estadoDrive.carpetaId) return
 
-    const nombresEnDrive = new Set(estadoDrive.archivos.map((a) => a.name))
     const faltantes = documentos.filter((d) => {
       const v = d.ultima_version
       if (!v) return false
-      if (nombresEnDrive.has(v.nombre_archivo)) return false
       return !intentosSincronizacion.current.has(v.id)
     })
     if (faltantes.length === 0) return
