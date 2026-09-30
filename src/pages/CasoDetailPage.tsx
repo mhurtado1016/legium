@@ -28,6 +28,7 @@ import {
 } from '../lib/casos'
 import { crearPlazo, listarPlazos, marcarCumplido, type Plazo } from '../lib/plazos'
 import {
+  eliminarDocumento,
   listarDocumentos,
   listarVersiones,
   urlDescarga,
@@ -707,6 +708,10 @@ function DocumentosSeccion({
   const [eliminandoDriveId, setEliminandoDriveId] = useState<string | null>(null)
   const [sincronizandoDrive, setSincronizandoDrive] = useState(false)
   const [archivosSincronizados, setArchivosSincronizados] = useState(0)
+  const [erroresSincronizacion, setErroresSincronizacion] = useState<string[]>([])
+  // IDs de `documentos` que se están subiendo a Drive en este momento
+  // — para mostrar el indicador de carga en su fila de la tabla.
+  const [sincronizandoIds, setSincronizandoIds] = useState<Set<string>>(new Set())
   // Versiones de documento que ya se intentó subir a Drive en esta
   // sesión de la página, para no reintentar en bucle si alguna falla
   // (ej. archivo corrupto): si sigue faltando, se reintenta recién al
@@ -737,13 +742,16 @@ function DocumentosSeccion({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numeroRadicado, tituloCaso])
 
-  // Sube a Drive los documentos que ya están en el bucket de Supabase
-  // (subidos antes de que existiera la integración, o subidos mientras
-  // Drive estaba desconectado) pero todavía no aparecen en la carpeta
-  // del caso — comparando por nombre de archivo. Corre solo al entrar
-  // al caso o cuando cambia la lista de documentos/archivos de Drive,
-  // nunca en bucle: cada versión de documento se intenta como máximo
-  // una vez por carga de página.
+  // Migra a Drive los documentos que ya están en el bucket de Supabase
+  // (subidos antes de que existiera la integración, o mientras Drive
+  // estaba desconectado) pero todavía no aparecen en la carpeta del
+  // caso — comparando por nombre de archivo. Una vez subida a Drive,
+  // la copia del sistema (bucket + fila de documentos/versiones) se
+  // borra por completo: de ahí en adelante ese archivo vive solo en
+  // Drive, para no dejarlo duplicado ni con un enlace roto en la tabla.
+  // Corre al entrar al caso o cuando cambia la lista de
+  // documentos/archivos de Drive; cada versión se intenta como máximo
+  // una vez por carga de página, para no reintentar en bucle si falla.
   useEffect(() => {
     if (!estadoDrive?.carpetaEncontrada || !estadoDrive.carpetaId) return
 
@@ -760,9 +768,11 @@ function DocumentosSeccion({
     ;(async () => {
       setSincronizandoDrive(true)
       let subidos = 0
+      const errores: string[] = []
       for (const doc of faltantes) {
         const version = doc.ultima_version!
         intentosSincronizacion.current.add(version.id)
+        setSincronizandoIds((prev) => new Set(prev).add(doc.id))
         try {
           const url = await urlDescarga(version.storage_path)
           const res = await fetch(url)
@@ -772,14 +782,23 @@ function DocumentosSeccion({
             type: version.mime_type || blob.type,
           })
           await subirArchivoDrive(estadoDrive.carpetaId!, archivo)
+          await eliminarDocumento(doc.id)
           subidos++
-        } catch {
-          // Sin bloquear el resto: se reintenta al volver a entrar al caso.
+        } catch (err) {
+          errores.push(`${version.nombre_archivo}: ${err instanceof Error ? err.message : String(err)}`)
+        } finally {
+          setSincronizandoIds((prev) => {
+            const next = new Set(prev)
+            next.delete(doc.id)
+            return next
+          })
         }
       }
       if (cancelado) return
+      setErroresSincronizacion(errores)
       if (subidos > 0) {
         setArchivosSincronizados(subidos)
+        onCambio() // refresca `documentos`: los migrados ya no deben aparecer como "sistema"
         await cargarDrive()
       }
       setSincronizandoDrive(false)
@@ -994,9 +1013,19 @@ function DocumentosSeccion({
       )}
       {!sincronizandoDrive && archivosSincronizados > 0 && (
         <p className="text-xs text-success mb-4">
-          Se subieron {archivosSincronizados} documento{archivosSincronizados === 1 ? '' : 's'} a Google Drive que
-          todavía no estaban ahí.
+          Se migraron {archivosSincronizados} documento{archivosSincronizados === 1 ? '' : 's'} a Google Drive
+          (ya no están en el bucket, ahora viven solo en Drive).
         </p>
+      )}
+      {!sincronizandoDrive && erroresSincronizacion.length > 0 && (
+        <div className="text-xs text-danger mb-4">
+          <p>No se pudo migrar {erroresSincronizacion.length === 1 ? 'este documento' : 'estos documentos'} a Google Drive:</p>
+          <ul className="list-disc pl-4 mt-1 space-y-0.5">
+            {erroresSincronizacion.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
       )}
       {errorDrive && <p className="text-xs text-danger mb-4">{errorDrive}</p>}
 
@@ -1028,6 +1057,12 @@ function DocumentosSeccion({
                       <div className="max-w-xs truncate" title={item.doc.nombre}>
                         {item.doc.nombre}
                       </div>
+                      {sincronizandoIds.has(item.doc.id) && (
+                        <div className="flex items-center gap-1.5 text-xs font-normal text-slate mt-0.5">
+                          <Loader2 size={11} className="animate-spin" strokeWidth={1.75} />
+                          Migrando a Drive…
+                        </div>
+                      )}
                     </td>
                     <td className="border-b-0 pb-1.5">
                       {item.doc.ultima_version ? (
@@ -1180,6 +1215,12 @@ function DocumentosSeccion({
               <CardHeader>
                 <span className="font-medium text-ink break-words min-w-0">{item.doc.nombre}</span>
               </CardHeader>
+              {sincronizandoIds.has(item.doc.id) && (
+                <div className="flex items-center gap-1.5 text-xs text-slate mb-1.5">
+                  <Loader2 size={11} className="animate-spin" strokeWidth={1.75} />
+                  Migrando a Drive…
+                </div>
+              )}
               <CardRow label="Versión">
                 {item.doc.ultima_version ? (
                   <button

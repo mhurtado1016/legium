@@ -161,3 +161,28 @@ export async function urlDescarga(storagePath: string) {
   if (error) throw error
   return data.signedUrl
 }
+
+// Borra un documento del sistema por completo (todas sus versiones, en
+// el bucket y en la base de datos) — se usa después de migrarlo a
+// Google Drive, para no dejar el archivo duplicado en dos sitios ni una
+// fila del sistema con un enlace de descarga roto. No hay
+// "ON DELETE CASCADE" entre documento_versiones y documentos, así que
+// las versiones se borran explícitamente antes que el documento.
+export async function eliminarDocumento(documentoId: string) {
+  const versiones = await listarVersiones(documentoId)
+
+  const storagePaths = versiones.map((v) => v.storage_path)
+  if (storagePaths.length > 0) {
+    const { error: storageError } = await supabase.storage.from('documentos').remove(storagePaths)
+    if (storageError) throw storageError
+  }
+
+  const { error: versionesError } = await supabase
+    .from('documento_versiones')
+    .delete()
+    .eq('documento_id', documentoId)
+  if (versionesError) throw versionesError
+
+  const { error: docError } = await supabase.from('documentos').delete().eq('id', documentoId)
+  if (docError) throw docError
+}
