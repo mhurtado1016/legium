@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { useUsuario } from './lib/useUsuario'
 import { LandingPage } from './pages/LandingPage'
-import { PushNotificationGate } from './components/PushNotificationGate'
 
 // Carga perezosa: el panel interno (casos, agenda, facturación, reportes,
 // administración) no debe pesar en el bundle inicial del landing público
@@ -33,7 +32,7 @@ function ProtectedRoute({ children }: { children: React.ReactElement }) {
 
   if (loading) return null // evita parpadeo de redirección mientras se resuelve la sesión
   if (!session) return <Navigate to="/login" replace />
-  return <PushNotificationGate>{children}</PushNotificationGate>
+  return children
 }
 
 // Guardia inversa: si ya hay sesión activa, no tiene sentido mostrar el
@@ -55,7 +54,7 @@ function AdminOnlyRoute({ children }: { children: React.ReactElement }) {
   if (loadingSesion || loadingUsuario) return null
   if (!session) return <Navigate to="/login" replace />
   if (!usuario?.es_administrador) return <Navigate to="/app" replace />
-  return <PushNotificationGate>{children}</PushNotificationGate>
+  return children
 }
 
 function AppRoutes() {

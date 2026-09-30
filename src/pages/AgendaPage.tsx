@@ -1,12 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Bell, BellOff, Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
 import { SelectorFranja } from '../components/SelectorFranja'
 import { StatusBadge } from '../components/StatusBadge'
-import { useUsuario, type Usuario } from '../lib/useUsuario'
-import { suscribirsePush } from '../lib/plazos'
+import { useUsuario } from '../lib/useUsuario'
 import {
   DIAS_SEMANA,
   actualizarConfiguracion,
@@ -49,71 +48,12 @@ export function AgendaPage() {
             <h1 className="font-display text-2xl font-semibold tracking-tight">Agenda</h1>
             <p className="text-sm text-slate mt-1">Citas del equipo y disponibilidad para agendar.</p>
           </div>
-          {usuario && <NotificacionesPushBoton usuario={usuario} />}
         </div>
         <CitasSeccion refrescar={refrescoCitas} />
         <ReservarManualSeccion onReservada={() => setRefrescoCitas((n) => n + 1)} />
         {usuario?.es_administrador && <ConfiguracionSeccion />}
       </main>
     </div>
-  )
-}
-
-// Indicador/reintento manual de la suscripción push. El alta obligatoria
-// ocurre en PushNotificationGate (modal al cargar la app); esto queda
-// como respaldo visible por si la suscripción se pierde sin recargar.
-function NotificacionesPushBoton({ usuario }: { usuario: Usuario }) {
-  const [estado, setEstado] = useState<'inactivo' | 'activando' | 'activo' | 'error' | 'no_soportado'>('inactivo')
-
-  useEffect(() => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      setEstado('no_soportado')
-      return
-    }
-    navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => {
-        if (sub) setEstado('activo')
-      })
-      .catch(() => {})
-  }, [])
-
-  async function activar() {
-    setEstado('activando')
-    try {
-      await suscribirsePush(usuario.firma_id, usuario.id)
-      setEstado('activo')
-    } catch (err) {
-      console.error('No se pudo activar las notificaciones push:', err)
-      setEstado('error')
-    }
-  }
-
-  if (estado === 'no_soportado') return null
-
-  if (estado === 'activo') {
-    return (
-      <span className="flex items-center gap-1.5 text-xs text-slate">
-        <Bell size={14} strokeWidth={1.75} className="text-success" />
-        Notificaciones activas
-      </span>
-    )
-  }
-
-  return (
-    <button type="button" onClick={activar} disabled={estado === 'activando'} className="btn-secondary btn-sm">
-      {estado === 'activando' ? (
-        <>
-          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-          Activando…
-        </>
-      ) : (
-        <>
-          <BellOff size={14} strokeWidth={1.75} />
-          {estado === 'error' ? 'Reintentar activar notificaciones' : 'Activar notificaciones'}
-        </>
-      )}
-    </button>
   )
 }
 

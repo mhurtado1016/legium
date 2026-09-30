@@ -4,6 +4,7 @@ import { LogOut, Menu, X } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { useUsuario } from '../lib/useUsuario'
 import { NotificationBell } from './NotificationBell'
+import { PushNotificationButton } from './PushNotificationButton'
 
 const NAV_ITEMS = [
   { to: '/app', label: 'Buscador' },
@@ -94,6 +95,7 @@ export function AppHeader({ left }: { left?: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <PushNotificationButton />
             <NotificationBell />
 
             <div className="relative hidden md:block" ref={usuarioMenuRef}>
