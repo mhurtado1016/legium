@@ -1559,20 +1559,38 @@ function DriveArchivoPreviewModal({
     }
   }, [onClose])
 
+  // A diferencia de DocumentoPreviewModal (signed URL de Supabase, que
+  // solo falla por permisos), el endpoint de Drive también puede
+  // responder un error JSON en texto plano (ej. sesión inválida, el
+  // archivo ya no existe — ver api/drive/ver.ts). Sin este fetch
+  // previo, ese JSON quedaba como src del iframe y se veía literalmente
+  // como texto en el visor en vez de un mensaje de error.
   useEffect(() => {
     let cancelado = false
+    let urlObjeto: string | null = null
     setUrl(null)
     setArchivoListo(false)
     setError(null)
-    urlVerArchivoDrive(fileId)
-      .then((u) => {
-        if (!cancelado) setUrl(u)
-      })
-      .catch((err) => {
+    ;(async () => {
+      try {
+        const endpoint = await urlVerArchivoDrive(fileId)
+        const res = await fetch(endpoint)
+        if (cancelado) return
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          throw new Error(data?.error || 'No se pudo cargar el documento.')
+        }
+        const blob = await res.blob()
+        if (cancelado) return
+        urlObjeto = URL.createObjectURL(blob)
+        setUrl(urlObjeto)
+      } catch (err) {
         if (!cancelado) setError(err instanceof Error ? err.message : 'No se pudo cargar el documento.')
-      })
+      }
+    })()
     return () => {
       cancelado = true
+      if (urlObjeto) URL.revokeObjectURL(urlObjeto)
     }
   }, [fileId])
 
