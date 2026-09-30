@@ -706,6 +706,7 @@ function DocumentosSeccion({
   const [errorDrive, setErrorDrive] = useState<string | null>(null)
   const [subiendoDrive, setSubiendoDrive] = useState(false)
   const [eliminandoDriveId, setEliminandoDriveId] = useState<string | null>(null)
+  const [eliminandoDocId, setEliminandoDocId] = useState<string | null>(null)
   const [sincronizandoDrive, setSincronizandoDrive] = useState(false)
   const [archivosSincronizados, setArchivosSincronizados] = useState(0)
   const [erroresSincronizacion, setErroresSincronizacion] = useState<string[]>([])
@@ -849,6 +850,20 @@ function DocumentosSeccion({
       setError(err instanceof Error ? err.message : 'No se pudo eliminar el archivo de Google Drive.')
     } finally {
       setEliminandoDriveId(null)
+    }
+  }
+
+  async function handleEliminarDocumento(doc: Documento) {
+    if (!window.confirm(`¿Eliminar "${doc.nombre}" del sistema? Esta acción no se puede deshacer.`)) return
+    setEliminandoDocId(doc.id)
+    setError(null)
+    try {
+      await eliminarDocumento(doc.id)
+      onCambio()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el documento.')
+    } finally {
+      setEliminandoDocId(null)
     }
   }
 
@@ -1120,6 +1135,18 @@ function DocumentosSeccion({
                           <History size={14} strokeWidth={1.75} />
                           Historial
                         </button>
+                        <button
+                          onClick={() => handleEliminarDocumento(item.doc)}
+                          disabled={eliminandoDocId === item.doc.id}
+                          className="flex items-center gap-1.5 text-slate hover:text-danger transition-colors disabled:opacity-60"
+                        >
+                          {eliminandoDocId === item.doc.id ? (
+                            <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                          ) : (
+                            <Trash2 size={14} strokeWidth={1.75} />
+                          )}
+                          Eliminar
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1271,6 +1298,18 @@ function DocumentosSeccion({
                 >
                   <History size={14} strokeWidth={1.75} />
                   Historial
+                </button>
+                <button
+                  onClick={() => handleEliminarDocumento(item.doc)}
+                  disabled={eliminandoDocId === item.doc.id}
+                  className="flex items-center gap-1.5 text-slate hover:text-danger transition-colors disabled:opacity-60"
+                >
+                  {eliminandoDocId === item.doc.id ? (
+                    <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Trash2 size={14} strokeWidth={1.75} />
+                  )}
+                  Eliminar
                 </button>
               </CardActions>
               {historialAbierto === item.doc.id && (
