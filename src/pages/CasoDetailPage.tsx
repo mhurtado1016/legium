@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Download, ExternalLink, Eye, History, Loader2, Trash2, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -705,6 +705,13 @@ function DocumentosSeccion({
   const [errorDrive, setErrorDrive] = useState<string | null>(null)
   const [subiendoDrive, setSubiendoDrive] = useState(false)
   const [eliminandoDriveId, setEliminandoDriveId] = useState<string | null>(null)
+  const [sincronizandoDrive, setSincronizandoDrive] = useState(false)
+  const [archivosSincronizados, setArchivosSincronizados] = useState(0)
+  // Versiones de documento que ya se intentó subir a Drive en esta
+  // sesión de la página, para no reintentar en bucle si alguna falla
+  // (ej. archivo corrupto): si sigue faltando, se reintenta recién al
+  // volver a entrar al caso.
+  const intentosSincronizacion = useRef<Set<string>>(new Set())
 
   async function cargarDrive() {
     if (!numeroRadicado) {
@@ -729,6 +736,60 @@ function DocumentosSeccion({
     cargarDrive()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numeroRadicado, tituloCaso])
+
+  // Sube a Drive los documentos que ya están en el bucket de Supabase
+  // (subidos antes de que existiera la integración, o subidos mientras
+  // Drive estaba desconectado) pero todavía no aparecen en la carpeta
+  // del caso — comparando por nombre de archivo. Corre solo al entrar
+  // al caso o cuando cambia la lista de documentos/archivos de Drive,
+  // nunca en bucle: cada versión de documento se intenta como máximo
+  // una vez por carga de página.
+  useEffect(() => {
+    if (!estadoDrive?.carpetaEncontrada || !estadoDrive.carpetaId) return
+
+    const nombresEnDrive = new Set(estadoDrive.archivos.map((a) => a.name))
+    const faltantes = documentos.filter((d) => {
+      const v = d.ultima_version
+      if (!v) return false
+      if (nombresEnDrive.has(v.nombre_archivo)) return false
+      return !intentosSincronizacion.current.has(v.id)
+    })
+    if (faltantes.length === 0) return
+
+    let cancelado = false
+    ;(async () => {
+      setSincronizandoDrive(true)
+      let subidos = 0
+      for (const doc of faltantes) {
+        const version = doc.ultima_version!
+        intentosSincronizacion.current.add(version.id)
+        try {
+          const url = await urlDescarga(version.storage_path)
+          const res = await fetch(url)
+          if (!res.ok) throw new Error('No se pudo descargar el archivo del bucket')
+          const blob = await res.blob()
+          const archivo = new File([blob], version.nombre_archivo, {
+            type: version.mime_type || blob.type,
+          })
+          await subirArchivoDrive(estadoDrive.carpetaId!, archivo)
+          subidos++
+        } catch {
+          // Sin bloquear el resto: se reintenta al volver a entrar al caso.
+        }
+      }
+      if (cancelado) return
+      if (subidos > 0) {
+        setArchivosSincronizados(subidos)
+        await cargarDrive()
+      }
+      setSincronizandoDrive(false)
+    })()
+
+    return () => {
+      cancelado = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentos, estadoDrive?.carpetaId, estadoDrive?.archivos])
 
   async function handleSubirDrive(e: React.ChangeEvent<HTMLInputElement>) {
     const archivoDrive = e.target.files?.[0]
@@ -923,6 +984,18 @@ function DocumentosSeccion({
       {!cargandoDrive && estadoDrive?.carpetaCreada && (
         <p className="text-xs text-success mb-4">
           Se creó la carpeta de este caso en Google Drive: "{estadoDrive.carpetaNombre}".
+        </p>
+      )}
+      {sincronizandoDrive && (
+        <p className="text-xs text-slate mb-4 flex items-center gap-2">
+          <Loader2 size={12} className="animate-spin" strokeWidth={1.75} />
+          Sincronizando documentos con Google Drive…
+        </p>
+      )}
+      {!sincronizandoDrive && archivosSincronizados > 0 && (
+        <p className="text-xs text-success mb-4">
+          Se subieron {archivosSincronizados} documento{archivosSincronizados === 1 ? '' : 's'} a Google Drive que
+          todavía no estaban ahí.
         </p>
       )}
       {errorDrive && <p className="text-xs text-danger mb-4">{errorDrive}</p>}
