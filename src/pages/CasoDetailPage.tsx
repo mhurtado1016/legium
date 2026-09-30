@@ -918,6 +918,15 @@ function DocumentosSeccion({
     })
   }
 
+  // Antes de que resuelva la primera consulta a Drive, el listado se
+  // veía "vacío" un instante (los documentos del sistema ya estaban,
+  // pero la tabla entera se sentía incompleta) y de repente aparecía
+  // todo junto. Mientras no haya llegado ni una sola respuesta de Drive
+  // (estadoDrive sigue en null) se muestra un estado de carga en vez de
+  // la tabla — en recargas posteriores (subir un archivo, etc.) ya hay
+  // un estadoDrive previo y no vuelve a tapar la tabla.
+  const cargandoListaInicial = cargandoDrive && estadoDrive === null
+
   const documentosFiltrados = busqueda
     ? documentos.filter((d) => d.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     : documentos
@@ -1051,15 +1060,22 @@ function DocumentosSeccion({
 
       {error && <p className="text-sm text-danger mb-3">{error}</p>}
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre…"
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        className="field field-sm mb-3 w-full max-w-xs"
-      />
+      {cargandoListaInicial ? (
+        <div className="card flex items-center justify-center gap-2 py-10 text-sm text-slate">
+          <Loader2 size={16} className="animate-spin" strokeWidth={1.75} />
+          Cargando documentos…
+        </div>
+      ) : (
+        <>
+          <input
+            type="text"
+            placeholder="Buscar por nombre…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="field field-sm mb-3 w-full max-w-xs"
+          />
 
-      <div className="hidden md:block card overflow-hidden">
+          <div className="hidden md:block card overflow-hidden">
         <table className="table-modern">
           <thead>
             <tr>
@@ -1374,7 +1390,9 @@ function DocumentosSeccion({
           ),
         )}
         {itemsUnificados.length === 0 && <CardEmpty>Sin documentos todavía.</CardEmpty>}
-      </CardList>
+          </CardList>
+        </>
+      )}
 
       {previsualizando?.tipo === 'sistema' && (
         <DocumentoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
