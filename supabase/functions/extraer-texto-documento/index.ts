@@ -7,17 +7,22 @@
 // contenido (sección 7.4) y el contexto del asistente de Documentos IA
 // (ver documentos-ia-chat).
 //
-// PDF: pdfjs-dist (build "legacy", pensado para entornos sin DOM/worker
-// como este) — se usa en vez de pdf-parse porque esa librería intenta
-// leer un PDF de prueba de su propio paquete en modo "debug" cuando no
-// detecta un module.parent normal de Node, algo que rompe en runtimes
-// como Deno/edge; pdfjs-dist no tiene ese problema.
+// PDF: unpdf — build de pdf.js empaquetado específicamente para entornos
+// serverless/edge (sin canvas, sin workers, sin los cmaps/standard_fonts
+// de varios MB que trae el paquete pdfjs-dist completo). Se intentó
+// primero pdfjs-dist directo (build "legacy") y luego pdf-parse (que
+// además tiene un bug conocido: en modo "debug" intenta leer un PDF de
+// prueba de su propio paquete cuando no detecta un module.parent normal
+// de Node, algo que rompe en Deno/edge); pdfjs-dist funcionaba pero el
+// despliegue a Supabase falló con "413 request entity too large" — el
+// paquete completo es demasiado pesado para subirse como función. unpdf
+// resuelve ambos problemas.
 // DOCX: mammoth, que solo sabe leer el formato .docx (XML) — el .doc
 // binario antiguo (application/msword) sigue sin extracción, ver más
 // abajo.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { getDocument } from 'npm:pdfjs-dist@4/legacy/build/pdf.mjs'
+import { extractText } from 'npm:unpdf@1'
 import mammoth from 'npm:mammoth@1'
 
 // Headers CORS: sin esto, el navegador bloquea la respuesta por venir
@@ -32,21 +37,8 @@ interface Body {
 }
 
 async function extraerTextoPdf(bytes: Uint8Array): Promise<string> {
-  const documento = await getDocument({
-    data: bytes,
-    useWorkerFetch: false,
-    isEvalSupported: false,
-    disableFontFace: true,
-  }).promise
-
-  const paginas: string[] = []
-  for (let numeroPagina = 1; numeroPagina <= documento.numPages; numeroPagina++) {
-    const pagina = await documento.getPage(numeroPagina)
-    const contenido = await pagina.getTextContent()
-    const texto = contenido.items.map((item) => ('str' in item ? item.str : '')).join(' ')
-    paginas.push(texto)
-  }
-  return paginas.join('\n\n')
+  const { text } = await extractText(bytes, { mergePages: true })
+  return text
 }
 
 async function extraerTextoDocx(bytes: ArrayBuffer): Promise<string> {

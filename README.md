@@ -130,7 +130,9 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
 - `extraer-texto-documento`: extrae texto de una versión de documento
   recién subida para habilitar la búsqueda de contenido (sección 7.3) y
   el contexto del asistente de Documentos IA. Implementado para texto
-  plano/HTML, PDF (`pdfjs-dist`, build "legacy") y DOCX (`mammoth`). El
+  plano/HTML, PDF (`unpdf`, build de pdf.js para entornos serverless/edge
+  — `pdfjs-dist` directo funcionaba pero su despliegue como función
+  fallaba con "413 request entity too large") y DOCX (`mammoth`). El
   `.doc` binario antiguo (`application/msword`) y las imágenes quedan sin
   extracción (sin una librería de OCR/parser binario, no vale la pena la
   dependencia); si la extracción falla para un archivo puntual (PDF
