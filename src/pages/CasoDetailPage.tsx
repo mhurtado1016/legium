@@ -689,7 +689,7 @@ export function CasoDetailPage() {
       {usuario?.es_administrador && (
         <>
           {mostrarSaludoIA && !mostrarAsistenteIA && (
-            <div className="fixed bottom-24 right-6 z-40 max-w-[230px] animate-in">
+            <div className="hidden md:block fixed bottom-24 right-6 z-40 max-w-[230px] animate-in">
               <div className="relative card px-4 py-3 shadow-[var(--shadow-raised)]">
                 <button
                   type="button"
@@ -737,7 +737,7 @@ export function CasoDetailPage() {
       {usuario && (
         <>
           {mostrarSaludoSentencias && !mostrarBuscadorSentencias && (
-            <div className="fixed bottom-24 left-6 z-40 max-w-[230px] animate-in">
+            <div className="hidden md:block fixed bottom-24 left-6 z-40 max-w-[230px] animate-in">
               <div className="relative card px-4 py-3 shadow-[var(--shadow-raised)]">
                 <button
                   type="button"
