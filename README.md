@@ -128,9 +128,14 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   (por defecto `v21.0`).
 
 - `extraer-texto-documento`: extrae texto de una versión de documento
-  recién subida para habilitar la búsqueda de contenido (sección 7.3).
-  Implementado para texto plano/HTML; PDF y DOCX quedan pendientes de
-  una librería de extracción dedicada.
+  recién subida para habilitar la búsqueda de contenido (sección 7.3) y
+  el contexto del asistente de Documentos IA. Implementado para texto
+  plano/HTML, PDF (`pdfjs-dist`, build "legacy") y DOCX (`mammoth`). El
+  `.doc` binario antiguo (`application/msword`) y las imágenes quedan sin
+  extracción (sin una librería de OCR/parser binario, no vale la pena la
+  dependencia); si la extracción falla para un archivo puntual (PDF
+  corrupto, escaneado sin capa de texto, etc.) no bloquea la subida, solo
+  queda sin `texto_extraido`.
 
 - `generar-documento-plantilla`: resuelve variables automáticas del
   caso/cliente y manuales del formulario, rellena el `.docx` base con
@@ -150,6 +155,32 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   el correo de invitación con el mismo mecanismo de Auth que ya usa la
   recuperación de contraseña, sin secretos nuevos) y su fila en
   `usuarios`. Requiere `SUPABASE_SERVICE_ROLE_KEY`.
+
+- `documentos-ia-chat`: un turno del chat de redacción de documentos
+  jurídicos con IA ("Documentos IA" — botón flotante en el detalle de un
+  caso y `/app/documentos-ia`, solo admin). Arma el historial completo de
+  `documentos_ia_mensajes` + la especificación markdown del tipo de
+  documento elegido (`tipos_documento_legal`) y lo envía a Gemini
+  (`systemInstruction` + `contents`, mismo modelo/fallback que
+  `generar-resumen-ia`); si la IA entrega un borrador, actualiza
+  `documentos_ia_conversaciones.contenido_generado`. Los archivos de
+  soporte (PDF/imagen/texto) se suben una sola vez a la Gemini File API y
+  se referencian por URI (`documentos_ia_archivos_soporte.gemini_file_uri`)
+  para no reenviar bytes en cada turno. Si la conversación tiene un caso
+  vinculado, el `systemInstruction` también incluye los datos generales
+  del caso (título, cliente, estado, radicado, despacho, etapa,
+  descripción), su bitácora (`caso_actividad`, últimas 10 entradas) y el
+  texto ya extraído de sus documentos (`documento_versiones.texto_extraido`
+  de hasta 8 documentos recientes del módulo de Documentos — los que aún
+  no tienen texto extraído se listan por nombre, sin inventar su
+  contenido). Requiere `GEMINI_API_KEY` (mismo secreto que
+  `generar-resumen-ia`).
+
+- `exportar-documento-legal`: convierte el borrador de una conversación
+  de "Documentos IA" a `.docx` (con `npm:docx`) o `.pdf` (con
+  `npm:pdf-lib`, con ajuste de línea y paginación propios) y lo guarda en
+  el bucket `documentos-ia`. No usa una plantilla prearmada: el documento
+  se construye en código a partir del texto generado.
 
 ## Estado actual
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { CheckCircle2, Copy, HardDrive, Loader2, Plus, UserCog } from 'lucide-react'
+import { CheckCircle2, Copy, FileText, HardDrive, Loader2, Plus, UserCog } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
@@ -9,6 +9,12 @@ import { useUsuario } from '../lib/useUsuario'
 import { actualizarUsuario, invitarUsuario, listarUsuarios, type UsuarioAdmin } from '../lib/administracion'
 import { separarTelefono } from '../lib/paisesTelefono'
 import { estadoCuentaServicioDrive } from '../lib/drive'
+import {
+  actualizarTipoDocumento,
+  crearTipoDocumento,
+  listarTiposDocumento,
+  type TipoDocumentoLegal,
+} from '../lib/documentosIA'
 
 /**
  * Panel de administración — gestión de usuarios de la firma (punto 1 del
@@ -64,6 +70,7 @@ export function AdministracionPage() {
         </div>
 
         <IntegracionDriveSeccion />
+        <TiposDocumentoIASeccion />
 
         {cargando ? (
           <p className="text-sm text-slate flex items-center gap-2">
@@ -412,6 +419,195 @@ function EditarUsuarioModal({
           <button type="submit" disabled={guardando} className="btn-primary btn-sm">
             {guardando ? 'Guardando…' : 'Guardar'}
           </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// Tipos de documento legal para el asistente de "Documentos IA" (botón
+// flotante en el detalle de un caso y página /app/documentos-ia). Los
+// predefinidos (globales, es_predefinida=true) son de solo lectura: cada
+// firma puede crear sus propios tipos o editar únicamente los suyos.
+function TiposDocumentoIASeccion() {
+  const { usuario } = useUsuario()
+  const [tipos, setTipos] = useState<TipoDocumentoLegal[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [mostrarNuevo, setMostrarNuevo] = useState(false)
+  const [editando, setEditando] = useState<TipoDocumentoLegal | null>(null)
+
+  async function cargar() {
+    setCargando(true)
+    try {
+      setTipos(await listarTiposDocumento())
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  useEffect(() => {
+    cargar()
+  }, [])
+
+  return (
+    <section className="card p-4">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2">
+          <FileText size={16} strokeWidth={1.75} className="text-slate" />
+          <h2 className="font-display text-sm font-semibold">Tipos de documento (Documentos IA)</h2>
+        </div>
+        <button type="button" onClick={() => setMostrarNuevo(true)} className="link text-xs flex items-center gap-1">
+          <Plus size={12} strokeWidth={1.75} />
+          Nuevo tipo
+        </button>
+      </div>
+      <p className="text-sm text-slate mb-3">
+        Cada tipo define, en markdown, cómo debe redactar la IA ese documento (tutela, demanda, derecho de
+        petición…). Los predefinidos son de referencia; puedes crear o editar los propios de la firma.
+      </p>
+
+      {cargando ? (
+        <p className="text-sm text-slate flex items-center gap-2">
+          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
+          Cargando…
+        </p>
+      ) : (
+        <ul className="text-sm divide-y divide-line">
+          {tipos.map((t) => (
+            <li key={t.id} className="py-2 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="font-medium text-ink">{t.nombre}</span>{' '}
+                {t.es_predefinida && <span className="text-xs text-slate">(predefinido)</span>}
+                {!t.activo && <span className="text-xs text-danger"> · inactivo</span>}
+                {t.descripcion && <p className="text-xs text-slate truncate">{t.descripcion}</p>}
+              </div>
+              <button onClick={() => setEditando(t)} className="link shrink-0">
+                {t.es_predefinida ? 'Ver' : 'Editar'}
+              </button>
+            </li>
+          ))}
+          {tipos.length === 0 && <li className="py-3 text-slate">Sin tipos configurados todavía.</li>}
+        </ul>
+      )}
+
+      {mostrarNuevo && usuario && (
+        <TipoDocumentoModal
+          firmaId={usuario.firma_id}
+          usuarioId={usuario.id}
+          onClose={() => setMostrarNuevo(false)}
+          onGuardado={() => {
+            setMostrarNuevo(false)
+            cargar()
+          }}
+        />
+      )}
+      {editando && usuario && (
+        <TipoDocumentoModal
+          firmaId={usuario.firma_id}
+          usuarioId={usuario.id}
+          tipo={editando}
+          onClose={() => setEditando(null)}
+          onGuardado={() => {
+            setEditando(null)
+            cargar()
+          }}
+        />
+      )}
+    </section>
+  )
+}
+
+function TipoDocumentoModal({
+  firmaId,
+  usuarioId,
+  tipo,
+  onClose,
+  onGuardado,
+}: {
+  firmaId: string
+  usuarioId: string
+  tipo?: TipoDocumentoLegal
+  onClose: () => void
+  onGuardado: () => void
+}) {
+  const soloLectura = !!tipo?.es_predefinida
+  const [nombre, setNombre] = useState(tipo?.nombre ?? '')
+  const [descripcion, setDescripcion] = useState(tipo?.descripcion ?? '')
+  const [especificacionMd, setEspecificacionMd] = useState(tipo?.especificacion_md ?? '')
+  const [activo, setActivo] = useState(tipo?.activo ?? true)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setGuardando(true)
+    try {
+      if (tipo) {
+        await actualizarTipoDocumento(tipo.id, { nombre, descripcion, especificacionMd, activo })
+      } else {
+        await crearTipoDocumento({ firmaId, usuarioId, nombre, descripcion, especificacionMd })
+      }
+      onGuardado()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar el tipo de documento.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Modal title={tipo ? tipo.nombre : 'Nuevo tipo de documento'} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-3 text-sm">
+        <div>
+          <label className="block text-slate mb-1">Nombre</label>
+          <input
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required
+            disabled={soloLectura}
+            className="w-full field field-sm disabled:opacity-60"
+          />
+        </div>
+        <div>
+          <label className="block text-slate mb-1">Descripción</label>
+          <input
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            disabled={soloLectura}
+            className="w-full field field-sm disabled:opacity-60"
+          />
+        </div>
+        <div>
+          <label className="block text-slate mb-1">Especificación (markdown que sigue la IA al redactar)</label>
+          <textarea
+            value={especificacionMd}
+            onChange={(e) => setEspecificacionMd(e.target.value)}
+            required
+            disabled={soloLectura}
+            rows={14}
+            className="w-full field text-sm disabled:opacity-60"
+          />
+        </div>
+        {tipo && !soloLectura && (
+          <label className="flex items-center gap-2 text-slate">
+            <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
+            Activo (visible al iniciar una nueva conversación)
+          </label>
+        )}
+        {soloLectura && (
+          <p className="text-xs text-slate">Los tipos predefinidos son de solo lectura.</p>
+        )}
+        {error && <p className="text-danger">{error}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={onClose} className="btn-secondary btn-sm">
+            {soloLectura ? 'Cerrar' : 'Cancelar'}
+          </button>
+          {!soloLectura && (
+            <button type="submit" disabled={guardando} className="btn-primary btn-sm">
+              {guardando ? 'Guardando…' : 'Guardar'}
+            </button>
+          )}
         </div>
       </form>
     </Modal>

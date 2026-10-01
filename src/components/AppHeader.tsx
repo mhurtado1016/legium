@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/app/agenda', label: 'Agenda' },
   { to: '/app/facturacion', label: 'Facturación' },
   { to: '/app/reportes', label: 'Reportes' },
+  { to: '/app/documentos-ia', label: 'Documentos IA', soloAdmin: true },
   { to: '/app/administracion', label: 'Administración', soloAdmin: true },
 ]
 

@@ -4,14 +4,22 @@
 // Se invoca después de subir una nueva documento_version. Descarga el
 // archivo, extrae texto según el tipo MIME y lo guarda en
 // documento_versiones.texto_extraido, para habilitar la búsqueda de
-// contenido (sección 7.4).
+// contenido (sección 7.4) y el contexto del asistente de Documentos IA
+// (ver documentos-ia-chat).
 //
-// NOTA: la extracción de texto real de PDF/DOCX requiere una librería
-// dedicada (ej. pdf-parse, mammoth); aquí se implementa el caso simple
-// de texto plano/HTML como base, y se deja explícito qué falta para
-// los demás formatos (ver sección 7.5, pendiente de definir).
+// PDF: pdfjs-dist (build "legacy", pensado para entornos sin DOM/worker
+// como este) — se usa en vez de pdf-parse porque esa librería intenta
+// leer un PDF de prueba de su propio paquete en modo "debug" cuando no
+// detecta un module.parent normal de Node, algo que rompe en runtimes
+// como Deno/edge; pdfjs-dist no tiene ese problema.
+// DOCX: mammoth, que solo sabe leer el formato .docx (XML) — el .doc
+// binario antiguo (application/msword) sigue sin extracción, ver más
+// abajo.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { getDocument } from 'npm:pdfjs-dist@4/legacy/build/pdf.mjs'
+import mammoth from 'npm:mammoth@1'
+
 // Headers CORS: sin esto, el navegador bloquea la respuesta por venir
 // de un origen distinto al de la app (Vercel vs. Supabase).
 const corsHeaders = {
@@ -21,6 +29,29 @@ const corsHeaders = {
 
 interface Body {
   documento_version_id: string
+}
+
+async function extraerTextoPdf(bytes: Uint8Array): Promise<string> {
+  const documento = await getDocument({
+    data: bytes,
+    useWorkerFetch: false,
+    isEvalSupported: false,
+    disableFontFace: true,
+  }).promise
+
+  const paginas: string[] = []
+  for (let numeroPagina = 1; numeroPagina <= documento.numPages; numeroPagina++) {
+    const pagina = await documento.getPage(numeroPagina)
+    const contenido = await pagina.getTextContent()
+    const texto = contenido.items.map((item) => ('str' in item ? item.str : '')).join(' ')
+    paginas.push(texto)
+  }
+  return paginas.join('\n\n')
+}
+
+async function extraerTextoDocx(bytes: ArrayBuffer): Promise<string> {
+  const resultado = await mammoth.extractRawText({ buffer: new Uint8Array(bytes) })
+  return resultado.value
 }
 
 Deno.serve(async (req) => {
@@ -53,10 +84,15 @@ Deno.serve(async (req) => {
       texto = await file.text()
     } else if (mime === 'text/html') {
       texto = (await file.text()).replace(/<[^>]+>/g, ' ')
+    } else if (mime === 'application/pdf') {
+      texto = await extraerTextoPdf(new Uint8Array(await file.arrayBuffer()))
+    } else if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      texto = await extraerTextoDocx(await file.arrayBuffer())
     } else {
-      // PDF, DOCX, etc.: pendiente integrar una librería de extracción
-      // (ver sección 7.5). Por ahora se deja sin texto extraído, sin que
-      // eso bloquee la subida del documento.
+      // .doc binario antiguo, imágenes, etc.: sin librería viable sin
+      // dependencias pesadas (OCR para imágenes, parser binario para
+      // .doc) — se deja sin texto extraído, sin que eso bloquee la
+      // subida del documento.
       await admin
         .from('documento_versiones')
         .update({ texto_extraido_en: new Date().toISOString() })
@@ -76,6 +112,10 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (err) {
+    // Si la extracción falla (PDF corrupto, escaneado como imagen sin
+    // capa de texto, etc.) no debe tumbar la subida del documento, que ya
+    // ocurrió antes de invocar esto — queda sin texto_extraido, igual que
+    // un tipo de archivo sin extracción implementada.
     return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, ExternalLink, Eye, History, Loader2, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bot, Download, ExternalLink, Eye, History, Loader2, Trash2, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { AsistenteDocumentosIA } from '../components/AsistenteDocumentosIA'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
+import { DocumentoPreviewModal } from '../components/DocumentoPreviewModal'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -91,6 +93,15 @@ export function CasoDetailPage() {
   const [clienteIdEdit, setClienteIdEdit] = useState('')
   const [tipoEdit, setTipoEdit] = useState<TipoCaso>('litigio')
   const [guardandoDatos, setGuardandoDatos] = useState(false)
+  const [mostrarAsistenteIA, setMostrarAsistenteIA] = useState(false)
+  const [mostrarSaludoIA, setMostrarSaludoIA] = useState(false)
+
+  useEffect(() => {
+    // Pequeña demora para que el globo aparezca después de que cargue la
+    // página, no de golpe junto con el resto de la interfaz.
+    const t = setTimeout(() => setMostrarSaludoIA(true), 700)
+    return () => clearTimeout(t)
+  }, [])
 
   async function cargar() {
     if (!id) return
@@ -503,6 +514,54 @@ export function CasoDetailPage() {
           </section>
         </div>
       </div>
+
+      {usuario?.es_administrador && (
+        <>
+          {mostrarSaludoIA && !mostrarAsistenteIA && (
+            <div className="fixed bottom-24 right-6 z-40 max-w-[230px] animate-in">
+              <div className="relative card px-4 py-3 shadow-[var(--shadow-raised)]">
+                <button
+                  type="button"
+                  onClick={() => setMostrarSaludoIA(false)}
+                  aria-label="Cerrar"
+                  className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 rounded-full bg-paper-raised border border-line text-slate hover:text-ink transition-colors"
+                >
+                  <X size={11} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarAsistenteIA(true)
+                    setMostrarSaludoIA(false)
+                  }}
+                  className="text-left text-sm"
+                >
+                  <span className="font-medium text-ink">¡Hola! Soy Mañecito 👋</span>
+                  <br />
+                  <span className="text-slate">¿Te ayudo a redactar un documento?</span>
+                </button>
+                {/* Cola del globo, apuntando hacia el botón flotante. */}
+                <div className="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 bg-paper-raised border-r border-b border-line" />
+              </div>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setMostrarAsistenteIA(true)
+              setMostrarSaludoIA(false)
+            }}
+            aria-label="Hablar con Mañecito"
+            title="Mañecito — redactar documento con IA"
+            className="fixed bottom-6 right-6 z-40 flex items-center justify-center h-14 w-14 rounded-full bg-ink text-paper shadow-[var(--shadow-raised)] hover:opacity-90 transition-opacity"
+          >
+            <Bot size={24} strokeWidth={1.75} />
+          </button>
+          {mostrarAsistenteIA && (
+            <AsistenteDocumentosIA casoId={caso.id} onClose={() => setMostrarAsistenteIA(false)} />
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -1395,148 +1454,11 @@ function DocumentosSeccion({
       )}
 
       {previsualizando?.tipo === 'sistema' && (
-        <DocumentoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
+        <DocumentoPreviewModal {...previsualizando} obtenerUrl={urlDescarga} onClose={() => setPrevisualizando(null)} />
       )}
       {previsualizando?.tipo === 'drive' && (
         <DriveArchivoPreviewModal {...previsualizando} onClose={() => setPrevisualizando(null)} />
       )}
-    </div>
-  )
-}
-
-// Visor dentro del sitio: PDF e imágenes se muestran embebidos (iframe /
-// <img>), sin navegar a otra pestaña ni forzar una descarga. Para tipos que
-// ningún navegador renderiza de forma nativa (Word, etc.) no hay forma
-// honesta de "previsualizar" sin subir el archivo a un servicio externo —
-// se avisa y se deja la descarga como única vía.
-function DocumentoPreviewModal({
-  storagePath,
-  mimeType,
-  nombre,
-  onClose,
-}: {
-  storagePath: string
-  mimeType: string | null
-  nombre: string
-  onClose: () => void
-}) {
-  const [url, setUrl] = useState<string | null>(null)
-  const [archivoListo, setArchivoListo] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = ''
-    }
-  }, [onClose])
-
-  // Resuelve la signed URL acá (no antes de abrir el modal) para que el
-  // spinner sea visible desde el primer click, sin ese hueco de "no pasó
-  // nada" mientras se espera la respuesta de Supabase.
-  useEffect(() => {
-    let cancelado = false
-    setUrl(null)
-    setArchivoListo(false)
-    setError(null)
-    urlDescarga(storagePath)
-      .then((u) => {
-        if (!cancelado) setUrl(u)
-      })
-      .catch(() => {
-        if (!cancelado) setError('No se pudo cargar el documento.')
-      })
-    return () => {
-      cancelado = true
-    }
-  }, [storagePath])
-
-  const esPdf = mimeType === 'application/pdf'
-  const esImagen = mimeType?.startsWith('image/') ?? false
-  // Para tipos sin visor embebido no hay nada que "cargar" en el iframe/img
-  // — el spinner solo debe esperar a la signed URL, no a un onLoad que
-  // nunca va a llegar.
-  const cargando = !error && (!url || ((esPdf || esImagen) && !archivoListo))
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in" onClick={onClose} />
-
-      <div className="relative w-full max-w-4xl h-[85vh] flex flex-col rounded-[var(--radius-card)] bg-paper-raised shadow-[var(--shadow-raised)] animate-in overflow-hidden">
-        <div className="flex items-start justify-between gap-3 px-5 py-3 border-b border-line shrink-0">
-          <p className="font-medium text-sm text-ink break-words min-w-0">{nombre}</p>
-          <div className="flex items-center gap-3 shrink-0">
-            {url && (
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
-              >
-                <Download size={14} strokeWidth={1.75} />
-                Descargar
-              </a>
-            )}
-            <button
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="p-1.5 -m-1.5 rounded-md text-slate hover:text-ink hover:bg-paper-sunken transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="relative flex-1 min-h-0 bg-paper-sunken">
-          {cargando && (
-            <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-slate">
-              <Loader2 size={18} className="animate-spin" strokeWidth={1.75} />
-              Cargando documento…
-            </div>
-          )}
-
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-danger px-6 text-center">
-              {error}
-            </div>
-          )}
-
-          {url && esPdf && (
-            <iframe
-              src={url}
-              title={nombre}
-              onLoad={() => setArchivoListo(true)}
-              className={`w-full h-full border-0 transition-opacity ${archivoListo ? 'opacity-100' : 'opacity-0'}`}
-            />
-          )}
-          {url && esImagen && (
-            <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
-              <img
-                src={url}
-                alt={nombre}
-                onLoad={() => setArchivoListo(true)}
-                className={`max-w-full max-h-full object-contain transition-opacity ${archivoListo ? 'opacity-100' : 'opacity-0'}`}
-              />
-            </div>
-          )}
-          {url && !esPdf && !esImagen && (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center px-6">
-              <p className="text-sm text-slate">
-                Este tipo de archivo no se puede previsualizar en el navegador.
-              </p>
-              <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary btn-sm">
-                <Download size={14} strokeWidth={1.75} />
-                Descargar para verlo
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

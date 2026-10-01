@@ -26,6 +26,9 @@ const ReportesPage = lazy(() => import('./pages/ReportesPage').then((m) => ({ de
 const AdministracionPage = lazy(() =>
   import('./pages/AdministracionPage').then((m) => ({ default: m.AdministracionPage })),
 )
+const DocumentosIAPage = lazy(() =>
+  import('./pages/DocumentosIAPage').then((m) => ({ default: m.DocumentosIAPage })),
+)
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { session, loading } = useAuth()
@@ -145,6 +148,14 @@ function AppRoutes() {
           element={
             <AdminOnlyRoute>
               <AdministracionPage />
+            </AdminOnlyRoute>
+          }
+        />
+        <Route
+          path="/app/documentos-ia"
+          element={
+            <AdminOnlyRoute>
+              <DocumentosIAPage />
             </AdminOnlyRoute>
           }
         />
