@@ -4,6 +4,7 @@
 // ejecuta JS (o el primer pintado de un visitante real) recibe el
 // contenido real del landing en vez de un shell vacío — el bundle
 // cliente sigue montando la SPA normalmente encima al cargar.
+import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +12,20 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const indexPath = join(root, 'dist/index.html')
 const ssrEntryPath = join(root, 'dist-ssr/entry-server.js')
+
+// Mismo buildId que vite.config.ts embebió en el bundle cliente
+// (__BUILD_ID__, a partir del commit actual) — src/lib/actualizarApp.ts
+// lo compara contra este archivo, pedido siempre sin caché, para avisar
+// cuando hay una versión más nueva que la que sigue corriendo en una
+// PWA instalada que no se ha recargado.
+function obtenerBuildId() {
+  try {
+    return execSync('git rev-parse HEAD').toString().trim()
+  } catch {
+    return String(Date.now())
+  }
+}
+writeFileSync(join(root, 'dist/version.json'), JSON.stringify({ buildId: obtenerBuildId() }))
 
 const { render } = await import(`file://${ssrEntryPath}`)
 const appHtml = render('/')

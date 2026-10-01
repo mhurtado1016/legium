@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { ActualizacionDisponible } from './components/ActualizacionDisponible'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import { useUsuario } from './lib/useUsuario'
 import { LandingPage } from './pages/LandingPage'
@@ -168,6 +169,7 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <ActualizacionDisponible />
     </AuthProvider>
   )
 }
