@@ -51,6 +51,7 @@ export interface CasoTraslado {
 export interface CasoActividad {
   id: string
   descripcion: string
+  fijada: boolean
   created_at: string
   usuarios?: { nombre: string | null }
 }
@@ -237,6 +238,14 @@ export async function agregarActividad(
     usuario_id: usuarioId,
     descripcion,
   })
+  if (error) throw error
+}
+
+export async function actualizarActividad(
+  id: string,
+  cambios: Partial<Pick<CasoActividad, 'descripcion' | 'fijada'>>,
+) {
+  const { error } = await supabase.from('caso_actividad').update(cambios).eq('id', id)
   if (error) throw error
 }
 

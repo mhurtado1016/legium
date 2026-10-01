@@ -9,6 +9,7 @@ import { DocumentoPreviewModal } from '../components/DocumentoPreviewModal'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
+  actualizarActividad,
   actualizarCaso,
   actualizarEstadoCaso,
   actualizarNumeroRadicado,
@@ -59,6 +60,16 @@ import {
 } from '../lib/facturacion'
 
 const ESTADOS: EstadoCaso[] = ['abierto', 'en_curso', 'suspendido', 'cerrado']
+// Paleta de colores "post-it" para las notas de bitácora fijadas,
+// asignada por posición (no por id) para que se sientan como notas
+// adhesivas distintas entre sí en vez de un único color repetido.
+const COLORES_STICKY = [
+  { bg: 'bg-amber-200', border: 'border-amber-300/80' },
+  { bg: 'bg-pink-200', border: 'border-pink-300/80' },
+  { bg: 'bg-sky-200', border: 'border-sky-300/80' },
+  { bg: 'bg-lime-200', border: 'border-lime-300/80' },
+  { bg: 'bg-violet-200', border: 'border-violet-300/80' },
+]
 const SECCIONES = [
   { id: 'datos', label: 'Datos' },
   { id: 'responsable', label: 'Responsable' },
@@ -88,6 +99,10 @@ export function CasoDetailPage() {
   const [registrosTiempo, setRegistrosTiempo] = useState<RegistroTiempo[]>([])
   const [honorarioFijo, setHonorarioFijo] = useState<HonorarioFijo | null>(null)
   const [nuevaNota, setNuevaNota] = useState('')
+  const [editandoNotaId, setEditandoNotaId] = useState<string | null>(null)
+  const [textoEditNota, setTextoEditNota] = useState('')
+  const [fijadaEditNota, setFijadaEditNota] = useState(false)
+  const [guardandoNota, setGuardandoNota] = useState(false)
   const [numeroRadicado, setNumeroRadicado] = useState('')
   const [guardandoRadicado, setGuardandoRadicado] = useState(false)
   const [editandoDatos, setEditandoDatos] = useState(false)
@@ -207,6 +222,46 @@ export function CasoDetailPage() {
     setNuevaNota('')
     const a = await listarActividad(id)
     setActividad(a)
+  }
+
+  function handleEditarNota(nota: CasoActividad) {
+    setEditandoNotaId(nota.id)
+    setTextoEditNota(nota.descripcion)
+    setFijadaEditNota(nota.fijada)
+  }
+
+  function handleCancelarEdicionNota() {
+    setEditandoNotaId(null)
+  }
+
+  async function handleGuardarEdicionNota(e: FormEvent) {
+    e.preventDefault()
+    if (!id || !editandoNotaId || !textoEditNota.trim()) return
+    setGuardandoNota(true)
+    try {
+      await actualizarActividad(editandoNotaId, {
+        descripcion: textoEditNota.trim(),
+        fijada: fijadaEditNota,
+      })
+      const a = await listarActividad(id)
+      setActividad(a)
+      setEditandoNotaId(null)
+    } finally {
+      setGuardandoNota(false)
+    }
+  }
+
+  // Desde el stick note flotante: la "x" no borra la nota, solo la
+  // desmarca como fijada para que deje de mostrarse al costado.
+  async function handleQuitarFijada(notaId: string) {
+    const anterior = actividad
+    setActividad((prev) => prev.map((a) => (a.id === notaId ? { ...a, fijada: false } : a)))
+    try {
+      await actualizarActividad(notaId, { fijada: false })
+    } catch (err) {
+      setActividad(anterior)
+      alert(err instanceof Error ? err.message : 'No se pudo actualizar la nota.')
+    }
   }
 
   async function handleDesvincularSentencia(vinculoId: string) {
@@ -417,14 +472,60 @@ export function CasoDetailPage() {
               </button>
             </form>
             <ul className="text-sm divide-y divide-line card overflow-hidden">
-              {actividad.map((a) => (
-                <li key={a.id} className="px-4 py-2.5 break-words">
-                  <span className="text-slate">
-                    {new Date(a.created_at).toLocaleDateString('es-CO')} —{' '}
-                  </span>
-                  {a.descripcion}
-                </li>
-              ))}
+              {actividad.map((a) =>
+                editandoNotaId === a.id ? (
+                  <li key={a.id} className="px-4 py-3">
+                    <form onSubmit={handleGuardarEdicionNota} className="space-y-2">
+                      <input
+                        value={textoEditNota}
+                        onChange={(e) => setTextoEditNota(e.target.value)}
+                        required
+                        className="w-full field field-sm"
+                      />
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <label className="flex items-center gap-1.5 text-slate">
+                          <input
+                            type="checkbox"
+                            checked={fijadaEditNota}
+                            onChange={(e) => setFijadaEditNota(e.target.checked)}
+                          />
+                          Fijar siempre visible
+                        </label>
+                        <div className="flex gap-2">
+                          <button type="submit" disabled={guardandoNota} className="btn-primary btn-sm">
+                            {guardandoNota ? 'Guardando…' : 'Guardar'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelarEdicionNota}
+                            disabled={guardandoNota}
+                            className="btn-secondary btn-sm"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  </li>
+                ) : (
+                  <li key={a.id} className="px-4 py-2.5 flex items-start justify-between gap-3">
+                    <p className="min-w-0 break-words">
+                      <span className="text-slate">
+                        {new Date(a.created_at).toLocaleDateString('es-CO')} —{' '}
+                      </span>
+                      {a.descripcion}
+                      {a.fijada && <span className="badge-accent ml-2">Fijada</span>}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleEditarNota(a)}
+                      className="link shrink-0"
+                    >
+                      editar
+                    </button>
+                  </li>
+                ),
+              )}
               {actividad.length === 0 && <li className="px-4 py-3 text-slate">Sin actividad aún.</li>}
             </ul>
           </section>
@@ -540,6 +641,37 @@ export function CasoDetailPage() {
           </section>
         </div>
       </div>
+
+      {/* Notas de la bitácora marcadas como "siempre visibles": quedan
+          fijas al costado de la página, como post-its, independiente
+          del scroll. Se ocultan en pantallas angostas (no caben junto a
+          los botones flotantes de Mañecito/jurisprudencia). */}
+      {actividad.some((a) => a.fijada) && (
+        <div className="hidden lg:flex fixed top-24 right-4 z-30 flex-col gap-3 w-52 max-h-[75vh] overflow-y-auto pr-1">
+          {actividad
+            .filter((a) => a.fijada)
+            .map((a, i) => {
+              const color = COLORES_STICKY[i % COLORES_STICKY.length]
+              return (
+                <div
+                  key={a.id}
+                  className={`relative rounded-sm border p-3 pr-6 text-sm text-ink shadow-[var(--shadow-card)] ${color.bg} ${color.border}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleQuitarFijada(a.id)}
+                    aria-label="Quitar de notas fijadas"
+                    title="Quitar de notas fijadas"
+                    className="absolute top-1.5 right-1.5 flex items-center justify-center h-5 w-5 rounded-full bg-paper-raised/70 text-ink/70 hover:bg-paper-raised hover:text-ink transition-colors"
+                  >
+                    <X size={12} strokeWidth={2} />
+                  </button>
+                  <p className="break-words">{a.descripcion}</p>
+                </div>
+              )
+            })}
+        </div>
+      )}
 
       {usuario?.es_administrador && (
         <>
