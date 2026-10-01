@@ -47,7 +47,7 @@ export function PlazosPage() {
       <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-[100rem] mx-auto">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
-            <h1 className="font-display text-2xl font-semibold tracking-tight">Plazos</h1>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Recordatorios</h1>
             <p className="text-sm text-slate mt-1">Términos y vencimientos de todos los casos.</p>
           </div>
           <select

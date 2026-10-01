@@ -76,7 +76,7 @@ const SECCIONES = [
   { id: 'responsable', label: 'Responsable' },
   { id: 'actividad', label: 'Bitácora' },
   { id: 'sentencias', label: 'Sentencias' },
-  { id: 'plazos', label: 'Plazos' },
+  { id: 'plazos', label: 'Recordatorios' },
   { id: 'documentos', label: 'Documentación' },
   { id: 'facturacion', label: 'Facturación' },
 ]
@@ -578,7 +578,7 @@ export function CasoDetailPage() {
           </section>
 
           <section id="plazos" className="card p-6">
-            <h2 className="font-display text-base font-semibold mb-2">Plazos</h2>
+            <h2 className="font-display text-base font-semibold mb-2">Recordatorios</h2>
             <p className="text-sm text-slate mb-3">
               Fechas límite del caso, ya sean términos procesales, vencimientos contractuales u
               otros compromisos. Configura recordatorios por app, correo o notificación push
@@ -613,7 +613,7 @@ export function CasoDetailPage() {
                   )}
                 </li>
               ))}
-              {plazos.length === 0 && <li className="px-4 py-3 text-slate">Sin plazos para este caso.</li>}
+              {plazos.length === 0 && <li className="px-4 py-3 text-slate">Sin recordatorios para este caso.</li>}
             </ul>
           </section>
 
@@ -907,8 +907,8 @@ function NuevoPlazoForm({
   const [titulo, setTitulo] = useState('')
   const [fecha, setFecha] = useState('')
   const [notificarApp, setNotificarApp] = useState(true)
-  const [notificarEmail, setNotificarEmail] = useState(false)
-  const [notificarPush, setNotificarPush] = useState(false)
+  const [notificarEmail, setNotificarEmail] = useState(true)
+  const [notificarPush, setNotificarPush] = useState(true)
   const [guardando, setGuardando] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
@@ -946,8 +946,10 @@ function NuevoPlazoForm({
     // van separadas en vez de un único flex-wrap con items-end: al mezclar
     // ítems de alturas distintas en la misma línea, el cross-axis
     // alignment terminaba superponiendo los checkboxes sobre el campo de
-    // fecha en pantallas angostas.
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
+    // fecha en pantallas angostas. max-w-lg (mismo criterio que
+    // NuevoCasoForm en CasosListPage) evita que el título se estire a lo
+    // ancho de toda la sección cuando "Vence" ocupa poco espacio.
+    <form onSubmit={handleSubmit} className="card p-4 mb-3 flex flex-col gap-3 text-sm max-w-lg">
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
         <div className="sm:flex-1 sm:min-w-[10rem]">
           <label className="block text-slate mb-1">Título</label>
@@ -985,7 +987,7 @@ function NuevoPlazoForm({
           disabled={guardando}
           className="btn-primary btn-sm sm:ml-auto"
         >
-          {guardando ? 'Guardando…' : 'Agregar plazo'}
+          {guardando ? 'Guardando…' : 'Agregar recordatorio'}
         </button>
       </div>
     </form>

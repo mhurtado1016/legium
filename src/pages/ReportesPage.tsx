@@ -133,7 +133,7 @@ export function ReportesPage() {
           </section>
 
           <section>
-            <h2 className="eyebrow mb-3">Plazos</h2>
+            <h2 className="eyebrow mb-3">Recordatorios</h2>
             <div className="card overflow-hidden">
               <table className="table-modern">
                 <tbody>

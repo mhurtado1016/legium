@@ -41,7 +41,7 @@ const RESUMEN_TITULOS: Record<ResumenKey, string> = {
   abiertos: 'Casos abiertos',
   pendientes: 'Casos pendientes',
   cerrados: 'Casos cerrados',
-  vencidos: 'Casos con plazos vencidos',
+  vencidos: 'Casos con recordatorios vencidos',
 }
 
 /**
@@ -212,7 +212,7 @@ export function CasosListPage() {
               />
               <ResumenCard
                 icon={AlertTriangle}
-                label="Plazos vencidos"
+                label="Recordatorios vencidos"
                 value={resumen.vencidos.length}
                 onClick={() => setModalResumen('vencidos')}
                 alerta={resumen.vencidos.length > 0}
@@ -238,7 +238,7 @@ export function CasosListPage() {
                   </div>
                   {modalResumen === 'vencidos' && (
                     <div className="text-xs text-danger mt-1">
-                      Plazo(s) vencido(s):{' '}
+                      Recordatorio(s) vencido(s):{' '}
                       {(plazosVencidosPorCaso.get(c.id) ?? []).map((p) => p.titulo).join(', ')}
                     </div>
                   )}

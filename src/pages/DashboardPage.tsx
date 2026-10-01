@@ -656,7 +656,7 @@ export function DashboardPage() {
           <div className="card p-4">
             <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate tracking-wide uppercase mb-3">
               <Clock3 size={13} strokeWidth={1.75} />
-              Plazos próximos
+              Recordatorios próximos
             </p>
             {cargandoActividad ? (
               <SkeletonSideList count={3} />
@@ -677,7 +677,7 @@ export function DashboardPage() {
                   )
                 })}
                 {plazosProximos.length === 0 && (
-                  <li className="px-4 py-2 text-slate">Sin plazos pendientes.</li>
+                  <li className="px-4 py-2 text-slate">Sin recordatorios pendientes.</li>
                 )}
               </ul>
             )}

@@ -97,7 +97,7 @@ export function PushNotificationButton() {
             <div className="flex items-start gap-2.5">
               <BellRing size={16} strokeWidth={1.75} className="text-success mt-0.5 shrink-0" />
               <p className="text-sm text-ink">
-                Las notificaciones están activas. Te avisamos de vencimientos de plazos y citas nuevas.
+                Las notificaciones están activas. Te avisamos de vencimientos de recordatorios y citas nuevas.
               </p>
             </div>
           ) : estado === 'no_soportado' ? (
@@ -121,7 +121,7 @@ export function PushNotificationButton() {
           ) : (
             <>
               <p className="text-sm text-ink mb-3">
-                Activá las notificaciones para enterarte de vencimientos de plazos y citas nuevas apenas ocurran.
+                Activá las notificaciones para enterarte de vencimientos de recordatorios y citas nuevas apenas ocurran.
               </p>
               <button
                 type="button"
