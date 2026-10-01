@@ -350,3 +350,54 @@
 .animate-in {
   animation: fade-in-up 400ms ease-out both;
 }
+
+/* Línea de conexión del diagrama de flujo de "Cómo trabajamos"
+   (LandingPage.tsx, Metodologia): color de línea fijo de base +
+   un barrido de brillo continuo encima, para que el diagrama se
+   sienta "vivo"/tecnológico sin ser una animación llamativa. */
+@keyframes flow-sweep-x {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+@keyframes flow-sweep-y {
+  from {
+    background-position: 0 -200%;
+  }
+  to {
+    background-position: 0 200%;
+  }
+}
+.flow-line-x,
+.flow-line-y {
+  background-color: var(--color-line);
+}
+.flow-line-x {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-accent) 75%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: flow-sweep-x 4s linear infinite;
+}
+.flow-line-y {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-accent) 75%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 100% 220%;
+  animation: flow-sweep-y 4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-line-x,
+  .flow-line-y {
+    animation: none;
+  }
+}

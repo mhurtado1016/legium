@@ -24,6 +24,10 @@ import {
   Code2,
   Globe,
   CalendarDays,
+  Search,
+  Target,
+  Zap,
+  Radar,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -215,24 +219,24 @@ const GRUPOS_SERVICIOS = [
 
 const METODOLOGIA = [
   {
-    numero: '01',
+    icon: Search,
     titulo: 'Consulta inicial',
     descripcion: 'Escuchamos el caso, revisamos los documentos y definimos si hay una vía viable.',
   },
   {
-    numero: '02',
+    icon: Target,
     titulo: 'Análisis y estrategia',
     descripcion:
       'Investigamos jurisprudencia y precedentes aplicables, y trazamos un plan con hitos y plazos claros.',
   },
   {
-    numero: '03',
+    icon: Zap,
     titulo: 'Ejecución',
     descripcion:
       'Llevamos el proceso con seguimiento permanente de términos judiciales y administrativos.',
   },
   {
-    numero: '04',
+    icon: Radar,
     titulo: 'Seguimiento',
     descripcion: 'El cliente conoce en todo momento en qué va su caso, sin tener que preguntar.',
   },
@@ -463,6 +467,69 @@ function HeroImage() {
   )
 }
 
+// Nodo circular del diagrama de flujo: ícono del paso + número en una
+// insignia superpuesta en la esquina, mismo lenguaje visual (ink/accent)
+// que el resto del sitio.
+function NodoPaso({ icon: Icon, numero }: { icon: typeof Search; numero: number }) {
+  return (
+    <span className="relative inline-flex shrink-0">
+      <span className="flex items-center justify-center h-14 w-14 rounded-[var(--radius-card)] bg-ink shadow-[var(--shadow-card)]">
+        <Icon size={22} strokeWidth={1.75} className="text-[var(--color-accent)]" />
+      </span>
+      <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center h-5 w-5 rounded-full bg-[var(--color-accent)] text-[10px] font-bold text-ink ring-2 ring-paper-raised">
+        {numero}
+      </span>
+    </span>
+  )
+}
+
+// Pequeño trazo tipo "pin de circuito" — decoración junto a cada nodo,
+// evoca una placa/esquema técnico sin reproducir ningún diagrama ajeno.
+function PinCircuito({ className }: { className?: string }) {
+  return <span aria-hidden="true" className={`block h-2 w-px bg-[var(--color-line-strong)] ${className ?? ''}`} />
+}
+
+// Diagrama de "Cómo trabajamos": una sola traza horizontal (vertical en
+// móvil, ver Metodologia) con los 4 nodos de METODOLOGIA, sobre un fondo
+// de retícula — composición propia y deliberadamente simple (sin malla
+// de nodos ni iconografía de otro sitio) para que se sienta técnica sin
+// calcar el diseño de nadie.
+function DiagramaMetodologia() {
+  return (
+    <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-paper-sunken/60 px-10 py-14">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          maskImage: 'radial-gradient(ellipse 70% 100% at center, black 35%, transparent 85%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 70% 100% at center, black 35%, transparent 85%)',
+        }}
+      />
+
+      <div className="relative">
+        <div className="absolute top-7 left-[12.5%] right-[12.5%] h-px flow-line-x" />
+        <div className="relative grid grid-cols-4 gap-x-8">
+          {METODOLOGIA.map((paso, i) => (
+            <div key={paso.titulo} className="flex flex-col items-center text-center">
+              <NodoPaso icon={paso.icon} numero={i + 1} />
+              <span className="flex gap-1 mt-1">
+                <PinCircuito />
+                <PinCircuito />
+                <PinCircuito />
+              </span>
+              <h3 className="mt-4 text-base font-semibold mb-2 tracking-tight">{paso.titulo}</h3>
+              <p className="text-sm text-slate leading-relaxed">{paso.descripcion}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Metodologia() {
   return (
     <section id="metodologia" className="border-t border-line/70 bg-paper-raised">
@@ -473,12 +540,27 @@ function Metodologia() {
           descripcion="Cada caso sigue la misma disciplina, desde la primera consulta hasta el cierre."
         />
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
-          {METODOLOGIA.map((paso) => (
-            <div key={paso.numero} className="relative pl-0 lg:pr-6 lg:border-r lg:border-line last:border-r-0">
-              <p className="font-serif text-4xl text-accent mb-4">{paso.numero}</p>
-              <h3 className="text-base font-semibold mb-2 tracking-tight">{paso.titulo}</h3>
-              <p className="text-sm text-slate leading-relaxed">{paso.descripcion}</p>
+        {/* Diagrama de flujo — desktop (lg+): los 4 pasos de METODOLOGIA
+            sobre una traza de circuito (línea con barrido animado +
+            pines decorativos), ver DiagramaMetodologia. */}
+        <div className="hidden lg:block mt-16">
+          <DiagramaMetodologia />
+        </div>
+
+        {/* Mismo diagrama, apilado — móvil y tablet: cada nodo conectado al
+            siguiente por un tramo de línea cuya altura sigue la del texto
+            (flex-1 dentro de una columna "stretched" por el row flex). */}
+        <div className="flex flex-col lg:hidden mt-14">
+          {METODOLOGIA.map((paso, i) => (
+            <div key={paso.titulo} className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <NodoPaso icon={paso.icon} numero={i + 1} />
+                {i < METODOLOGIA.length - 1 && <span className="w-px flex-1 my-2 flow-line-y" />}
+              </div>
+              <div className={i < METODOLOGIA.length - 1 ? 'pb-9' : ''}>
+                <h3 className="text-base font-semibold mb-2 tracking-tight">{paso.titulo}</h3>
+                <p className="text-sm text-slate leading-relaxed">{paso.descripcion}</p>
+              </div>
             </div>
           ))}
         </div>
