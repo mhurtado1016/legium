@@ -391,7 +391,7 @@ function Hero() {
         <div className="flex items-center gap-2 mb-5">
           <span className="h-px w-6 bg-[#d9b878]/70 shrink-0" />
           <p className="min-w-0 text-xs font-semibold text-[#d9b878] tracking-[0.16em] uppercase">
-            Despacho de abogados &amp; software jurídico
+            Despacho de abogados &amp; desarrollo de software
           </p>
         </div>
         <h1 className="font-serif text-4xl md:text-6xl leading-[1.08] tracking-tight max-w-3xl text-paper-raised">
