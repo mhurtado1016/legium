@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, Loader2 } from 'lucide-react'
+import { BellOff, BellRing, Loader2 } from 'lucide-react'
 import { useUsuario } from '../lib/useUsuario'
 import { suscribirsePush } from '../lib/plazos'
 
@@ -80,21 +80,22 @@ export function PushNotificationButton() {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setAbierto((v) => !v)}
-        aria-label="Notificaciones push"
+        aria-label="Notificaciones push del navegador"
+        title="Notificaciones push del navegador"
         aria-expanded={abierto}
         className={
           'relative flex items-center justify-center h-9 w-9 rounded-[var(--radius-field)] transition-colors ' +
           (activa ? 'text-success hover:bg-paper-sunken' : 'text-slate hover:text-ink hover:bg-paper-sunken')
         }
       >
-        {activa ? <Bell size={19} strokeWidth={1.75} /> : <BellOff size={19} strokeWidth={1.75} />}
+        {activa ? <BellRing size={19} strokeWidth={1.75} /> : <BellOff size={19} strokeWidth={1.75} />}
       </button>
 
       {abierto && (
         <div className="card absolute right-0 top-full mt-2 w-72 max-w-[90vw] p-4 z-10 animate-in">
           {estado === 'activo' ? (
             <div className="flex items-start gap-2.5">
-              <Bell size={16} strokeWidth={1.75} className="text-success mt-0.5 shrink-0" />
+              <BellRing size={16} strokeWidth={1.75} className="text-success mt-0.5 shrink-0" />
               <p className="text-sm text-ink">
                 Las notificaciones están activas. Te avisamos de vencimientos de plazos y citas nuevas.
               </p>

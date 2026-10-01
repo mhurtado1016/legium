@@ -87,6 +87,7 @@ export function NotificationBell() {
       <button
         onClick={alAbrir}
         aria-label="Notificaciones"
+        title="Notificaciones"
         aria-expanded={abierto}
         className="relative flex items-center justify-center h-9 w-9 rounded-[var(--radius-field)]
           text-ink hover:bg-paper-sunken transition-colors"
