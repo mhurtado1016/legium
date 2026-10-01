@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { CheckCircle2, Copy, FileText, HardDrive, Loader2, Plus, UserCog } from 'lucide-react'
+import { CheckCircle2, Copy, FileText, HardDrive, Plus, UserCog } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
+import { Skeleton, SkeletonCards, SkeletonTableRows } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import { TelefonoInput } from '../components/TelefonoInput'
 import { useUsuario } from '../lib/useUsuario'
@@ -72,26 +73,23 @@ export function AdministracionPage() {
         <IntegracionDriveSeccion />
         <TiposDocumentoIASeccion />
 
-        {cargando ? (
-          <p className="text-sm text-slate flex items-center gap-2">
-            <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-            Cargando…
-          </p>
-        ) : (
-          <>
-          <div className="hidden md:block card overflow-hidden">
-            <table className="table-modern">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>WhatsApp</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+        <div className="hidden md:block card overflow-hidden">
+          <table className="table-modern">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>WhatsApp</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {cargando ? (
+                <SkeletonTableRows columns={6} />
+              ) : (
+                <>
                 {usuarios.map((u) => {
                   const esUnoMismo = u.id === usuario?.id
                   return (
@@ -138,10 +136,15 @@ export function AdministracionPage() {
                     </td>
                   </tr>
                 )}
-              </tbody>
-            </table>
-          </div>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
 
+        {cargando ? (
+          <SkeletonCards count={3} rows={3} />
+        ) : (
           <CardList>
             {usuarios.map((u) => {
               const esUnoMismo = u.id === usuario?.id
@@ -180,7 +183,6 @@ export function AdministracionPage() {
             })}
             {usuarios.length === 0 && <CardEmpty>No hay usuarios registrados.</CardEmpty>}
           </CardList>
-          </>
         )}
       </main>
 
@@ -256,10 +258,10 @@ function IntegracionDriveSeccion() {
       {error && <p className="text-sm text-danger mb-3">{error}</p>}
 
       {cargando ? (
-        <p className="text-sm text-slate flex items-center gap-2">
-          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-          Cargando…
-        </p>
+        <div className="space-y-2" aria-hidden="true">
+          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-3 w-80" />
+        </div>
       ) : !estado?.configurado ? (
         <p className="text-sm text-slate">No hay una cuenta de servicio de Google Drive configurada todavía.</p>
       ) : (
@@ -467,10 +469,14 @@ function TiposDocumentoIASeccion() {
       </p>
 
       {cargando ? (
-        <p className="text-sm text-slate flex items-center gap-2">
-          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-          Cargando…
-        </p>
+        <ul className="text-sm divide-y divide-line" aria-hidden="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i} className="py-2.5 flex items-center justify-between gap-3">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-10" />
+            </li>
+          ))}
+        </ul>
       ) : (
         <ul className="text-sm divide-y divide-line">
           {tipos.map((t) => (

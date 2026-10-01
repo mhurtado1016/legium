@@ -6,6 +6,7 @@ import { AsistenteDocumentosIA } from '../components/AsistenteDocumentosIA'
 import { BuscadorSentenciasFlotante } from '../components/BuscadorSentenciasFlotante'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { DocumentoPreviewModal } from '../components/DocumentoPreviewModal'
+import { Skeleton } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -277,7 +278,7 @@ export function CasoDetailPage() {
     }
   }
 
-  if (!caso) return null
+  if (!caso) return <CasoDetailSkeleton />
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -787,6 +788,43 @@ export function CasoDetailPage() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// Placeholder mientras carga la ficha del caso (antes mostraba una página
+// en blanco hasta que `cargar()` resolvía todas las promesas).
+function CasoDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-paper text-ink">
+      <AppHeader
+        left={
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-center h-8 w-8 -ml-1.5 rounded-full text-slate shrink-0">
+              <ArrowLeft size={17} strokeWidth={1.75} />
+            </div>
+            <Skeleton className="h-4 w-40" />
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-10 px-4 sm:px-6 lg:px-8 py-8 max-w-5xl mx-auto">
+        <nav className="space-y-2.5 self-start md:sticky md:top-24" aria-hidden="true">
+          {SECCIONES.map((s) => (
+            <Skeleton key={s.id} className="h-3 w-20" />
+          ))}
+        </nav>
+
+        <div className="max-w-2xl space-y-10" aria-hidden="true">
+          {SECCIONES.map((s) => (
+            <div key={s.id} className="card p-6 space-y-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-5/6" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
 import { SelectorFranja } from '../components/SelectorFranja'
+import { Skeleton, SkeletonCards, SkeletonTableRows } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -85,58 +86,60 @@ function CitasSeccion({ refrescar }: { refrescar: number }) {
   return (
     <section>
       <h2 className="font-display text-base font-semibold mb-3">Próximas citas</h2>
-      {cargando ? (
-        <p className="text-sm text-slate flex items-center gap-2">
-          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-          Cargando…
-        </p>
-      ) : (
-        <>
-        <div className="hidden md:block card overflow-hidden">
-          <table className="table-modern">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Cliente</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {citas.map((c) => (
-                <tr key={c.id} className={c.estado === 'cancelada' ? 'text-slate' : ''}>
-                  <td>{formatoFechaCorta(c.fecha)}</td>
-                  <td>{formatoHora12(c.hora_inicio)}</td>
-                  <td>
-                    <div className="font-medium text-ink">{c.nombre_cliente}</div>
-                    <div className="text-xs text-slate">{c.correo_cliente}</div>
-                  </td>
-                  <td className="capitalize">{c.tipo_sesion}</td>
-                  <td>
-                    <StatusBadge estado={c.estado} />
-                  </td>
-                  <td>
-                    {c.estado === 'confirmada' && (
-                      <button onClick={() => handleCancelar(c.id)} className="link">
-                        cancelar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {citas.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-slate text-center">
-                    No hay citas próximas.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="hidden md:block card overflow-hidden">
+        <table className="table-modern">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {cargando ? (
+              <SkeletonTableRows columns={6} />
+            ) : (
+              <>
+                {citas.map((c) => (
+                  <tr key={c.id} className={c.estado === 'cancelada' ? 'text-slate' : ''}>
+                    <td>{formatoFechaCorta(c.fecha)}</td>
+                    <td>{formatoHora12(c.hora_inicio)}</td>
+                    <td>
+                      <div className="font-medium text-ink">{c.nombre_cliente}</div>
+                      <div className="text-xs text-slate">{c.correo_cliente}</div>
+                    </td>
+                    <td className="capitalize">{c.tipo_sesion}</td>
+                    <td>
+                      <StatusBadge estado={c.estado} />
+                    </td>
+                    <td>
+                      {c.estado === 'confirmada' && (
+                        <button onClick={() => handleCancelar(c.id)} className="link">
+                          cancelar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {citas.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-slate text-center">
+                      No hay citas próximas.
+                    </td>
+                  </tr>
+                )}
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
 
+      {cargando ? (
+        <SkeletonCards count={3} rows={3} />
+      ) : (
         <CardList>
           {citas.map((c) => (
             <DataCard key={c.id} className={c.estado === 'cancelada' ? 'opacity-60' : ''}>
@@ -163,7 +166,6 @@ function CitasSeccion({ refrescar }: { refrescar: number }) {
           ))}
           {citas.length === 0 && <CardEmpty>No hay citas próximas.</CardEmpty>}
         </CardList>
-        </>
       )}
     </section>
   )
@@ -317,10 +319,11 @@ function ConfiguracionSeccion() {
     <section className="card p-4">
       <EncabezadoColapsable titulo="Configuración de disponibilidad" abierto={abierto} onToggle={() => setAbierto((v) => !v)} />
       {abierto && (!config || !horarios) && (
-        <p className="text-sm text-slate flex items-center gap-2 mt-4">
-          <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-          Cargando…
-        </p>
+        <div className="mt-4 space-y-3" aria-hidden="true">
+          <Skeleton className="h-9 w-full max-w-sm" />
+          <Skeleton className="h-9 w-full max-w-sm" />
+          <Skeleton className="h-9 w-32" />
+        </div>
       )}
       {abierto && config && horarios && (
         <div className="mt-4 space-y-8">
@@ -335,8 +338,6 @@ function ConfiguracionSeccion() {
             <h3 className="font-display text-sm font-semibold mb-3">Bloqueos</h3>
             <NuevoBloqueoForm onCreado={(b) => setBloqueos((prev) => [b, ...prev])} />
 
-            {cargandoBloqueos ? null : (
-              <>
               <div className="hidden md:block card overflow-hidden mt-4">
                 <table className="table-modern">
                   <thead>
@@ -349,61 +350,69 @@ function ConfiguracionSeccion() {
                     </tr>
                   </thead>
                   <tbody>
-                    {bloqueos.map((b) => (
-                      <tr key={b.id}>
-                        <td>{formatoFechaCorta(b.fecha_inicio)}</td>
-                        <td>{formatoFechaCorta(b.fecha_fin)}</td>
-                        <td>
-                          {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
-                        </td>
-                        <td>{b.motivo || '—'}</td>
-                        <td>
-                          <button
-                            onClick={() => handleEliminarBloqueo(b.id)}
-                            aria-label="Eliminar bloqueo"
-                            className="text-slate hover:text-danger transition-colors"
-                          >
-                            <Trash2 size={16} strokeWidth={1.75} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {bloqueos.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="py-6 text-slate text-center">
-                          No hay bloqueos registrados.
-                        </td>
-                      </tr>
+                    {cargandoBloqueos ? (
+                      <SkeletonTableRows columns={5} rows={3} />
+                    ) : (
+                      <>
+                        {bloqueos.map((b) => (
+                          <tr key={b.id}>
+                            <td>{formatoFechaCorta(b.fecha_inicio)}</td>
+                            <td>{formatoFechaCorta(b.fecha_fin)}</td>
+                            <td>
+                              {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
+                            </td>
+                            <td>{b.motivo || '—'}</td>
+                            <td>
+                              <button
+                                onClick={() => handleEliminarBloqueo(b.id)}
+                                aria-label="Eliminar bloqueo"
+                                className="text-slate hover:text-danger transition-colors"
+                              >
+                                <Trash2 size={16} strokeWidth={1.75} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {bloqueos.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="py-6 text-slate text-center">
+                              No hay bloqueos registrados.
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <CardList>
-                {bloqueos.map((b) => (
-                  <DataCard key={b.id}>
-                    <CardHeader>
-                      <span className="font-medium text-ink">
-                        {formatoFechaCorta(b.fecha_inicio)} – {formatoFechaCorta(b.fecha_fin)}
-                      </span>
-                      <button
-                        onClick={() => handleEliminarBloqueo(b.id)}
-                        aria-label="Eliminar bloqueo"
-                        className="shrink-0 text-slate hover:text-danger transition-colors"
-                      >
-                        <Trash2 size={16} strokeWidth={1.75} />
-                      </button>
-                    </CardHeader>
-                    <CardRow label="Horario">
-                      {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
-                    </CardRow>
-                    <CardRow label="Motivo">{b.motivo || '—'}</CardRow>
-                  </DataCard>
-                ))}
-                {bloqueos.length === 0 && <CardEmpty>No hay bloqueos registrados.</CardEmpty>}
-              </CardList>
-              </>
-            )}
+              {cargandoBloqueos ? (
+                <SkeletonCards count={2} rows={2} />
+              ) : (
+                <CardList>
+                  {bloqueos.map((b) => (
+                    <DataCard key={b.id}>
+                      <CardHeader>
+                        <span className="font-medium text-ink">
+                          {formatoFechaCorta(b.fecha_inicio)} – {formatoFechaCorta(b.fecha_fin)}
+                        </span>
+                        <button
+                          onClick={() => handleEliminarBloqueo(b.id)}
+                          aria-label="Eliminar bloqueo"
+                          className="shrink-0 text-slate hover:text-danger transition-colors"
+                        >
+                          <Trash2 size={16} strokeWidth={1.75} />
+                        </button>
+                      </CardHeader>
+                      <CardRow label="Horario">
+                        {b.hora_inicio ? `${formatoHora12(b.hora_inicio)} – ${formatoHora12(b.hora_fin!)}` : 'Día completo'}
+                      </CardRow>
+                      <CardRow label="Motivo">{b.motivo || '—'}</CardRow>
+                    </DataCard>
+                  ))}
+                  {bloqueos.length === 0 && <CardEmpty>No hay bloqueos registrados.</CardEmpty>}
+                </CardList>
+              )}
           </div>
         </div>
       )}

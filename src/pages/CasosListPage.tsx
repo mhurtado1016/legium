@@ -4,6 +4,7 @@ import { FolderKanban, FolderOpen, Clock3, CheckCircle2, AlertTriangle, Plus, Ar
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
+import { SkeletonCards, SkeletonStatCards, SkeletonTableRows } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -67,11 +68,18 @@ export function CasosListPage() {
   const [todosCasos, setTodosCasos] = useState<Caso[]>([])
   const [plazosVencidos, setPlazosVencidos] = useState<Plazo[]>([])
   const [modalResumen, setModalResumen] = useState<ResumenKey | null>(null)
+  const [cargandoResumen, setCargandoResumen] = useState(true)
+  const [cargando, setCargando] = useState(true)
 
   async function cargarResumen() {
-    const [c, p] = await Promise.all([listarCasos(), listarPlazos({ estado: 'vencido' })])
-    setTodosCasos(c)
-    setPlazosVencidos(p)
+    setCargandoResumen(true)
+    try {
+      const [c, p] = await Promise.all([listarCasos(), listarPlazos({ estado: 'vencido' })])
+      setTodosCasos(c)
+      setPlazosVencidos(p)
+    } finally {
+      setCargandoResumen(false)
+    }
   }
 
   useEffect(() => {
@@ -97,23 +105,28 @@ export function CasosListPage() {
   }, [todosCasos, plazosVencidosPorCaso])
 
   async function cargar() {
-    const [c, cl, uf] = await Promise.all([
-      listarCasos({
-        estado: filtroEstado || undefined,
-        tipo: filtroTipo || undefined,
-        numeroRadicado: filtroRadicado || undefined,
-        clienteNombre: filtroCliente || undefined,
-        titulo: filtroTitulo || undefined,
-        responsableId: soloMisCasos ? usuario?.id : undefined,
-        orderBy,
-        orderAsc,
-      }),
-      listarClientes(),
-      listarUsuariosFirma(),
-    ])
-    setCasos(c)
-    setClientes(cl)
-    setUsuariosFirma(uf)
+    setCargando(true)
+    try {
+      const [c, cl, uf] = await Promise.all([
+        listarCasos({
+          estado: filtroEstado || undefined,
+          tipo: filtroTipo || undefined,
+          numeroRadicado: filtroRadicado || undefined,
+          clienteNombre: filtroCliente || undefined,
+          titulo: filtroTitulo || undefined,
+          responsableId: soloMisCasos ? usuario?.id : undefined,
+          orderBy,
+          orderAsc,
+        }),
+        listarClientes(),
+        listarUsuariosFirma(),
+      ])
+      setCasos(c)
+      setClientes(cl)
+      setUsuariosFirma(uf)
+    } finally {
+      setCargando(false)
+    }
   }
 
   async function handleTrasladar(nuevoResponsableId: string, motivo: string) {
@@ -169,37 +182,43 @@ export function CasosListPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
-          <ResumenCard
-            icon={FolderKanban}
-            label="Total"
-            value={resumen.total.length}
-            onClick={() => setModalResumen('total')}
-          />
-          <ResumenCard
-            icon={FolderOpen}
-            label="Abiertos"
-            value={resumen.abiertos.length}
-            onClick={() => setModalResumen('abiertos')}
-          />
-          <ResumenCard
-            icon={Clock3}
-            label="Pendientes"
-            value={resumen.pendientes.length}
-            onClick={() => setModalResumen('pendientes')}
-          />
-          <ResumenCard
-            icon={CheckCircle2}
-            label="Cerrados"
-            value={resumen.cerrados.length}
-            onClick={() => setModalResumen('cerrados')}
-          />
-          <ResumenCard
-            icon={AlertTriangle}
-            label="Plazos vencidos"
-            value={resumen.vencidos.length}
-            onClick={() => setModalResumen('vencidos')}
-            alerta={resumen.vencidos.length > 0}
-          />
+          {cargandoResumen ? (
+            <SkeletonStatCards count={5} />
+          ) : (
+            <>
+              <ResumenCard
+                icon={FolderKanban}
+                label="Total"
+                value={resumen.total.length}
+                onClick={() => setModalResumen('total')}
+              />
+              <ResumenCard
+                icon={FolderOpen}
+                label="Abiertos"
+                value={resumen.abiertos.length}
+                onClick={() => setModalResumen('abiertos')}
+              />
+              <ResumenCard
+                icon={Clock3}
+                label="Pendientes"
+                value={resumen.pendientes.length}
+                onClick={() => setModalResumen('pendientes')}
+              />
+              <ResumenCard
+                icon={CheckCircle2}
+                label="Cerrados"
+                value={resumen.cerrados.length}
+                onClick={() => setModalResumen('cerrados')}
+              />
+              <ResumenCard
+                icon={AlertTriangle}
+                label="Plazos vencidos"
+                value={resumen.vencidos.length}
+                onClick={() => setModalResumen('vencidos')}
+                alerta={resumen.vencidos.length > 0}
+              />
+            </>
+          )}
         </div>
 
         {modalResumen && (
@@ -333,75 +352,85 @@ export function CasosListPage() {
               </tr>
             </thead>
             <tbody>
-              {casos.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <Link to={`/app/casos/${c.id}`} className="font-medium text-ink hover:text-accent transition-colors">
-                      {c.titulo}
-                    </Link>
-                  </td>
-                  <td>{c.clientes?.nombre ?? '—'}</td>
-                  <td className="capitalize">{c.tipo}</td>
-                  <td>{c.numero_radicado ?? '—'}</td>
-                  <td>
-                    <StatusBadge estado={c.estado} />
-                  </td>
-                  <td className="text-slate">
-                    {new Date(c.created_at).toLocaleDateString('es-CO')}
-                  </td>
-                  <td>{c.usuarios?.nombre ?? '—'}</td>
-                  <td>
-                    <button
-                      onClick={() => setCasoATrasladar(c)}
-                      aria-label="Transferir caso"
-                      title="Transferir caso"
-                      className="flex items-center justify-center h-7 w-7 rounded-full text-slate hover:text-accent hover:bg-paper-sunken transition-colors"
-                    >
-                      <ArrowRightLeft size={15} strokeWidth={1.75} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {casos.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-6 text-slate text-center">
-                    No hay casos con este filtro.
-                  </td>
-                </tr>
+              {cargando ? (
+                <SkeletonTableRows columns={8} />
+              ) : (
+                <>
+                  {casos.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <Link to={`/app/casos/${c.id}`} className="font-medium text-ink hover:text-accent transition-colors">
+                          {c.titulo}
+                        </Link>
+                      </td>
+                      <td>{c.clientes?.nombre ?? '—'}</td>
+                      <td className="capitalize">{c.tipo}</td>
+                      <td>{c.numero_radicado ?? '—'}</td>
+                      <td>
+                        <StatusBadge estado={c.estado} />
+                      </td>
+                      <td className="text-slate">
+                        {new Date(c.created_at).toLocaleDateString('es-CO')}
+                      </td>
+                      <td>{c.usuarios?.nombre ?? '—'}</td>
+                      <td>
+                        <button
+                          onClick={() => setCasoATrasladar(c)}
+                          aria-label="Transferir caso"
+                          title="Transferir caso"
+                          className="flex items-center justify-center h-7 w-7 rounded-full text-slate hover:text-accent hover:bg-paper-sunken transition-colors"
+                        >
+                          <ArrowRightLeft size={15} strokeWidth={1.75} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {casos.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="py-6 text-slate text-center">
+                        No hay casos con este filtro.
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
         </div>
 
-        <CardList>
-          {casos.map((c) => (
-            <DataCard key={c.id}>
-              <CardHeader>
-                <Link to={`/app/casos/${c.id}`} className="font-medium text-ink hover:text-accent transition-colors">
-                  {c.titulo}
-                </Link>
-                <StatusBadge estado={c.estado} />
-              </CardHeader>
-              <CardRow label="Cliente">{c.clientes?.nombre ?? '—'}</CardRow>
-              <CardRow label="Tipo">
-                <span className="capitalize">{c.tipo}</span>
-              </CardRow>
-              <CardRow label="Radicado">{c.numero_radicado ?? '—'}</CardRow>
-              <CardRow label="Creado">{new Date(c.created_at).toLocaleDateString('es-CO')}</CardRow>
-              <CardRow label="Responsable">{c.usuarios?.nombre ?? '—'}</CardRow>
-              <CardActions>
-                <button
-                  onClick={() => setCasoATrasladar(c)}
-                  className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
-                >
-                  <ArrowRightLeft size={14} strokeWidth={1.75} />
-                  Transferir
-                </button>
-              </CardActions>
-            </DataCard>
-          ))}
-          {casos.length === 0 && <CardEmpty>No hay casos con este filtro.</CardEmpty>}
-        </CardList>
+        {cargando ? (
+          <SkeletonCards count={3} rows={5} />
+        ) : (
+          <CardList>
+            {casos.map((c) => (
+              <DataCard key={c.id}>
+                <CardHeader>
+                  <Link to={`/app/casos/${c.id}`} className="font-medium text-ink hover:text-accent transition-colors">
+                    {c.titulo}
+                  </Link>
+                  <StatusBadge estado={c.estado} />
+                </CardHeader>
+                <CardRow label="Cliente">{c.clientes?.nombre ?? '—'}</CardRow>
+                <CardRow label="Tipo">
+                  <span className="capitalize">{c.tipo}</span>
+                </CardRow>
+                <CardRow label="Radicado">{c.numero_radicado ?? '—'}</CardRow>
+                <CardRow label="Creado">{new Date(c.created_at).toLocaleDateString('es-CO')}</CardRow>
+                <CardRow label="Responsable">{c.usuarios?.nombre ?? '—'}</CardRow>
+                <CardActions>
+                  <button
+                    onClick={() => setCasoATrasladar(c)}
+                    className="flex items-center gap-1.5 text-slate hover:text-accent transition-colors"
+                  >
+                    <ArrowRightLeft size={14} strokeWidth={1.75} />
+                    Transferir
+                  </button>
+                </CardActions>
+              </DataCard>
+            ))}
+            {casos.length === 0 && <CardEmpty>No hay casos con este filtro.</CardEmpty>}
+          </CardList>
+        )}
 
         {casoATrasladar && (
           <TrasladarCasoModal

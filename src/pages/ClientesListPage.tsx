@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { Modal } from '../components/Modal'
+import { SkeletonCards, SkeletonTableRows } from '../components/Skeleton'
 import { TelefonoInput } from '../components/TelefonoInput'
 import { actualizarCliente, listarClientes, type Cliente } from '../lib/casos'
 import { separarTelefono } from '../lib/paisesTelefono'
@@ -54,50 +55,55 @@ export function ClientesListPage() {
           </div>
         </div>
 
-        {cargando ? (
-          <p className="text-sm text-slate">Cargando…</p>
-        ) : (
-          <>
-          <div className="hidden md:block card overflow-hidden">
-            <table className="table-modern">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Identificación</th>
-                  <th>Correo</th>
-                  <th>WhatsApp</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {clientes.map((c) => (
-                  <tr key={c.id}>
-                    <td className="font-medium text-ink">{c.nombre}</td>
-                    <td className="capitalize">{c.tipo === 'empresa' ? 'Empresa' : 'Persona natural'}</td>
-                    <td className="text-slate">{c.identificacion ?? '—'}</td>
-                    <td className="text-slate">{c.email ?? '—'}</td>
-                    <td className="text-slate">{c.telefono ?? '—'}</td>
-                    <td>
-                      <div className="flex items-center justify-end text-xs">
-                        <button onClick={() => setEditando(c)} className="link">
-                          Editar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {clientes.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="py-6 text-slate text-center">
-                      No hay clientes con este filtro.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="hidden md:block card overflow-hidden">
+          <table className="table-modern">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Identificación</th>
+                <th>Correo</th>
+                <th>WhatsApp</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {cargando ? (
+                <SkeletonTableRows columns={6} />
+              ) : (
+                <>
+                  {clientes.map((c) => (
+                    <tr key={c.id}>
+                      <td className="font-medium text-ink">{c.nombre}</td>
+                      <td className="capitalize">{c.tipo === 'empresa' ? 'Empresa' : 'Persona natural'}</td>
+                      <td className="text-slate">{c.identificacion ?? '—'}</td>
+                      <td className="text-slate">{c.email ?? '—'}</td>
+                      <td className="text-slate">{c.telefono ?? '—'}</td>
+                      <td>
+                        <div className="flex items-center justify-end text-xs">
+                          <button onClick={() => setEditando(c)} className="link">
+                            Editar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {clientes.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-slate text-center">
+                        No hay clientes con este filtro.
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
 
+        {cargando ? (
+          <SkeletonCards count={3} rows={3} />
+        ) : (
           <CardList>
             {clientes.map((c) => (
               <DataCard key={c.id}>
@@ -119,7 +125,6 @@ export function ClientesListPage() {
             ))}
             {clientes.length === 0 && <CardEmpty>No hay clientes con este filtro.</CardEmpty>}
           </CardList>
-          </>
         )}
       </main>
 

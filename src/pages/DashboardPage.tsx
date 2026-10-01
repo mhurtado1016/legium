@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { EncabezadoColapsable } from '../components/EncabezadoColapsable'
+import { SkeletonSideList } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import { useUsuario } from '../lib/useUsuario'
 import {
@@ -60,6 +61,7 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [plazosProximos, setPlazosProximos] = useState<Plazo[]>([])
   const [casosAbiertos, setCasosAbiertos] = useState<Caso[]>([])
+  const [cargandoActividad, setCargandoActividad] = useState(true)
   const [generando, setGenerando] = useState<Record<string, boolean>>({})
   const [errorGeneracion, setErrorGeneracion] = useState<Record<string, string>>({})
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
@@ -71,12 +73,14 @@ export function DashboardPage() {
 
   useEffect(() => {
     listarSentenciasFavoritasIds().then(setFavoritasIds).catch(() => {})
-    listarPlazos({ estado: 'pendiente' })
-      .then((p) => setPlazosProximos(p.slice(0, 5)))
+    Promise.all([
+      listarPlazos({ estado: 'pendiente' }).then((p) => setPlazosProximos(p.slice(0, 5))),
+      listarCasos().then((c) =>
+        setCasosAbiertos(c.filter((x) => x.estado === 'abierto' || x.estado === 'en_curso').slice(0, 5)),
+      ),
+    ])
       .catch(() => {})
-    listarCasos()
-      .then((c) => setCasosAbiertos(c.filter((x) => x.estado === 'abierto' || x.estado === 'en_curso').slice(0, 5)))
-      .catch(() => {})
+      .finally(() => setCargandoActividad(false))
   }, [])
 
   async function handleBuscar(e: FormEvent) {
@@ -654,25 +658,29 @@ export function DashboardPage() {
               <Clock3 size={13} strokeWidth={1.75} />
               Plazos próximos
             </p>
-            <ul className="text-sm divide-y divide-line -mx-4">
-              {plazosProximos.map((p) => {
-                const dias = diasRestantes(p.fecha_vencimiento)
-                const urgente = dias <= 0
-                return (
-                  <li key={p.id} className="px-4 py-2 hover:bg-paper-sunken transition-colors">
-                    <Link to={`/app/casos/${p.caso_id}`} className="hover:text-ink font-medium">
-                      {p.titulo}
-                    </Link>
-                    <div className={'text-xs mt-0.5 ' + (urgente ? 'text-danger font-medium' : 'text-slate')}>
-                      {urgente ? 'Hoy o vencido' : `${dias} días`}
-                    </div>
-                  </li>
-                )
-              })}
-              {plazosProximos.length === 0 && (
-                <li className="px-4 py-2 text-slate">Sin plazos pendientes.</li>
-              )}
-            </ul>
+            {cargandoActividad ? (
+              <SkeletonSideList count={3} />
+            ) : (
+              <ul className="text-sm divide-y divide-line -mx-4">
+                {plazosProximos.map((p) => {
+                  const dias = diasRestantes(p.fecha_vencimiento)
+                  const urgente = dias <= 0
+                  return (
+                    <li key={p.id} className="px-4 py-2 hover:bg-paper-sunken transition-colors">
+                      <Link to={`/app/casos/${p.caso_id}`} className="hover:text-ink font-medium">
+                        {p.titulo}
+                      </Link>
+                      <div className={'text-xs mt-0.5 ' + (urgente ? 'text-danger font-medium' : 'text-slate')}>
+                        {urgente ? 'Hoy o vencido' : `${dias} días`}
+                      </div>
+                    </li>
+                  )
+                })}
+                {plazosProximos.length === 0 && (
+                  <li className="px-4 py-2 text-slate">Sin plazos pendientes.</li>
+                )}
+              </ul>
+            )}
           </div>
 
           <div className="card p-4">
@@ -680,19 +688,23 @@ export function DashboardPage() {
               <FolderOpen size={13} strokeWidth={1.75} />
               Casos abiertos
             </p>
-            <ul className="text-sm divide-y divide-line -mx-4">
-              {casosAbiertos.map((c) => (
-                <li key={c.id} className="px-4 py-2 hover:bg-paper-sunken transition-colors flex items-center justify-between gap-2">
-                  <Link to={`/app/casos/${c.id}`} className="min-w-0 hover:text-ink font-medium truncate">
-                    {c.titulo}
-                  </Link>
-                  <StatusBadge estado={c.estado} />
-                </li>
-              ))}
-              {casosAbiertos.length === 0 && (
-                <li className="px-4 py-2 text-slate">Sin casos abiertos.</li>
-              )}
-            </ul>
+            {cargandoActividad ? (
+              <SkeletonSideList count={3} />
+            ) : (
+              <ul className="text-sm divide-y divide-line -mx-4">
+                {casosAbiertos.map((c) => (
+                  <li key={c.id} className="px-4 py-2 hover:bg-paper-sunken transition-colors flex items-center justify-between gap-2">
+                    <Link to={`/app/casos/${c.id}`} className="min-w-0 hover:text-ink font-medium truncate">
+                      {c.titulo}
+                    </Link>
+                    <StatusBadge estado={c.estado} />
+                  </li>
+                ))}
+                {casosAbiertos.length === 0 && (
+                  <li className="px-4 py-2 text-slate">Sin casos abiertos.</li>
+                )}
+              </ul>
+            )}
           </div>
 
           {usuario?.es_administrador && <ContactoConfigSeccion />}

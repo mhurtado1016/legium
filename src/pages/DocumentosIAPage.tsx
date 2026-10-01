@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Bot, Loader2, Plus } from 'lucide-react'
+import { Bot, Plus } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { AsistenteDocumentosIA } from '../components/AsistenteDocumentosIA'
+import { SkeletonTableRows } from '../components/Skeleton'
 import { listarConversaciones, type ConversacionIA } from '../lib/documentosIA'
 
 /**
@@ -62,50 +63,49 @@ export function DocumentosIAPage() {
           </button>
         </div>
 
-        {cargando ? (
-          <p className="text-sm text-slate flex items-center gap-2">
-            <Loader2 size={14} className="animate-spin" strokeWidth={1.75} />
-            Cargando…
-          </p>
-        ) : (
-          <div className="card overflow-hidden">
-            <table className="table-modern">
-              <thead>
-                <tr>
-                  <th>Documento</th>
-                  <th>Tipo</th>
-                  <th>Caso</th>
-                  <th>Estado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {conversaciones.map((c) => (
-                  <tr key={c.id}>
-                    <td className="font-medium text-ink">{c.titulo}</td>
-                    <td className="text-slate">{c.tipos_documento_legal?.nombre ?? '—'}</td>
-                    <td className="text-slate">{c.casos?.titulo ?? '—'}</td>
-                    <td className="text-slate">{c.estado === 'con_borrador' ? 'Con borrador' : 'En curso'}</td>
-                    <td className="text-right">
-                      <button onClick={() => abrirExistente(c.id)} className="link">
-                        Abrir
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {conversaciones.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center text-slate py-6">
-                      <Bot size={18} strokeWidth={1.75} className="inline-block mb-1" />
-                      <br />
-                      Sin conversaciones todavía.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="card overflow-hidden">
+          <table className="table-modern">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th>Tipo</th>
+                <th>Caso</th>
+                <th>Estado</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {cargando ? (
+                <SkeletonTableRows columns={5} />
+              ) : (
+                <>
+                  {conversaciones.map((c) => (
+                    <tr key={c.id}>
+                      <td className="font-medium text-ink">{c.titulo}</td>
+                      <td className="text-slate">{c.tipos_documento_legal?.nombre ?? '—'}</td>
+                      <td className="text-slate">{c.casos?.titulo ?? '—'}</td>
+                      <td className="text-slate">{c.estado === 'con_borrador' ? 'Con borrador' : 'En curso'}</td>
+                      <td className="text-right">
+                        <button onClick={() => abrirExistente(c.id)} className="link">
+                          Abrir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {conversaciones.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center text-slate py-6">
+                        <Bot size={18} strokeWidth={1.75} className="inline-block mb-1" />
+                        <br />
+                        Sin conversaciones todavía.
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
 
       {panelAbierto && <AsistenteDocumentosIA conversacionInicialId={conversacionAAbrir} onClose={cerrarPanel} />}

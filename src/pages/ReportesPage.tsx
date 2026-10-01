@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Wallet, AlertTriangle, CircleDollarSign } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
+import { SkeletonCards, SkeletonStatCards, SkeletonTableRows } from '../components/Skeleton'
 import {
   obtenerCartera,
   obtenerCasosPorEstado,
@@ -31,15 +32,20 @@ export function ReportesPage() {
   const [casosPorEstado, setCasosPorEstado] = useState<ConteoPorEstado[]>([])
   const [plazosPorEstado, setPlazosPorEstado] = useState<ConteoPorEstado[]>([])
   const [horasPorUsuario, setHorasPorUsuario] = useState<HorasUsuario[]>([])
+  const [cargandoPeriodo, setCargandoPeriodo] = useState(true)
+  const [cargandoEstados, setCargandoEstados] = useState(true)
 
   useEffect(() => {
-    obtenerCartera(periodo).then(setCartera)
-    obtenerHorasPorUsuario(periodo).then(setHorasPorUsuario)
+    setCargandoPeriodo(true)
+    Promise.all([obtenerCartera(periodo).then(setCartera), obtenerHorasPorUsuario(periodo).then(setHorasPorUsuario)]).finally(
+      () => setCargandoPeriodo(false),
+    )
   }, [periodo])
 
   useEffect(() => {
-    obtenerCasosPorEstado().then(setCasosPorEstado)
-    obtenerPlazosPorEstado().then(setPlazosPorEstado)
+    Promise.all([obtenerCasosPorEstado().then(setCasosPorEstado), obtenerPlazosPorEstado().then(setPlazosPorEstado)]).finally(
+      () => setCargandoEstados(false),
+    )
   }, [])
 
   return (
@@ -68,27 +74,33 @@ export function ReportesPage() {
         <section className="mb-10">
           <h2 className="eyebrow mb-3">Cartera</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="card p-5">
-              <Wallet size={17} strokeWidth={1.75} className="text-slate-soft mb-3" />
-              <p className="text-2xl font-display font-semibold">
-                ${(cartera?.pendiente ?? 0).toLocaleString('es-CO')}
-              </p>
-              <p className="text-sm text-slate mt-1">Pendiente</p>
-            </div>
-            <div className="card p-5 border-[var(--color-danger)]/25">
-              <AlertTriangle size={17} strokeWidth={1.75} className="text-danger mb-3" />
-              <p className="text-2xl font-display font-semibold text-danger">
-                ${(cartera?.vencida ?? 0).toLocaleString('es-CO')}
-              </p>
-              <p className="text-sm text-slate mt-1">Vencida</p>
-            </div>
-            <div className="card p-5">
-              <CircleDollarSign size={17} strokeWidth={1.75} className="text-success mb-3" />
-              <p className="text-2xl font-display font-semibold">
-                ${(cartera?.cobrado ?? 0).toLocaleString('es-CO')}
-              </p>
-              <p className="text-sm text-slate mt-1">Cobrado</p>
-            </div>
+            {cargandoPeriodo ? (
+              <SkeletonStatCards count={3} />
+            ) : (
+              <>
+                <div className="card p-5">
+                  <Wallet size={17} strokeWidth={1.75} className="text-slate-soft mb-3" />
+                  <p className="text-2xl font-display font-semibold">
+                    ${(cartera?.pendiente ?? 0).toLocaleString('es-CO')}
+                  </p>
+                  <p className="text-sm text-slate mt-1">Pendiente</p>
+                </div>
+                <div className="card p-5 border-[var(--color-danger)]/25">
+                  <AlertTriangle size={17} strokeWidth={1.75} className="text-danger mb-3" />
+                  <p className="text-2xl font-display font-semibold text-danger">
+                    ${(cartera?.vencida ?? 0).toLocaleString('es-CO')}
+                  </p>
+                  <p className="text-sm text-slate mt-1">Vencida</p>
+                </div>
+                <div className="card p-5">
+                  <CircleDollarSign size={17} strokeWidth={1.75} className="text-success mb-3" />
+                  <p className="text-2xl font-display font-semibold">
+                    ${(cartera?.cobrado ?? 0).toLocaleString('es-CO')}
+                  </p>
+                  <p className="text-sm text-slate mt-1">Cobrado</p>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -98,16 +110,22 @@ export function ReportesPage() {
             <div className="card overflow-hidden">
               <table className="table-modern">
                 <tbody>
-                  {casosPorEstado.map((c) => (
-                    <tr key={c.estado}>
-                      <td className="capitalize">{c.estado}</td>
-                      <td className="text-right font-medium">{c.total}</td>
-                    </tr>
-                  ))}
-                  {casosPorEstado.length === 0 && (
-                    <tr>
-                      <td className="text-slate">Sin datos.</td>
-                    </tr>
+                  {cargandoEstados ? (
+                    <SkeletonTableRows columns={2} rows={4} />
+                  ) : (
+                    <>
+                      {casosPorEstado.map((c) => (
+                        <tr key={c.estado}>
+                          <td className="capitalize">{c.estado}</td>
+                          <td className="text-right font-medium">{c.total}</td>
+                        </tr>
+                      ))}
+                      {casosPorEstado.length === 0 && (
+                        <tr>
+                          <td className="text-slate">Sin datos.</td>
+                        </tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>
@@ -119,16 +137,22 @@ export function ReportesPage() {
             <div className="card overflow-hidden">
               <table className="table-modern">
                 <tbody>
-                  {plazosPorEstado.map((p) => (
-                    <tr key={p.estado}>
-                      <td className="capitalize">{p.estado}</td>
-                      <td className="text-right font-medium">{p.total}</td>
-                    </tr>
-                  ))}
-                  {plazosPorEstado.length === 0 && (
-                    <tr>
-                      <td className="text-slate">Sin datos.</td>
-                    </tr>
+                  {cargandoEstados ? (
+                    <SkeletonTableRows columns={2} rows={3} />
+                  ) : (
+                    <>
+                      {plazosPorEstado.map((p) => (
+                        <tr key={p.estado}>
+                          <td className="capitalize">{p.estado}</td>
+                          <td className="text-right font-medium">{p.total}</td>
+                        </tr>
+                      ))}
+                      {plazosPorEstado.length === 0 && (
+                        <tr>
+                          <td className="text-slate">Sin datos.</td>
+                        </tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>
@@ -148,36 +172,46 @@ export function ReportesPage() {
                 </tr>
               </thead>
               <tbody>
-                {horasPorUsuario.map((h) => (
-                  <tr key={h.usuario_id}>
-                    <td className="font-medium text-ink">{h.nombre ?? '—'}</td>
-                    <td>{h.horas_totales}</td>
-                    <td>{h.horas_facturadas}</td>
-                  </tr>
-                ))}
-                {horasPorUsuario.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="py-6 text-slate text-center">
-                      Sin horas registradas en este período.
-                    </td>
-                  </tr>
+                {cargandoPeriodo ? (
+                  <SkeletonTableRows columns={3} />
+                ) : (
+                  <>
+                    {horasPorUsuario.map((h) => (
+                      <tr key={h.usuario_id}>
+                        <td className="font-medium text-ink">{h.nombre ?? '—'}</td>
+                        <td>{h.horas_totales}</td>
+                        <td>{h.horas_facturadas}</td>
+                      </tr>
+                    ))}
+                    {horasPorUsuario.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="py-6 text-slate text-center">
+                          Sin horas registradas en este período.
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 )}
               </tbody>
             </table>
           </div>
 
-          <CardList>
-            {horasPorUsuario.map((h) => (
-              <DataCard key={h.usuario_id}>
-                <CardHeader>
-                  <span className="font-medium text-ink">{h.nombre ?? '—'}</span>
-                </CardHeader>
-                <CardRow label="Horas registradas">{h.horas_totales}</CardRow>
-                <CardRow label="Horas facturadas">{h.horas_facturadas}</CardRow>
-              </DataCard>
-            ))}
-            {horasPorUsuario.length === 0 && <CardEmpty>Sin horas registradas en este período.</CardEmpty>}
-          </CardList>
+          {cargandoPeriodo ? (
+            <SkeletonCards count={3} rows={2} />
+          ) : (
+            <CardList>
+              {horasPorUsuario.map((h) => (
+                <DataCard key={h.usuario_id}>
+                  <CardHeader>
+                    <span className="font-medium text-ink">{h.nombre ?? '—'}</span>
+                  </CardHeader>
+                  <CardRow label="Horas registradas">{h.horas_totales}</CardRow>
+                  <CardRow label="Horas facturadas">{h.horas_facturadas}</CardRow>
+                </DataCard>
+              ))}
+              {horasPorUsuario.length === 0 && <CardEmpty>Sin horas registradas en este período.</CardEmpty>}
+            </CardList>
+          )}
         </section>
       </main>
     </div>

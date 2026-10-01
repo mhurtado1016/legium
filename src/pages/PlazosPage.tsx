@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
+import { SkeletonCards, SkeletonTableRows } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import { diasRestantes, listarPlazos, marcarCumplido, type EstadoPlazo, type Plazo } from '../lib/plazos'
 
@@ -17,10 +18,16 @@ const ESTADOS: EstadoPlazo[] = ['pendiente', 'vencido', 'cumplido']
 export function PlazosPage() {
   const [plazos, setPlazos] = useState<Plazo[]>([])
   const [filtroEstado, setFiltroEstado] = useState<EstadoPlazo | ''>('')
+  const [cargando, setCargando] = useState(true)
 
   async function cargar() {
-    const data = await listarPlazos(filtroEstado ? { estado: filtroEstado } : undefined)
-    setPlazos(data)
+    setCargando(true)
+    try {
+      const data = await listarPlazos(filtroEstado ? { estado: filtroEstado } : undefined)
+      setPlazos(data)
+    } finally {
+      setCargando(false)
+    }
   }
 
   useEffect(() => {
@@ -69,83 +76,93 @@ export function PlazosPage() {
               </tr>
             </thead>
             <tbody>
-              {plazos.map((p) => {
-                const dias = diasRestantes(p.fecha_vencimiento)
-                const urgente = p.estado !== 'cumplido' && dias < 3
-                return (
-                  <tr key={p.id} className={urgente ? 'bg-[var(--color-danger-soft)]/40' : ''}>
-                    <td>
-                      <span className={urgente ? 'inline-flex items-center gap-1.5 font-medium text-danger' : ''}>
-                        {urgente && <AlertTriangle size={14} strokeWidth={1.75} />}
-                        {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
-                      </span>
-                    </td>
-                    <td className="font-medium text-ink">{p.titulo}</td>
-                    <td>
-                      <Link to={`/app/casos/${p.caso_id}`} className="hover:text-accent transition-colors">
-                        {p.casos?.titulo ?? '—'}
-                      </Link>
-                    </td>
-                    <td>
-                      <StatusBadge estado={p.estado} />
-                    </td>
-                    <td>
-                      {p.estado !== 'cumplido' && (
-                        <button
-                          onClick={() => handleCumplido(p.id)}
-                          className="link"
-                        >
-                          marcar cumplido
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-              {plazos.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-6 text-slate text-center">
-                    No hay plazos con este filtro.
-                  </td>
-                </tr>
+              {cargando ? (
+                <SkeletonTableRows columns={5} />
+              ) : (
+                <>
+                  {plazos.map((p) => {
+                    const dias = diasRestantes(p.fecha_vencimiento)
+                    const urgente = p.estado !== 'cumplido' && dias < 3
+                    return (
+                      <tr key={p.id} className={urgente ? 'bg-[var(--color-danger-soft)]/40' : ''}>
+                        <td>
+                          <span className={urgente ? 'inline-flex items-center gap-1.5 font-medium text-danger' : ''}>
+                            {urgente && <AlertTriangle size={14} strokeWidth={1.75} />}
+                            {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
+                          </span>
+                        </td>
+                        <td className="font-medium text-ink">{p.titulo}</td>
+                        <td>
+                          <Link to={`/app/casos/${p.caso_id}`} className="hover:text-accent transition-colors">
+                            {p.casos?.titulo ?? '—'}
+                          </Link>
+                        </td>
+                        <td>
+                          <StatusBadge estado={p.estado} />
+                        </td>
+                        <td>
+                          {p.estado !== 'cumplido' && (
+                            <button
+                              onClick={() => handleCumplido(p.id)}
+                              className="link"
+                            >
+                              marcar cumplido
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {plazos.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-slate text-center">
+                        No hay plazos con este filtro.
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
         </div>
 
-        <CardList>
-          {plazos.map((p) => {
-            const dias = diasRestantes(p.fecha_vencimiento)
-            const urgente = p.estado !== 'cumplido' && dias < 3
-            return (
-              <DataCard key={p.id} urgente={urgente}>
-                <CardHeader>
-                  <span className="font-medium text-ink">{p.titulo}</span>
-                  <StatusBadge estado={p.estado} />
-                </CardHeader>
-                <CardRow label="Vence en">
-                  <span className={urgente ? 'inline-flex items-center gap-1.5 font-medium text-danger' : ''}>
-                    {urgente && <AlertTriangle size={14} strokeWidth={1.75} />}
-                    {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
-                  </span>
-                </CardRow>
-                <CardRow label="Caso">
-                  <Link to={`/app/casos/${p.caso_id}`} className="hover:text-accent transition-colors">
-                    {p.casos?.titulo ?? '—'}
-                  </Link>
-                </CardRow>
-                {p.estado !== 'cumplido' && (
-                  <CardActions>
-                    <button onClick={() => handleCumplido(p.id)} className="link">
-                      marcar cumplido
-                    </button>
-                  </CardActions>
-                )}
-              </DataCard>
-            )
-          })}
-          {plazos.length === 0 && <CardEmpty>No hay plazos con este filtro.</CardEmpty>}
-        </CardList>
+        {cargando ? (
+          <SkeletonCards count={3} rows={3} />
+        ) : (
+          <CardList>
+            {plazos.map((p) => {
+              const dias = diasRestantes(p.fecha_vencimiento)
+              const urgente = p.estado !== 'cumplido' && dias < 3
+              return (
+                <DataCard key={p.id} urgente={urgente}>
+                  <CardHeader>
+                    <span className="font-medium text-ink">{p.titulo}</span>
+                    <StatusBadge estado={p.estado} />
+                  </CardHeader>
+                  <CardRow label="Vence en">
+                    <span className={urgente ? 'inline-flex items-center gap-1.5 font-medium text-danger' : ''}>
+                      {urgente && <AlertTriangle size={14} strokeWidth={1.75} />}
+                      {p.estado === 'vencido' ? 'Vencido' : dias === 0 ? 'Hoy' : `${dias} días`}
+                    </span>
+                  </CardRow>
+                  <CardRow label="Caso">
+                    <Link to={`/app/casos/${p.caso_id}`} className="hover:text-accent transition-colors">
+                      {p.casos?.titulo ?? '—'}
+                    </Link>
+                  </CardRow>
+                  {p.estado !== 'cumplido' && (
+                    <CardActions>
+                      <button onClick={() => handleCumplido(p.id)} className="link">
+                        marcar cumplido
+                      </button>
+                    </CardActions>
+                  )}
+                </DataCard>
+              )
+            })}
+            {plazos.length === 0 && <CardEmpty>No hay plazos con este filtro.</CardEmpty>}
+          </CardList>
+        )}
       </main>
     </div>
   )

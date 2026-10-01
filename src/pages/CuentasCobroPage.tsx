@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AppHeader } from '../components/AppHeader'
 import { CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
+import { SkeletonCards, SkeletonTableRows } from '../components/Skeleton'
 import { StatusBadge } from '../components/StatusBadge'
 import {
   actualizarEstadoCuentaCobro,
@@ -19,10 +20,16 @@ const ESTADOS: EstadoCuentaCobro[] = ['pendiente', 'pagada', 'vencida', 'anulada
 export function CuentasCobroPage() {
   const [cuentas, setCuentas] = useState<CuentaCobro[]>([])
   const [filtroEstado, setFiltroEstado] = useState<EstadoCuentaCobro | ''>('')
+  const [cargando, setCargando] = useState(true)
 
   async function cargar() {
-    const data = await listarCuentasCobro(filtroEstado ? { estado: filtroEstado } : undefined)
-    setCuentas(data)
+    setCargando(true)
+    try {
+      const data = await listarCuentasCobro(filtroEstado ? { estado: filtroEstado } : undefined)
+      setCuentas(data)
+    } finally {
+      setCargando(false)
+    }
   }
 
   useEffect(() => {
@@ -78,80 +85,90 @@ export function CuentasCobroPage() {
               </tr>
             </thead>
             <tbody>
-              {cuentas.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <button onClick={() => handleDescargar(c.storage_path)} className="font-medium text-ink hover:text-accent transition-colors">
-                      {c.numero}
-                    </button>
-                  </td>
-                  <td>{c.casos?.titulo ?? '—'}</td>
-                  <td>{c.clientes?.nombre ?? '—'}</td>
-                  <td className="font-medium">${c.total.toLocaleString('es-CO')}</td>
-                  <td>
-                    <StatusBadge estado={c.estado} />
-                  </td>
-                  <td>
-                    <select
-                      value={c.estado}
-                      onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
-                      className="field field-sm w-auto"
-                    >
-                      {ESTADOS.map((e) => (
-                        <option key={e} value={e}>
-                          {e}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-              {cuentas.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-slate text-center">
-                    No hay cuentas de cobro con este filtro.
-                  </td>
-                </tr>
+              {cargando ? (
+                <SkeletonTableRows columns={6} />
+              ) : (
+                <>
+                  {cuentas.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <button onClick={() => handleDescargar(c.storage_path)} className="font-medium text-ink hover:text-accent transition-colors">
+                          {c.numero}
+                        </button>
+                      </td>
+                      <td>{c.casos?.titulo ?? '—'}</td>
+                      <td>{c.clientes?.nombre ?? '—'}</td>
+                      <td className="font-medium">${c.total.toLocaleString('es-CO')}</td>
+                      <td>
+                        <StatusBadge estado={c.estado} />
+                      </td>
+                      <td>
+                        <select
+                          value={c.estado}
+                          onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
+                          className="field field-sm w-auto"
+                        >
+                          {ESTADOS.map((e) => (
+                            <option key={e} value={e}>
+                              {e}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                  {cuentas.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-slate text-center">
+                        No hay cuentas de cobro con este filtro.
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
         </div>
 
-        <CardList>
-          {cuentas.map((c) => (
-            <DataCard key={c.id}>
-              <CardHeader>
-                <button
-                  onClick={() => handleDescargar(c.storage_path)}
-                  className="font-medium text-ink hover:text-accent transition-colors text-left"
-                >
-                  {c.numero}
-                </button>
-                <StatusBadge estado={c.estado} />
-              </CardHeader>
-              <CardRow label="Caso">{c.casos?.titulo ?? '—'}</CardRow>
-              <CardRow label="Cliente">{c.clientes?.nombre ?? '—'}</CardRow>
-              <CardRow label="Total">
-                <span className="font-medium">${c.total.toLocaleString('es-CO')}</span>
-              </CardRow>
-              <label className="block pt-1 border-t border-line">
-                <span className="block text-xs text-slate mb-1">Cambiar estado</span>
-                <select
-                  value={c.estado}
-                  onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
-                  className="field field-sm w-full"
-                >
-                  {ESTADOS.map((e) => (
-                    <option key={e} value={e}>
-                      {e}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </DataCard>
-          ))}
-          {cuentas.length === 0 && <CardEmpty>No hay cuentas de cobro con este filtro.</CardEmpty>}
-        </CardList>
+        {cargando ? (
+          <SkeletonCards count={3} rows={3} />
+        ) : (
+          <CardList>
+            {cuentas.map((c) => (
+              <DataCard key={c.id}>
+                <CardHeader>
+                  <button
+                    onClick={() => handleDescargar(c.storage_path)}
+                    className="font-medium text-ink hover:text-accent transition-colors text-left"
+                  >
+                    {c.numero}
+                  </button>
+                  <StatusBadge estado={c.estado} />
+                </CardHeader>
+                <CardRow label="Caso">{c.casos?.titulo ?? '—'}</CardRow>
+                <CardRow label="Cliente">{c.clientes?.nombre ?? '—'}</CardRow>
+                <CardRow label="Total">
+                  <span className="font-medium">${c.total.toLocaleString('es-CO')}</span>
+                </CardRow>
+                <label className="block pt-1 border-t border-line">
+                  <span className="block text-xs text-slate mb-1">Cambiar estado</span>
+                  <select
+                    value={c.estado}
+                    onChange={(e) => handleCambiarEstado(c.id, e.target.value as EstadoCuentaCobro)}
+                    className="field field-sm w-full"
+                  >
+                    {ESTADOS.map((e) => (
+                      <option key={e} value={e}>
+                        {e}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </DataCard>
+            ))}
+            {cuentas.length === 0 && <CardEmpty>No hay cuentas de cobro con este filtro.</CardEmpty>}
+          </CardList>
+        )}
       </main>
     </div>
   )
