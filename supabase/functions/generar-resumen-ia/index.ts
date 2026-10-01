@@ -22,6 +22,12 @@ const corsHeaders = {
 
 const GEMINI_MODEL_PRINCIPAL = 'gemini-3.8-flash' // gemini-2.0-flash fue apagado el 1 de junio de 2026
 const GEMINI_MODEL_RESPALDO = 'gemini-3.6-flash' // generación anterior, estable, menos demandada
+// Segundo respaldo: en producción se vio que un pico de demanda puede
+// saturar el principal Y el primer respaldo al mismo tiempo (ver
+// documentos-ia-chat, mismo patrón). gemini-3.5-flash es una versión fija
+// independiente, no un alias "-latest" (esos parecen compartir la
+// saturación de la versión más nueva).
+const GEMINI_MODEL_RESPALDO_2 = 'gemini-3.5-flash'
 const GEMINI_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 interface Body {
@@ -199,16 +205,14 @@ Texto de la providencia:
 
     let { resp: geminiResp, ultimoError } = await llamarGemini(GEMINI_MODEL_PRINCIPAL, prompt, 3)
 
-    if (!geminiResp.ok) {
-      const eraSaturacionTemporal = geminiResp.status === 503 || geminiResp.status === 429
-      if (eraSaturacionTemporal) {
-        // El modelo principal sigue saturado tras los reintentos: se
-        // prueba con un modelo de generación anterior, normalmente con
-        // menos demanda (no se reintenta el mismo modelo indefinidamente).
-        const resultado = await llamarGemini(GEMINI_MODEL_RESPALDO, prompt, 2)
-        geminiResp = resultado.resp
-        ultimoError = resultado.ultimoError
-      }
+    // Si el principal sigue saturado tras los reintentos, se prueba con
+    // hasta dos modelos de respaldo (no se reintenta el mismo modelo
+    // indefinidamente).
+    for (const modeloRespaldo of [GEMINI_MODEL_RESPALDO, GEMINI_MODEL_RESPALDO_2]) {
+      if (geminiResp.ok || (geminiResp.status !== 503 && geminiResp.status !== 429)) break
+      const resultado = await llamarGemini(modeloRespaldo, prompt, 2)
+      geminiResp = resultado.resp
+      ultimoError = resultado.ultimoError
     }
     if (!geminiResp.ok) throw new Error(ultimoError)
 

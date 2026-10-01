@@ -103,9 +103,11 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   "Gemini respondió 400: ..." y hay que actualizar
   `GEMINI_MODEL_PRINCIPAL` en el código). Reintenta hasta 3 veces con
   espera creciente si Gemini responde 503/429 (saturación temporal del
-  modelo); si sigue saturado, cae a `gemini-3.6-flash` (generación
-  anterior, normalmente con menos demanda) con 2 intentos más antes de
-  darlo por fallido. Requiere el secreto `GEMINI_API_KEY`
+  modelo); si sigue saturado, prueba con hasta dos modelos de respaldo
+  (`gemini-3.6-flash`, luego `gemini-3.5-flash`), 2 intentos cada uno
+  antes de darlo por fallido — se vio en producción que un pico de
+  demanda puede saturar más de una versión a la vez, así que un solo
+  respaldo no bastaba. Requiere el secreto `GEMINI_API_KEY`
   (`supabase secrets set GEMINI_API_KEY=...`).
 
 - `enviar-notificaciones-plazos`: despacha notificaciones de plazos por

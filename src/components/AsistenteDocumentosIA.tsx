@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Bot, FileDown, Loader2, Paperclip, Send, User, X } from 'lucide-react'
 import { useUsuario } from '../lib/useUsuario'
 import { listarCasos, type Caso } from '../lib/casos'
@@ -23,6 +23,101 @@ import {
   type TipoDocumentoLegal,
 } from '../lib/documentosIA'
 import { DocumentoPreviewModal } from './DocumentoPreviewModal'
+
+// Formato ligero para los mensajes del chat (no es un parser de markdown
+// completo, solo el subconjunto que de verdad usa Mañecito: encabezados
+// "# "/"## ", viñetas "- ", listas numeradas "1. " y **negrita**). Se
+// devuelven elementos de React directamente, nunca HTML crudo, así que no
+// hay riesgo de inyección con lo que responda el modelo.
+function formatearEnLinea(texto: string): ReactNode {
+  const partes = texto.split(/(\*\*[^*]+\*\*)/g).filter(Boolean)
+  return partes.map((parte, i) =>
+    parte.startsWith('**') && parte.endsWith('**') ? (
+      <strong key={i} className="font-semibold">
+        {parte.slice(2, -2)}
+      </strong>
+    ) : (
+      <span key={i}>{parte}</span>
+    ),
+  )
+}
+
+function formatearMensaje(texto: string): ReactNode {
+  const lineas = texto.split('\n')
+  const bloques: ReactNode[] = []
+  let parrafo: string[] = []
+  let lista: { tipo: 'ul' | 'ol'; items: string[] } | null = null
+
+  function cerrarParrafo() {
+    if (parrafo.length > 0) {
+      bloques.push(<p key={bloques.length}>{formatearEnLinea(parrafo.join(' '))}</p>)
+      parrafo = []
+    }
+  }
+  function cerrarLista() {
+    if (lista) {
+      const items = lista.items
+      bloques.push(
+        lista.tipo === 'ul' ? (
+          <ul key={bloques.length} className="list-disc pl-4 space-y-0.5">
+            {items.map((item, i) => (
+              <li key={i}>{formatearEnLinea(item)}</li>
+            ))}
+          </ul>
+        ) : (
+          <ol key={bloques.length} className="list-decimal pl-4 space-y-0.5">
+            {items.map((item, i) => (
+              <li key={i}>{formatearEnLinea(item)}</li>
+            ))}
+          </ol>
+        ),
+      )
+      lista = null
+    }
+  }
+
+  for (const linea of lineas) {
+    const t = linea.trim()
+    if (!t) {
+      cerrarParrafo()
+      cerrarLista()
+      continue
+    }
+    const header = t.match(/^(#{1,3})\s+(.*)/)
+    const vineta = t.match(/^[-*]\s+(.*)/)
+    const numerada = t.match(/^\d+\.\s+(.*)/)
+    if (header) {
+      cerrarParrafo()
+      cerrarLista()
+      bloques.push(
+        <p key={bloques.length} className={header[1].length === 1 ? 'font-semibold' : 'font-medium'}>
+          {formatearEnLinea(header[2])}
+        </p>,
+      )
+    } else if (vineta) {
+      cerrarParrafo()
+      if (lista?.tipo !== 'ul') {
+        cerrarLista()
+        lista = { tipo: 'ul', items: [] }
+      }
+      lista.items.push(vineta[1])
+    } else if (numerada) {
+      cerrarParrafo()
+      if (lista?.tipo !== 'ol') {
+        cerrarLista()
+        lista = { tipo: 'ol', items: [] }
+      }
+      lista.items.push(numerada[1])
+    } else {
+      cerrarLista()
+      parrafo.push(t)
+    }
+  }
+  cerrarParrafo()
+  cerrarLista()
+
+  return <div className="space-y-1.5">{bloques}</div>
+}
 
 /**
  * Asistente de redacción de documentos jurídicos con IA (chat de varios
@@ -170,16 +265,33 @@ export function AsistenteDocumentosIA({
 
   async function handleEnviar(e: FormEvent) {
     e.preventDefault()
-    if (!conversacion || (!textoMensaje.trim() && archivoIdsPendientes.length === 0)) return
+    if (!conversacion || (!textoMensaje.trim() && archivoIdsPendientes.length === 0) || enviando) return
+    const texto = textoMensaje.trim() || 'Adjunto el archivo.'
+    const archivosDelTurno = archivoIdsPendientes
+
+    // Optimista: el mensaje del usuario aparece de inmediato en la
+    // conversación, sin esperar la respuesta de la IA — se reemplaza por
+    // la fila real al recargar la conversación al final.
+    const mensajeOptimista: MensajeIA = {
+      id: `optimista-${Date.now()}`,
+      conversacion_id: conversacion.id,
+      rol: 'usuario',
+      contenido: texto,
+      created_at: new Date().toISOString(),
+    }
+    setMensajes((prev) => [...prev, mensajeOptimista])
+    setTextoMensaje('')
+    setArchivoIdsPendientes([])
     setEnviando(true)
     setError(null)
     try {
-      await enviarMensaje(conversacion.id, textoMensaje.trim() || 'Adjunto el archivo.', archivoIdsPendientes)
-      setTextoMensaje('')
-      setArchivoIdsPendientes([])
+      await enviarMensaje(conversacion.id, texto, archivosDelTurno)
       await abrirConversacion(conversacion.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo enviar el mensaje.')
+      setMensajes((prev) => prev.filter((m) => m.id !== mensajeOptimista.id))
+      setTextoMensaje(texto)
+      setArchivoIdsPendientes(archivosDelTurno)
     } finally {
       setEnviando(false)
     }
@@ -347,15 +459,25 @@ export function AsistenteDocumentosIA({
                 <div key={m.id} className={`flex gap-2 ${m.rol === 'usuario' ? 'justify-end' : 'justify-start'}`}>
                   {m.rol === 'asistente' && <Bot size={16} strokeWidth={1.75} className="text-slate shrink-0 mt-2" />}
                   <div
-                    className={`max-w-[80%] rounded-[var(--radius-card)] px-3.5 py-2.5 text-sm whitespace-pre-wrap ${
+                    className={`max-w-[80%] rounded-[var(--radius-card)] px-3.5 py-2.5 text-sm ${
                       m.rol === 'usuario' ? 'bg-ink text-paper' : 'bg-paper-sunken text-ink'
                     }`}
                   >
-                    {m.contenido}
+                    {formatearMensaje(m.contenido)}
                   </div>
                   {m.rol === 'usuario' && <User size={16} strokeWidth={1.75} className="text-slate shrink-0 mt-2" />}
                 </div>
               ))}
+              {enviando && (
+                <div className="flex gap-2 justify-start">
+                  <Bot size={16} strokeWidth={1.75} className="text-slate shrink-0 mt-2" />
+                  <div className="rounded-[var(--radius-card)] bg-paper-sunken px-3.5 py-3 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-soft animate-bounce [animation-delay:0ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-soft animate-bounce [animation-delay:150ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-soft animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              )}
               <div ref={finTranscriptRef} />
             </div>
 
@@ -434,8 +556,19 @@ export function AsistenteDocumentosIA({
                 </div>
               )}
               <div className="flex items-end gap-2">
-                <label className="p-2 -m-2 rounded-md text-slate hover:text-ink hover:bg-paper-sunken transition-colors cursor-pointer" title="Adjuntar archivo de soporte">
-                  {adjuntando ? <Loader2 size={18} className="animate-spin" strokeWidth={1.75} /> : <Paperclip size={18} strokeWidth={1.75} />}
+                <label
+                  title="Adjuntar archivo de soporte"
+                  className={`flex items-center justify-center h-10 w-10 shrink-0 rounded-full border border-line text-slate transition-colors ${
+                    adjuntando || archivosSoporte.length >= MAX_ARCHIVOS_SOPORTE
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'cursor-pointer hover:text-ink hover:bg-paper-sunken hover:border-ink/20'
+                  }`}
+                >
+                  {adjuntando ? (
+                    <Loader2 size={16} className="animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Paperclip size={16} strokeWidth={1.75} />
+                  )}
                   <input
                     type="file"
                     className="hidden"
@@ -461,8 +594,17 @@ export function AsistenteDocumentosIA({
                   placeholder="Escríbele a Mañecito los hechos, pretensiones o el ajuste que necesitas…"
                   className="flex-1 field field-sm resize-none"
                 />
-                <button type="submit" disabled={enviando} className="btn-primary btn-sm">
-                  {enviando ? <Loader2 size={14} className="animate-spin" strokeWidth={1.75} /> : <Send size={14} strokeWidth={1.75} />}
+                <button
+                  type="submit"
+                  disabled={enviando || (!textoMensaje.trim() && archivoIdsPendientes.length === 0)}
+                  aria-label="Enviar mensaje"
+                  className="flex items-center justify-center h-10 w-10 shrink-0 rounded-full bg-ink text-paper-raised shadow-[var(--shadow-button)] transition-all hover:bg-[var(--color-ink-soft)] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+                >
+                  {enviando ? (
+                    <Loader2 size={16} className="animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Send size={16} strokeWidth={1.75} />
+                  )}
                 </button>
               </div>
             </form>

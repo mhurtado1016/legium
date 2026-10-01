@@ -21,8 +21,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Dos respaldos (no uno): en la práctica, un pico de demanda puede saturar
+// más de una versión del modelo a la vez — se vio en producción que
+// gemini-3.8-flash y gemini-3.6-flash devolvieron 503 juntos en el mismo
+// momento, mientras que gemini-3.5-flash sí respondía. Son versiones
+// fijas independientes (no alias "-latest", que en la práctica parece
+// compartir la saturación de la versión más nueva).
 const GEMINI_MODEL_PRINCIPAL = 'gemini-3.8-flash'
 const GEMINI_MODEL_RESPALDO = 'gemini-3.6-flash'
+const GEMINI_MODEL_RESPALDO_2 = 'gemini-3.5-flash'
 const GEMINI_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 const GEMINI_UPLOAD_URL = 'https://generativelanguage.googleapis.com/upload/v1beta/files'
 
@@ -297,14 +304,23 @@ Reglas estrictas:
 - Si tu respuesta es solo conversación (una pregunta, una aclaración) y no estás entregando ni actualizando el borrador, deja "contenido_markdown" en null.
 - Responde ÚNICAMENTE con un objeto JSON con las claves: respuesta_chat (string, tu mensaje para el chat), contenido_markdown (string o null), datos_faltantes (arreglo de strings, puede ser vacío).${contextoCaso}`
 
-    // 5. Llamar a Gemini (con fallback de modelo si el principal está saturado).
+    // 5. Llamar a Gemini, con dos modelos de respaldo si el principal está
+    // saturado (ver nota junto a las constantes de modelo).
     let { resp: geminiResp, ultimoError } = await llamarGemini(GEMINI_MODEL_PRINCIPAL, systemInstruction, contents, 3)
-    if (!geminiResp.ok && (geminiResp.status === 503 || geminiResp.status === 429)) {
-      const resultado = await llamarGemini(GEMINI_MODEL_RESPALDO, systemInstruction, contents, 2)
+    for (const modeloRespaldo of [GEMINI_MODEL_RESPALDO, GEMINI_MODEL_RESPALDO_2]) {
+      if (geminiResp.ok || (geminiResp.status !== 503 && geminiResp.status !== 429)) break
+      const resultado = await llamarGemini(modeloRespaldo, systemInstruction, contents, 2)
       geminiResp = resultado.resp
       ultimoError = resultado.ultimoError
     }
-    if (!geminiResp.ok) throw new Error(ultimoError)
+    if (!geminiResp.ok) {
+      const saturado = geminiResp.status === 503 || geminiResp.status === 429
+      throw new Error(
+        saturado
+          ? 'Mañecito está recibiendo mucha demanda en este momento. Intenta de nuevo en un par de minutos.'
+          : ultimoError,
+      )
+    }
 
     const geminiData = await geminiResp.json()
     const jsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
