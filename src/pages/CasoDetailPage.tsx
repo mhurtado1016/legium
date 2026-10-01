@@ -588,7 +588,7 @@ export function CasoDetailPage() {
             type="button"
             onClick={() => setMostrarBuscadorSentencias(true)}
             aria-label="Buscar jurisprudencia para este caso"
-            title="Buscar jurisprudencia para este caso"
+            title="Jurisprudencia — buscar y vincular sentencias a este caso"
             className="fixed bottom-6 left-6 z-40 flex items-center justify-center h-14 w-14 rounded-full bg-paper-raised text-ink border border-line shadow-[var(--shadow-raised)] hover:bg-paper-sunken transition-colors"
           >
             <Scale size={22} strokeWidth={1.75} />
