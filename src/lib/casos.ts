@@ -57,6 +57,7 @@ export interface CasoActividad {
 
 export interface CasoSentencia {
   id: string
+  sentencia_id: string
   nota: string | null
   sentencias_cache: { sentencia: string; sala: string | null } | null
 }
@@ -242,7 +243,7 @@ export async function agregarActividad(
 export async function listarSentenciasVinculadas(casoId: string) {
   const { data, error } = await supabase
     .from('caso_sentencias')
-    .select('id, nota, sentencias_cache(sentencia, sala)')
+    .select('id, sentencia_id, nota, sentencias_cache(sentencia, sala)')
     .eq('caso_id', casoId)
   if (error) throw error
   return data as unknown as CasoSentencia[]
@@ -262,5 +263,10 @@ export async function vincularSentencia(
     firma_id: firmaId,
     agregado_por: usuarioId,
   })
+  if (error) throw error
+}
+
+export async function desvincularSentencia(vinculoId: string) {
+  const { error } = await supabase.from('caso_sentencias').delete().eq('id', vinculoId)
   if (error) throw error
 }

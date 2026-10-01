@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Bot, Download, ExternalLink, Eye, History, Loader2, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Bot, Download, ExternalLink, Eye, History, Loader2, Scale, Trash2, X } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { AsistenteDocumentosIA } from '../components/AsistenteDocumentosIA'
+import { BuscadorSentenciasFlotante } from '../components/BuscadorSentenciasFlotante'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { DocumentoPreviewModal } from '../components/DocumentoPreviewModal'
 import { StatusBadge } from '../components/StatusBadge'
@@ -12,6 +13,7 @@ import {
   actualizarEstadoCaso,
   actualizarNumeroRadicado,
   agregarActividad,
+  desvincularSentencia,
   listarActividad,
   listarClientes,
   listarSentenciasVinculadas,
@@ -95,6 +97,7 @@ export function CasoDetailPage() {
   const [guardandoDatos, setGuardandoDatos] = useState(false)
   const [mostrarAsistenteIA, setMostrarAsistenteIA] = useState(false)
   const [mostrarSaludoIA, setMostrarSaludoIA] = useState(false)
+  const [mostrarBuscadorSentencias, setMostrarBuscadorSentencias] = useState(false)
 
   useEffect(() => {
     // Pequeña demora para que el globo aparezca después de que cargue la
@@ -197,6 +200,17 @@ export function CasoDetailPage() {
     setNuevaNota('')
     const a = await listarActividad(id)
     setActividad(a)
+  }
+
+  async function handleDesvincularSentencia(vinculoId: string) {
+    const anterior = sentencias
+    setSentencias((prev) => prev.filter((s) => s.id !== vinculoId))
+    try {
+      await desvincularSentencia(vinculoId)
+    } catch (err) {
+      setSentencias(anterior)
+      alert(err instanceof Error ? err.message : 'No se pudo quitar la sentencia.')
+    }
   }
 
   if (!caso) return null
@@ -417,21 +431,26 @@ export function CasoDetailPage() {
             </p>
             <ul className="text-sm divide-y divide-line card overflow-hidden">
               {sentencias.map((s) => (
-                <li key={s.id} className="px-4 py-2.5">
-                  {s.sentencias_cache ? (
-                    <>
-                      {s.sentencias_cache.sentencia} · {s.sentencias_cache.sala ?? '—'}
-                    </>
-                  ) : (
-                    <span className="text-slate">Sentencia no disponible</span>
-                  )}
-                  {s.nota && <span className="text-slate"> — nota: {s.nota}</span>}
+                <li key={s.id} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                  <span className="min-w-0">
+                    {s.sentencias_cache ? (
+                      <>
+                        {s.sentencias_cache.sentencia} · {s.sentencias_cache.sala ?? '—'}
+                      </>
+                    ) : (
+                      <span className="text-slate">Sentencia no disponible</span>
+                    )}
+                    {s.nota && <span className="text-slate"> — nota: {s.nota}</span>}
+                  </span>
+                  <button onClick={() => handleDesvincularSentencia(s.id)} className="link shrink-0">
+                    Quitar
+                  </button>
                 </li>
               ))}
               {sentencias.length === 0 && (
                 <li className="px-4 py-3 text-slate">
-                  Ninguna todavía. Vincula sentencias desde el buscador (pendiente de integrar
-                  aquí).
+                  Ninguna todavía. Búscalas con el botón de jurisprudencia flotante, abajo a la
+                  derecha.
                 </li>
               )}
             </ul>
@@ -559,6 +578,30 @@ export function CasoDetailPage() {
           </button>
           {mostrarAsistenteIA && (
             <AsistenteDocumentosIA casoId={caso.id} onClose={() => setMostrarAsistenteIA(false)} />
+          )}
+        </>
+      )}
+
+      {usuario && (
+        <>
+          <button
+            type="button"
+            onClick={() => setMostrarBuscadorSentencias(true)}
+            aria-label="Buscar jurisprudencia para este caso"
+            title="Buscar jurisprudencia para este caso"
+            className="fixed bottom-6 right-24 z-40 flex items-center justify-center h-14 w-14 rounded-full bg-paper-raised text-ink border border-line shadow-[var(--shadow-raised)] hover:bg-paper-sunken transition-colors"
+          >
+            <Scale size={22} strokeWidth={1.75} />
+          </button>
+          {mostrarBuscadorSentencias && (
+            <BuscadorSentenciasFlotante
+              casoId={caso.id}
+              firmaId={usuario.firma_id}
+              usuarioId={usuario.id}
+              sentenciaIdsVinculadas={new Set(sentencias.map((s) => s.sentencia_id))}
+              onVinculada={cargar}
+              onClose={() => setMostrarBuscadorSentencias(false)}
+            />
           )}
         </>
       )}
