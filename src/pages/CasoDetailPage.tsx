@@ -99,6 +99,7 @@ export function CasoDetailPage() {
   const [registrosTiempo, setRegistrosTiempo] = useState<RegistroTiempo[]>([])
   const [honorarioFijo, setHonorarioFijo] = useState<HonorarioFijo | null>(null)
   const [nuevaNota, setNuevaNota] = useState('')
+  const [fijarNuevaNota, setFijarNuevaNota] = useState(true)
   const [editandoNotaId, setEditandoNotaId] = useState<string | null>(null)
   const [textoEditNota, setTextoEditNota] = useState('')
   const [fijadaEditNota, setFijadaEditNota] = useState(false)
@@ -218,8 +219,9 @@ export function CasoDetailPage() {
   async function handleAgregarNota(e: FormEvent) {
     e.preventDefault()
     if (!id || !usuario || !nuevaNota.trim()) return
-    await agregarActividad(id, nuevaNota.trim(), usuario.firma_id, usuario.id)
+    await agregarActividad(id, nuevaNota.trim(), usuario.firma_id, usuario.id, fijarNuevaNota)
     setNuevaNota('')
+    setFijarNuevaNota(true)
     const a = await listarActividad(id)
     setActividad(a)
   }
@@ -460,16 +462,26 @@ export function CasoDetailPage() {
               o decisiones importantes para que quede un historial consultable por todo el
               equipo.
             </p>
-            <form onSubmit={handleAgregarNota} className="flex gap-2 mb-3">
-              <input
-                value={nuevaNota}
-                onChange={(e) => setNuevaNota(e.target.value)}
-                placeholder="Agregar nota…"
-                className="flex-1 field field-sm"
-              />
-              <button className="btn-primary btn-sm">
-                Agregar
-              </button>
+            <form onSubmit={handleAgregarNota} className="mb-3 space-y-2">
+              <div className="flex gap-2">
+                <input
+                  value={nuevaNota}
+                  onChange={(e) => setNuevaNota(e.target.value)}
+                  placeholder="Agregar nota…"
+                  className="flex-1 field field-sm"
+                />
+                <button className="btn-primary btn-sm">
+                  Agregar
+                </button>
+              </div>
+              <label className="flex items-center gap-1.5 text-sm text-slate">
+                <input
+                  type="checkbox"
+                  checked={fijarNuevaNota}
+                  onChange={(e) => setFijarNuevaNota(e.target.checked)}
+                />
+                Fijar siempre visible
+              </label>
             </form>
             <ul className="text-sm divide-y divide-line card overflow-hidden">
               {actividad.map((a) =>

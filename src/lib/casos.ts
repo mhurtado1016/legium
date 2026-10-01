@@ -231,12 +231,14 @@ export async function agregarActividad(
   descripcion: string,
   firmaId: string,
   usuarioId: string,
+  fijada: boolean,
 ) {
   const { error } = await supabase.from('caso_actividad').insert({
     caso_id: casoId,
     firma_id: firmaId,
     usuario_id: usuarioId,
     descripcion,
+    fijada,
   })
   if (error) throw error
 }
