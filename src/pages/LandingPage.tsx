@@ -22,8 +22,7 @@ import {
   Loader2,
   ImagePlus,
   Code2,
-  Workflow,
-  Plug,
+  Globe,
   CalendarDays,
 } from 'lucide-react'
 
@@ -38,7 +37,7 @@ const NAV_ITEMS = [
 // no dependen de dónde haga scroll el usuario, así que se arman una sola
 // vez acá en vez de calcularlos en cada render.
 const URL_SITIO = 'https://efrata360.com/'
-const TEXTO_COMPARTIR = 'Efrata 360 — Despacho de abogados en Bogotá'
+const TEXTO_COMPARTIR = 'Efrata 360 — Despacho de abogados y desarrollo de software'
 const COMPARTIR_LINKS = [
   {
     label: 'WhatsApp',
@@ -184,7 +183,7 @@ const GRUPOS_SERVICIOS = [
     items: [
       {
         icon: Code2,
-        titulo: 'Desarrollo de Software a la Medida',
+        titulo: 'Construcción de Software a la Medida',
         descripcion:
           'Creamos aplicaciones y sistemas diseñados alrededor de los procesos reales de tu empresa, no al revés.',
         descripcionAmplia:
@@ -197,30 +196,17 @@ const GRUPOS_SERVICIOS = [
         ],
       },
       {
-        icon: Workflow,
-        titulo: 'Automatización de Procesos Empresariales',
+        icon: Globe,
+        titulo: 'Construcción de Página Web Corporativa',
         descripcion:
-          'Eliminamos tareas manuales repetitivas para que tu equipo dedique tiempo a decisiones que realmente lo requieren.',
+          'Diseñamos y construimos la página web de tu empresa o despacho, pensada para transmitir confianza y convertir visitas en clientes.',
         descripcionAmplia:
-          'Muchas horas de trabajo se pierden en tareas repetitivas que no agregan valor: cargar datos, generar reportes o hacer seguimientos manuales. En Efrata360 identificamos estos cuellos de botella dentro de tu operación y desarrollamos herramientas que los automatizan, liberando tiempo del equipo y reduciendo el margen de error humano.',
+          'Una página web genérica, armada con una plantilla, rara vez transmite la seriedad de tu negocio ni está pensada para que un visitante termine escribiéndote. En Efrata360 diseñamos y construimos tu sitio corporativo desde cero: estructura, contenido y formularios de contacto pensados para tus clientes reales, igual que hicimos con el sitio que estás viendo ahora mismo.',
         beneficios: [
-          'Identificación de tareas manuales automatizables.',
-          'Desarrollo de herramientas a medida para procesos internos.',
-          'Reducción de errores operativos.',
-          'Mayor disponibilidad de tiempo del equipo para tareas estratégicas.',
-        ],
-      },
-      {
-        icon: Plug,
-        titulo: 'Integraciones de Sistemas y Datos',
-        descripcion: 'Conectamos tus plataformas y bases de datos para que la información fluya sin duplicar trabajo.',
-        descripcionAmplia:
-          'Cuando los sistemas de una empresa no se comunican entre sí, la información se duplica, se pierde o llega tarde a quien la necesita. En Efrata360 conectamos tus plataformas, bases de datos y herramientas mediante integraciones y APIs, para que compartan información de forma automática y consistente.',
-        beneficios: [
-          'Conexión entre plataformas y sistemas existentes.',
-          'Sincronización automática de información entre áreas.',
-          'Desarrollo de integraciones vía API.',
-          'Reducción de trabajo duplicado y errores de datos.',
+          'Diseño y desarrollo de sitios corporativos a la medida.',
+          'Estructura y contenido pensados para generar contactos y clientes.',
+          'Formularios de contacto y agendamiento integrados.',
+          'Sitio propio, sin depender de plantillas genéricas de terceros.',
         ],
       },
     ],
