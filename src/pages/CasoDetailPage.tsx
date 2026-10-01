@@ -98,12 +98,19 @@ export function CasoDetailPage() {
   const [mostrarAsistenteIA, setMostrarAsistenteIA] = useState(false)
   const [mostrarSaludoIA, setMostrarSaludoIA] = useState(false)
   const [mostrarBuscadorSentencias, setMostrarBuscadorSentencias] = useState(false)
+  const [mostrarSaludoSentencias, setMostrarSaludoSentencias] = useState(false)
 
   useEffect(() => {
     // Pequeña demora para que el globo aparezca después de que cargue la
-    // página, no de golpe junto con el resto de la interfaz.
-    const t = setTimeout(() => setMostrarSaludoIA(true), 700)
-    return () => clearTimeout(t)
+    // página, no de golpe junto con el resto de la interfaz. El de
+    // jurisprudencia sale un poco después para que no aparezcan los dos
+    // al mismo tiempo.
+    const t1 = setTimeout(() => setMostrarSaludoIA(true), 700)
+    const t2 = setTimeout(() => setMostrarSaludoSentencias(true), 1200)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
   }, [])
 
   async function cargar() {
@@ -584,9 +591,40 @@ export function CasoDetailPage() {
 
       {usuario && (
         <>
+          {mostrarSaludoSentencias && !mostrarBuscadorSentencias && (
+            <div className="fixed bottom-24 left-6 z-40 max-w-[230px] animate-in">
+              <div className="relative card px-4 py-3 shadow-[var(--shadow-raised)]">
+                <button
+                  type="button"
+                  onClick={() => setMostrarSaludoSentencias(false)}
+                  aria-label="Cerrar"
+                  className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 rounded-full bg-paper-raised border border-line text-slate hover:text-ink transition-colors"
+                >
+                  <X size={11} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarBuscadorSentencias(true)
+                    setMostrarSaludoSentencias(false)
+                  }}
+                  className="text-left text-sm"
+                >
+                  <span className="font-medium text-ink">¿Buscas jurisprudencia? ⚖️</span>
+                  <br />
+                  <span className="text-slate">Encuentra sentencias y vincúlalas a este caso</span>
+                </button>
+                {/* Cola del globo, apuntando hacia el botón flotante. */}
+                <div className="absolute -bottom-1.5 left-6 h-3 w-3 rotate-45 bg-paper-raised border-r border-b border-line" />
+              </div>
+            </div>
+          )}
           <button
             type="button"
-            onClick={() => setMostrarBuscadorSentencias(true)}
+            onClick={() => {
+              setMostrarBuscadorSentencias(true)
+              setMostrarSaludoSentencias(false)
+            }}
             aria-label="Buscar jurisprudencia para este caso"
             title="Jurisprudencia — buscar y vincular sentencias a este caso"
             className="fixed bottom-6 left-6 z-40 flex items-center justify-center h-14 w-14 rounded-full bg-paper-raised text-ink border border-line shadow-[var(--shadow-raised)] hover:bg-paper-sunken transition-colors"
