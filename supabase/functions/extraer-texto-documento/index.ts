@@ -7,23 +7,12 @@
 // contenido (sección 7.4) y el contexto del asistente de Documentos IA
 // (ver documentos-ia-chat).
 //
-// PDF: unpdf — build de pdf.js empaquetado específicamente para entornos
-// serverless/edge (sin canvas, sin workers, sin los cmaps/standard_fonts
-// de varios MB que trae el paquete pdfjs-dist completo). Se intentó
-// primero pdfjs-dist directo (build "legacy") y luego pdf-parse (que
-// además tiene un bug conocido: en modo "debug" intenta leer un PDF de
-// prueba de su propio paquete cuando no detecta un module.parent normal
-// de Node, algo que rompe en Deno/edge); pdfjs-dist funcionaba pero el
-// despliegue a Supabase falló con "413 request entity too large" — el
-// paquete completo es demasiado pesado para subirse como función. unpdf
-// resuelve ambos problemas.
-// DOCX: mammoth, que solo sabe leer el formato .docx (XML) — el .doc
-// binario antiguo (application/msword) sigue sin extracción, ver más
-// abajo.
+// La extracción de PDF (unpdf) y DOCX (mammoth) vive en
+// _shared/extraerTexto.ts, compartida con documentos-ia-chat para los
+// documentos de Google Drive del caso.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { extractText } from 'npm:unpdf@1'
-import mammoth from 'npm:mammoth@1'
+import { extraerTexto } from '../_shared/extraerTexto.ts'
 
 // Headers CORS: sin esto, el navegador bloquea la respuesta por venir
 // de un origen distinto al de la app (Vercel vs. Supabase).
@@ -34,16 +23,6 @@ const corsHeaders = {
 
 interface Body {
   documento_version_id: string
-}
-
-async function extraerTextoPdf(bytes: Uint8Array): Promise<string> {
-  const { text } = await extractText(bytes, { mergePages: true })
-  return text
-}
-
-async function extraerTextoDocx(bytes: ArrayBuffer): Promise<string> {
-  const resultado = await mammoth.extractRawText({ buffer: new Uint8Array(bytes) })
-  return resultado.value
 }
 
 Deno.serve(async (req) => {
@@ -69,18 +48,9 @@ Deno.serve(async (req) => {
       .download(version.storage_path)
     if (downloadError) throw downloadError
 
-    let texto = ''
-    const mime = version.mime_type ?? ''
+    const texto = await extraerTexto(new Uint8Array(await file.arrayBuffer()), version.mime_type ?? '')
 
-    if (mime.startsWith('text/') || mime === 'application/json') {
-      texto = await file.text()
-    } else if (mime === 'text/html') {
-      texto = (await file.text()).replace(/<[^>]+>/g, ' ')
-    } else if (mime === 'application/pdf') {
-      texto = await extraerTextoPdf(new Uint8Array(await file.arrayBuffer()))
-    } else if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      texto = await extraerTextoDocx(await file.arrayBuffer())
-    } else {
+    if (texto === null) {
       // .doc binario antiguo, imágenes, etc.: sin librería viable sin
       // dependencias pesadas (OCR para imágenes, parser binario para
       // .doc) — se deja sin texto extraído, sin que eso bloquee la

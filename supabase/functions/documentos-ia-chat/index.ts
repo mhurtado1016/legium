@@ -15,6 +15,8 @@
 // ya cargados en el caso sí llega vía extraer-texto-documento, más abajo).
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { descargarArchivoDrive, listarArchivosDriveCaso } from '../_shared/drive.ts'
+import { extraerTexto, TIPOS_CON_EXTRACCION } from '../_shared/extraerTexto.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -286,6 +288,59 @@ Deno.serve(async (req) => {
           )
         }
         contextoCaso += `\n\nDocumentación del caso:\n${bloques.join('\n')}`
+      }
+
+      // Documentación en Google Drive del caso. Las credenciales de Drive
+      // solo existen en Vercel (ver _shared/drive.ts); se cachea el texto
+      // ya extraído por (caso_id, drive_file_id) en
+      // documentos_ia_archivos_drive_cache para no volver a descargar y
+      // procesar el mismo archivo en cada turno — modified_time detecta si
+      // el archivo cambió en Drive y toca re-extraer.
+      if (caso.numero_radicado) {
+        const tokenUsuario = authHeader.replace(/^Bearer /i, '')
+        const archivosDrive = await listarArchivosDriveCaso(caso.numero_radicado, caso.titulo, tokenUsuario)
+        if (archivosDrive.length > 0) {
+          const bloques: string[] = []
+          for (const archivo of archivosDrive.slice(0, 8)) {
+            const encabezado = `- ${archivo.name} (Google Drive)`
+            const { data: cacheado } = await admin
+              .from('documentos_ia_archivos_drive_cache')
+              .select('texto_extraido, modified_time')
+              .eq('caso_id', conversacion.caso_id)
+              .eq('drive_file_id', archivo.id)
+              .maybeSingle()
+
+            let texto: string | null
+            if (cacheado && cacheado.modified_time === archivo.modifiedTime) {
+              texto = cacheado.texto_extraido
+            } else if (!TIPOS_CON_EXTRACCION.includes(archivo.mimeType)) {
+              texto = null
+            } else {
+              const bytes = await descargarArchivoDrive(archivo.id, tokenUsuario)
+              texto = bytes ? await extraerTexto(bytes, archivo.mimeType) : null
+              await admin.from('documentos_ia_archivos_drive_cache').upsert(
+                {
+                  firma_id: conversacion.firma_id,
+                  caso_id: conversacion.caso_id,
+                  drive_file_id: archivo.id,
+                  nombre_archivo: archivo.name,
+                  mime_type: archivo.mimeType,
+                  modified_time: archivo.modifiedTime,
+                  texto_extraido: texto,
+                  actualizado_en: new Date().toISOString(),
+                },
+                { onConflict: 'caso_id,drive_file_id' },
+              )
+            }
+
+            bloques.push(
+              texto
+                ? `${encabezado}\n  Contenido: """${texto.slice(0, 3000)}"""`
+                : `${encabezado}\n  (sin texto extraído disponible; no inventes su contenido)`,
+            )
+          }
+          contextoCaso += `\n\nDocumentación en Google Drive del caso:\n${bloques.join('\n')}`
+        }
       }
     }
 

@@ -177,8 +177,16 @@ Desplegar con la Supabase CLI (`supabase functions deploy <nombre>`):
   texto ya extraído de sus documentos (`documento_versiones.texto_extraido`
   de hasta 8 documentos recientes del módulo de Documentos — los que aún
   no tienen texto extraído se listan por nombre, sin inventar su
-  contenido). Requiere `GEMINI_API_KEY` (mismo secreto que
-  `generar-resumen-ia`).
+  contenido) y, si el caso tiene número de radicado, de hasta 8 archivos
+  de su carpeta de Google Drive (PDF/DOCX/texto; las credenciales de
+  Drive solo existen en Vercel, así que esto llama a `api/drive/listar` y
+  `api/drive/ver` reenviando la sesión del usuario — ver
+  `_shared/drive.ts`). El texto de PDF/DOCX se extrae con
+  `_shared/extraerTexto.ts` (compartido con `extraer-texto-documento`) y
+  se cachea por `(caso_id, drive_file_id)` en
+  `documentos_ia_archivos_drive_cache`, re-extrayendo solo si
+  `modifiedTime` cambió en Drive. Requiere `GEMINI_API_KEY` (mismo
+  secreto que `generar-resumen-ia`).
 
 - `exportar-documento-legal`: convierte el borrador de una conversación
   de "Documentos IA" a `.docx` (con `npm:docx`) o `.pdf` (con
