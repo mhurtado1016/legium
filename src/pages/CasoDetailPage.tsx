@@ -462,7 +462,7 @@ export function CasoDetailPage() {
               o decisiones importantes para que quede un historial consultable por todo el
               equipo.
             </p>
-            <form onSubmit={handleAgregarNota} className="mb-3 space-y-2">
+            <form onSubmit={handleAgregarNota} className="card p-4 mb-3 space-y-2">
               <div className="flex gap-2">
                 <input
                   value={nuevaNota}
