@@ -273,16 +273,21 @@ const CONTACTO_FALLBACK = {
  */
 export function LandingPage() {
   const [menuAbierto, setMenuAbierto] = useState(false)
+  // Área elegida desde el botón "Agendar consulta para esta área" del
+  // modal de un servicio (ver ServicioModal) — se precarga en el campo
+  // de notas del formulario de agendamiento, para que quede registrada
+  // en la cita y en el correo/notificación que recibe el equipo.
+  const [areaConsulta, setAreaConsulta] = useState<string | null>(null)
 
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader menuAbierto={menuAbierto} setMenuAbierto={setMenuAbierto} />
       <Hero />
       <Metodologia />
-      <AreasPractica />
+      <AreasPractica onAgendarArea={setAreaConsulta} />
       <Equipo />
       <Clientes />
-      <Agenda />
+      <Agenda notaInicial={areaConsulta ? `Consulta sobre: ${areaConsulta}` : undefined} />
       <Contacto />
       <SiteFooter />
       <BotonAgendarFlotante />
@@ -571,7 +576,7 @@ function Metodologia() {
 
 type ServicioItem = (typeof GRUPOS_SERVICIOS)[number]['items'][number]
 
-function AreasPractica() {
+function AreasPractica({ onAgendarArea }: { onAgendarArea: (titulo: string) => void }) {
   const [servicioActivoTitulo, setServicioActivoTitulo] = useState<string | null>(null)
 
   return (
@@ -629,6 +634,10 @@ function AreasPractica() {
           item={item}
           abierto={servicioActivoTitulo === item.titulo}
           onClose={() => setServicioActivoTitulo(null)}
+          onAgendar={() => {
+            onAgendarArea(item.titulo)
+            setServicioActivoTitulo(null)
+          }}
         />
       ))}
     </section>
@@ -642,10 +651,12 @@ function ServicioModal({
   item,
   abierto,
   onClose,
+  onAgendar,
 }: {
   item: ServicioItem
   abierto: boolean
   onClose: () => void
+  onAgendar: () => void
 }) {
   useEffect(() => {
     if (!abierto) return
@@ -698,6 +709,15 @@ function ServicioModal({
             </li>
           ))}
         </ul>
+
+        <a
+          href="#agenda"
+          onClick={onAgendar}
+          className="btn-primary btn-sm mt-6 w-full justify-center"
+        >
+          <CalendarDays size={15} strokeWidth={1.75} />
+          Agendar consulta para esta área
+        </a>
       </div>
     </div>
   )
@@ -978,7 +998,7 @@ function LogoCliente({ src, alt, width, height }: { src: string; alt: string; wi
   )
 }
 
-function Agenda() {
+function Agenda({ notaInicial }: { notaInicial?: string }) {
   return (
     <section id="agenda" className="border-t border-line/70 bg-paper-raised">
       <div className="mx-auto max-w-6xl px-6 py-20">
@@ -988,7 +1008,7 @@ function Agenda() {
           descripcion="Elige el día y la hora que más te convengan — presencial o virtual — y confirma tu cita en línea."
         />
         <div className="mt-12">
-          <AgendarConsultaPublico />
+          <AgendarConsultaPublico notaInicial={notaInicial} />
         </div>
       </div>
     </section>

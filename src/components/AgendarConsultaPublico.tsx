@@ -9,7 +9,7 @@ import type { Franja, TipoSesion } from '../lib/agenda'
  * flujo real de reserva: elegir día/hora disponible, tipo de sesión
  * (presencial o virtual) y los datos de contacto.
  */
-export function AgendarConsultaPublico() {
+export function AgendarConsultaPublico({ notaInicial }: { notaInicial?: string }) {
   const [franja, setFranja] = useState<Franja | null>(null)
   const [tipoSesion, setTipoSesion] = useState<TipoSesion>('presencial')
   const [nombre, setNombre] = useState('')
@@ -20,6 +20,14 @@ export function AgendarConsultaPublico() {
   const [reservada, setReservada] = useState<Franja | null>(null)
   const [error, setError] = useState<string | null>(null)
   const confirmacionRef = useRef<HTMLDivElement>(null)
+
+  // Llega desde el botón "Agendar consulta para esta área" de un modal
+  // de servicio (ver LandingPage.tsx) — precarga el campo de notas para
+  // que el área quede registrada en la cita y en el aviso que recibe el
+  // equipo, sin obligar al usuario a volver a escribirla.
+  useEffect(() => {
+    if (notaInicial) setNotas(notaInicial)
+  }, [notaInicial])
 
   // El formulario (calendario + campos) es mucho más alto que la
   // tarjeta de confirmación que lo reemplaza — sin esto, el scroll se

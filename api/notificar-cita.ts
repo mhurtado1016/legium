@@ -277,13 +277,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let pushEnviados = 0
     let correosAdminEnviados = 0
 
+    // Se añade al cuerpo del aviso en la app y del push para que el
+    // motivo/área de la consulta (ej. "Consulta sobre: Derecho de
+    // Familia", precargado desde el botón "Agendar consulta para esta
+    // área" del landing) quede visible ahí también, no solo en el
+    // correo al administrador.
+    const resumenCita = `${cita.nombre_cliente} — ${cuando} (${tipoTexto})${cita.notas ? ` · ${cita.notas}` : ''}`
+
     for (const adminUsuario of admins ?? []) {
       try {
         await admin.from('notificaciones').insert({
           firma_id: adminUsuario.firma_id,
           usuario_id: adminUsuario.id,
           titulo: 'Nueva cita agendada',
-          cuerpo: `${cita.nombre_cliente} — ${cuando} (${tipoTexto})`,
+          cuerpo: resumenCita,
           enlace: '/app/agenda',
         })
       } catch (err) {
@@ -315,7 +322,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const payload = JSON.stringify({
           title: 'Nueva cita agendada',
-          body: `${cita.nombre_cliente} — ${cuando} (${tipoTexto})`,
+          body: resumenCita,
         })
 
         for (const sub of subs ?? []) {
