@@ -7,7 +7,9 @@ import {
   Briefcase,
   Landmark,
   Users,
-  FileText,
+  Receipt,
+  ShieldCheck,
+  Home,
   Mail,
   Phone,
   MapPin,
@@ -61,87 +63,118 @@ const GRUPOS_SERVICIOS = [
     titulo: 'Legal',
     items: [
       {
-        icon: Scale,
-        titulo: 'Derecho Civil',
-        descripcion:
-          'Protegemos tus contratos, tu propiedad y tus intereses frente a conflictos civiles, con una estrategia clara desde el inicio.',
-        descripcionAmplia:
-          'Los conflictos relacionados con contratos, propiedad o responsabilidad civil pueden comprometer tanto tu patrimonio personal como la operación de tu empresa. En Efrata360 analizamos el origen del conflicto, evaluamos los riesgos reales y definimos la ruta más adecuada para resolverlo: un acuerdo, un proceso judicial o una acción preventiva antes de que el problema escale.',
-        beneficios: [
-          'Revisión y estructuración de contratos para prevenir conflictos.',
-          'Representación en procesos declarativos y ejecutivos.',
-          'Defensa del patrimonio ante reclamaciones de responsabilidad civil.',
-          'Acompañamiento en disputas sobre propiedad y bienes.',
-        ],
-      },
-      {
         icon: Building2,
-        titulo: 'Derecho Corporativo y Comercial',
+        titulo: 'Derecho Comercial, Corporativo y Societario',
         descripcion:
-          'Acompañamos la creación, operación y cumplimiento legal de tu empresa, desde la constitución hasta las decisiones societarias.',
+          '¿Vas a crear una empresa, tienes un conflicto con un socio o alguien está usando tu marca sin autorización? Te acompañamos en cada decisión legal de tu negocio.',
         descripcionAmplia:
-          'Toda empresa enfrenta decisiones legales que afectan directamente su operación: constituir una sociedad, redactar contratos mercantiles o definir reglas de gobierno corporativo. En Efrata360 estructuramos estos procesos con una visión empresarial, no solo jurídica, para que cada decisión legal responda también a los objetivos reales de tu negocio.',
+          'Toda empresa enfrenta decisiones legales que afectan directamente su operación: constituir una sociedad, resolver un conflicto entre socios, proteger una marca o negociar un contrato con un proveedor o cliente. En Efrata360 te acompañamos desde la constitución hasta el día a día societario y comercial, con una mirada que combina rigor jurídico y sentido práctico de negocio.',
         beneficios: [
-          'Constitución y estructuración legal de sociedades.',
-          'Redacción y revisión de contratos mercantiles.',
-          'Definición de reglas de gobierno corporativo.',
-          'Acompañamiento en cumplimiento normativo empresarial.',
-        ],
-      },
-      {
-        icon: Briefcase,
-        titulo: 'Derecho Laboral',
-        descripcion:
-          'Gestionamos la relación laboral de tu empresa para reducir riesgos legales, desde la contratación hasta la desvinculación.',
-        descripcionAmplia:
-          'Las relaciones laborales generan obligaciones legales en cada etapa: contratación, cambios internos, terminaciones o procesos ante el Ministerio del Trabajo. En Efrata360 acompañamos estas decisiones dentro del marco legal vigente, reduciendo el riesgo de litigios y protegiendo tanto a la empresa como a sus colaboradores.',
-        beneficios: [
-          'Estructuración de contratos y políticas laborales.',
-          'Acompañamiento en procesos de terminación laboral.',
-          'Representación ante el Ministerio del Trabajo.',
-          'Defensa en litigios laborales.',
-        ],
-      },
-      {
-        icon: Landmark,
-        titulo: 'Litigios y Arbitraje',
-        descripcion:
-          'Te representamos ante jueces y tribunales arbitrales, con una estrategia clara de principio a fin.',
-        descripcionAmplia:
-          'Cuando un conflicto no se resuelve por la vía directa, se necesita una representación firme ante la justicia ordinaria o un tribunal arbitral. En Efrata360 asumimos estos procesos —civiles, comerciales, laborales o administrativos— con una estrategia definida desde el inicio y seguimiento constante de cada término hasta llegar a una resolución.',
-        beneficios: [
-          'Representación judicial de principio a fin.',
-          'Actuación ante tribunales de arbitraje.',
-          'Seguimiento permanente de términos y decisiones procesales.',
-          'Estrategia adaptada a cada tipo de conflicto.',
+          'Asesoría integral en creación de sociedades.',
+          'Servicios especializados en derecho societario.',
+          'Asesoría en derecho corporativo.',
+          'Registro y protección de marcas y patentes.',
+          'Redacción, revisión y negociación de contratos comerciales.',
+          'Representación judicial en procesos comerciales y societarios.',
         ],
       },
       {
         icon: Users,
         titulo: 'Derecho de Familia',
         descripcion:
-          'Acompañamos procesos de familia con un enfoque humano y jurídico, cuidando el resultado legal y el bienestar de cada cliente.',
+          '¿El papá de tu hijo no cumple con la cuota alimentaria? También te acompañamos en divorcios, custodia y sucesiones.',
         descripcionAmplia:
-          'Los procesos de familia —divorcios, custodia, alimentos o sucesiones— involucran decisiones legales con un fuerte componente personal. En Efrata360 los abordamos con claridad jurídica y atención a la situación de cada cliente, buscando acuerdos viables cuando es posible y una defensa firme cuando el proceso lo requiere.',
+          'Los procesos de familia —divorcios, sucesiones, cuotas alimentarias o custodia— mezclan una carga legal con un momento personal difícil. En Efrata360 te representamos con claridad jurídica y un trato cercano, para que el proceso avance sin que tengas que pelear cada paso tú solo.',
         beneficios: [
-          'Trámite de procesos de divorcio y custodia.',
-          'Definición y cobro de cuotas alimentarias.',
-          'Acompañamiento en procesos de sucesión.',
-          'Representación en otros procesos de familia.',
+          'Representación judicial en procesos de divorcio.',
+          'Representación judicial en procesos de sucesión.',
+          'Fijación de cuotas alimentarias.',
+          'Procesos de custodia, entre otros.',
         ],
       },
       {
-        icon: FileText,
-        titulo: 'Derecho Administrativo y Contratación Estatal',
+        icon: Landmark,
+        titulo: 'Derecho Administrativo y Público',
         descripcion:
-          'Asesoramos a empresas y personas en su relación con el Estado, desde la contratación pública hasta acciones constitucionales.',
+          '¿Una entidad pública te negó un trámite o una empresa de servicios públicos te cobró de más? Te representamos frente al Estado.',
         descripcionAmplia:
-          'Relacionarse con el Estado —participar en procesos de contratación pública, responder ante una entidad administrativa o interponer una acción constitucional— exige conocer reglas distintas a las del derecho privado. En Efrata360 guiamos estos procesos para proteger tus derechos frente a la administración pública.',
+          'Relacionarte con el Estado —responder ante una entidad pública, reclamar por un servicio público mal prestado o enfrentar un proceso contencioso-administrativo— exige conocer reglas distintas a las del derecho privado. En Efrata360 te representamos ante la administración pública para que tus derechos no se pierdan en el trámite.',
         beneficios: [
-          'Acompañamiento en procesos de contratación estatal.',
-          'Representación ante entidades públicas.',
-          'Trámite de acciones constitucionales (tutela, cumplimiento, popular).',
-          'Asesoría en el relacionamiento con el Estado.',
+          'Representación judicial en procesos contencioso-administrativos.',
+          'Procedimientos administrativos y reclamaciones ante entidades públicas.',
+          'Reclamaciones ante empresas de servicios públicos.',
+        ],
+      },
+      {
+        icon: Receipt,
+        titulo: 'Derecho Fiscal y Tributario',
+        descripcion:
+          '¿La DIAN o la Secretaría de Hacienda te iniciaron un proceso, o tienes dudas sobre tus obligaciones tributarias? Te asesoramos y te representamos.',
+        descripcionAmplia:
+          'Un requerimiento de la DIAN o de la Secretaría de Hacienda puede escalar rápido si no se responde con la estrategia correcta. En Efrata360 te asesoramos y representamos en procedimientos tributarios, para que tomes decisiones informadas en cada etapa del proceso.',
+        beneficios: [
+          'Asesoría en derecho fiscal y tributario.',
+          'Representación en procedimientos ante la Secretaría de Hacienda.',
+          'Representación en procedimientos ante la DIAN.',
+        ],
+      },
+      {
+        icon: ShieldCheck,
+        titulo: 'Derecho Constitucional',
+        descripcion:
+          '¿Sientes que un derecho fundamental tuyo no se está respetando? Te ayudamos a redactar y tramitar la acción que corresponda.',
+        descripcionAmplia:
+          'Cuando un derecho fundamental está en riesgo, el tiempo importa. En Efrata360 redactamos y tramitamos derechos de petición y acciones constitucionales, y te representamos en la defensa de tus derechos humanos y constitucionales frente a particulares o entidades públicas.',
+        beneficios: [
+          'Protección y defensa de los derechos humanos constitucionales.',
+          'Redacción, asesoría y trámite de derechos de petición.',
+          'Interposición y seguimiento de acciones de tutela.',
+          'Interposición y seguimiento de acciones populares, de grupo y de cumplimiento.',
+        ],
+      },
+      {
+        icon: Home,
+        titulo: 'Derecho Urbanístico e Inmobiliario',
+        descripcion:
+          '¿Vas a comprar, vender o construir y no sabes si el predio tiene todos los permisos en regla? Te acompañamos en cada trámite urbanístico e inmobiliario.',
+        descripcionAmplia:
+          'Comprar, vender o construir un inmueble implica trámites que, si no se hacen bien desde el inicio, pueden detener un proyecto o poner en riesgo tu inversión. En Efrata360 te acompañamos desde el concepto de viabilidad urbanística hasta la inscripción final ante la Oficina de Registro de Instrumentos Públicos.',
+        beneficios: [
+          'Emisión de conceptos sobre viabilidad urbanística.',
+          'Gestión de licencias urbanísticas ante curadurías o secretarías de planeación.',
+          'Acompañamiento y redacción de minutas de escritura pública.',
+          'Trámites de registro notarial hasta la inscripción final ante la Oficina de Registro de Instrumentos Públicos.',
+        ],
+      },
+      {
+        icon: Scale,
+        titulo: 'Derecho Civil y Responsabilidad',
+        descripcion:
+          '¿Un contrato no se está cumpliendo o alguien te causó un daño que debe repararse? Te representamos para proteger tu patrimonio.',
+        descripcionAmplia:
+          'Los conflictos relacionados con contratos, propiedad o responsabilidad civil pueden comprometer tu patrimonio sin que lo veas venir. En Efrata360 te representamos en procesos civiles, te asesoramos para el cumplimiento de tus contratos y redactamos los que necesites, desde una promesa de compraventa hasta un contrato de arrendamiento.',
+        beneficios: [
+          'Representación judicial en procesos civiles (ordinarios, ejecutivos, divisorios, entre otros).',
+          'Representación en casos de daño moral y patrimonial.',
+          'Asesoría para el cumplimiento y ejecución de contratos.',
+          'Redacción de contratos civiles (promesa de compraventa, arrendamiento, entre otros).',
+        ],
+      },
+      {
+        icon: Briefcase,
+        titulo: 'Derecho Laboral y Seguridad Social',
+        descripcion:
+          '¿Te despidieron sin justa causa o crees que tu pensión no se liquidó correctamente? También asesoramos a tu empresa para que no llegue a ese punto.',
+        descripcionAmplia:
+          'Las relaciones laborales y pensionales generan obligaciones en cada etapa: contratación, cambios internos, terminación o el reconocimiento de una pensión. En Efrata360 representamos tanto a empresas como a trabajadores, incluyendo trámites pensionales y demandas por traslado de régimen entre fondos privados y Colpensiones.',
+        beneficios: [
+          'Representación judicial en procesos y demandas laborales.',
+          'Consultoría en derecho laboral.',
+          'Trámites pensionales: reconocimiento y reliquidación de pensiones de vejez, invalidez y sobrevivencia.',
+          'Demandas por ineficacia de traslado de régimen pensional, ante fondos privados y Colpensiones.',
+          'Redacción de contratos laborales y perfiles de cargos.',
+          'Redacción de reglamento interno de trabajo y auditoría de cumplimiento laboral.',
+          'Conciliación de cartera con entidades del sistema de seguridad social.',
         ],
       },
     ],
