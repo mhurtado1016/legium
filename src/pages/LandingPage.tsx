@@ -617,7 +617,10 @@ function ServicioModal({
         </span>
 
         <h3 className="text-xl font-semibold tracking-tight mb-3 pr-8">{item.titulo}</h3>
-        <p className="text-sm text-slate leading-relaxed">{item.descripcionAmplia}</p>
+        <div className="space-y-3 text-sm text-slate leading-relaxed">
+          <p>{item.descripcion}</p>
+          <p>{item.descripcionAmplia}</p>
+        </div>
 
         <ul className="mt-5 flex flex-col gap-2.5">
           {item.beneficios.map((beneficio) => (
