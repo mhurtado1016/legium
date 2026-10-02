@@ -1,13 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { AlertCircle, Calendar, Check, ChevronDown, Link2, Loader2, Scale, Sparkles, User, X } from 'lucide-react'
-import {
-  buscarSentencias,
-  generarAnalisisIA,
-  localizarTexto,
-  obtenerTextoCompleto,
-  type Sentencia,
-} from '../lib/sentencias'
+import { Calendar, Check, ChevronDown, Link2, Loader2, Scale, User, X } from 'lucide-react'
+import { buscarSentencias, type Sentencia } from '../lib/sentencias'
 import { vincularSentencia } from '../lib/casos'
+import { DetalleSentencia } from './DetalleSentencia'
 
 /**
  * Buscador de jurisprudencia flotante dentro del detalle de un caso —
@@ -47,16 +42,7 @@ export function BuscadorSentenciasFlotante({
   const [vinculando, setVinculando] = useState<Record<string, boolean>>({})
   const [errorVincularPorId, setErrorVincularPorId] = useState<Record<string, string>>({})
 
-  // Mismo patrón que DashboardPage para el detalle expandible de cada
-  // resultado (análisis de IA, texto completo).
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
-  const [generando, setGenerando] = useState<Record<string, boolean>>({})
-  const [errorGeneracion, setErrorGeneracion] = useState<Record<string, string>>({})
-  const [htmlPorId, setHtmlPorId] = useState<Record<string, string>>({})
-  const [cargandoTextoId, setCargandoTextoId] = useState<string | null>(null)
-  const [errorTextoPorId, setErrorTextoPorId] = useState<Record<string, string>>({})
-  const [textoVisiblePorId, setTextoVisiblePorId] = useState<Record<string, boolean>>({})
-  const [analisisVisiblePorId, setAnalisisVisiblePorId] = useState<Record<string, boolean>>({})
 
   async function handleBuscar(e: FormEvent) {
     e.preventDefault()
@@ -100,100 +86,7 @@ export function BuscadorSentenciasFlotante({
   }
 
   function handleExpandir(s: Sentencia) {
-    const yaAbierto = expandidoId === s.id
-    setExpandidoId(yaAbierto ? null : s.id)
-
-    if (!yaAbierto && s.texto_completo_url && !htmlPorId[s.id]) {
-      setCargandoTextoId(s.id)
-      obtenerTextoCompleto(s.texto_completo_url)
-        .then((r) => {
-          setHtmlPorId((prev) => ({ ...prev, [s.id]: r.html }))
-          setTextoVisiblePorId((prev) => ({ ...prev, [s.id]: true }))
-        })
-        .catch((err) =>
-          setErrorTextoPorId((prev) => ({
-            ...prev,
-            [s.id]: err instanceof Error ? err.message : JSON.stringify(err),
-          })),
-        )
-        .finally(() => setCargandoTextoId(null))
-    }
-  }
-
-  async function handleLocalizarTexto(sentenciaId: string) {
-    setErrorGeneracion((prev) => {
-      const { [sentenciaId]: _omitida, ...resto } = prev
-      return resto
-    })
-    try {
-      const r = await localizarTexto(sentenciaId)
-      if (!r.ok) {
-        setErrorGeneracion((prev) => ({
-          ...prev,
-          [sentenciaId]: `${r.motivo ?? 'No se pudo localizar el texto.'}${r.detalle ? ` (${r.detalle})` : ''}`,
-        }))
-        return
-      }
-      setResultados((prev) =>
-        prev.map((s) =>
-          s.id === sentenciaId
-            ? { ...s, texto_completo_url: r.url ?? s.texto_completo_url, texto_completo_no_disponible: false }
-            : s,
-        ),
-      )
-    } catch (err) {
-      setErrorGeneracion((prev) => ({
-        ...prev,
-        [sentenciaId]: err instanceof Error ? err.message : JSON.stringify(err),
-      }))
-    }
-  }
-
-  async function handleGenerarAnalisis(sentenciaId: string) {
-    setGenerando((prev) => ({ ...prev, [sentenciaId]: true }))
-    setErrorGeneracion((prev) => {
-      const { [sentenciaId]: _omitida, ...resto } = prev
-      return resto
-    })
-    try {
-      const r = await generarAnalisisIA(sentenciaId)
-      if (!r.ok) {
-        const base =
-          r.motivo === 'texto_completo_no_disponible' || r.motivo === 'url_construida_no_responde'
-            ? 'No se pudo generar el análisis: no se encontró el texto completo en el sitio oficial.'
-            : `No se pudo generar el análisis (${r.motivo ?? 'motivo desconocido'}).`
-        setErrorGeneracion((prev) => ({
-          ...prev,
-          [sentenciaId]: r.detalle ? `${base} ${r.detalle}` : base,
-        }))
-      } else {
-        setResultados((prev) =>
-          prev.map((s) =>
-            s.id === sentenciaId
-              ? {
-                  ...s,
-                  demandante_ia: r.analisis?.demandante ?? s.demandante_ia,
-                  demandado_ia: r.analisis?.demandado ?? s.demandado_ia,
-                  motivo_ia: r.analisis?.motivo ?? s.motivo_ia,
-                  resumen_ia: r.analisis?.resumen ?? s.resumen_ia,
-                  hechos_ia: r.analisis?.hechos ?? s.hechos_ia,
-                  problema_juridico_ia: r.analisis?.problema_juridico ?? s.problema_juridico_ia,
-                  consideraciones_ia: r.analisis?.consideraciones_relevantes ?? s.consideraciones_ia,
-                  decision_ia: r.analisis?.decision ?? s.decision_ia,
-                }
-              : s,
-          ),
-        )
-        setAnalisisVisiblePorId((prev) => ({ ...prev, [sentenciaId]: true }))
-      }
-    } catch (err) {
-      setErrorGeneracion((prev) => ({
-        ...prev,
-        [sentenciaId]: err instanceof Error ? err.message : JSON.stringify(err),
-      }))
-    } finally {
-      setGenerando((prev) => ({ ...prev, [sentenciaId]: false }))
-    }
+    setExpandidoId((actual) => (actual === s.id ? null : s.id))
   }
 
   return (
@@ -355,148 +248,11 @@ export function BuscadorSentenciasFlotante({
                     </div>
 
                     {expandido && (
-                      <div className="border-t border-line p-4 space-y-4 text-sm">
-                        <table className="w-full">
-                          <tbody className="divide-y divide-line">
-                            <tr>
-                              <td className="py-1.5 text-slate w-36">Proceso</td>
-                              <td className="py-1.5">{s.proceso ?? '—'}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5 text-slate">Expediente</td>
-                              <td className="py-1.5">
-                                {s.expediente_tipo ?? '—'} {s.expediente_numero ?? ''}
-                              </td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5 text-slate">Salvamentos de voto</td>
-                              <td className="py-1.5">{s.sv_spv ?? 'no disponible en la fuente consultada'}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5 text-slate">Aclaraciones de voto</td>
-                              <td className="py-1.5">{s.av_apv ?? 'no disponible en la fuente consultada'}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-
-                        <div>
-                          <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setAnalisisVisiblePorId((prev) => ({ ...prev, [s.id]: !(prev[s.id] ?? true) }))
-                              }
-                              className="flex items-center gap-1.5 hover:text-ink transition-colors"
-                            >
-                              <h3 className="font-display text-base">Análisis</h3>
-                              {s.resumen_ia && (
-                                <ChevronDown
-                                  size={16}
-                                  strokeWidth={1.75}
-                                  className={
-                                    'text-slate transition-transform ' +
-                                    (analisisVisiblePorId[s.id] ?? true ? 'rotate-180' : '')
-                                  }
-                                />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleGenerarAnalisis(s.id)}
-                              disabled={generando[s.id]}
-                              className={
-                                'inline-flex items-center gap-1.5 disabled:opacity-50 ' +
-                                (s.resumen_ia ? 'link text-sm' : 'btn-primary btn-sm')
-                              }
-                            >
-                              {generando[s.id] ? (
-                                <>
-                                  <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
-                                  {s.resumen_ia ? 'Regenerando…' : 'Generando…'}
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles size={14} strokeWidth={1.75} />
-                                  {s.resumen_ia ? 'Regenerar análisis' : 'Generar análisis con IA'}
-                                </>
-                              )}
-                            </button>
-                          </div>
-
-                          {s.texto_completo_no_disponible && !s.texto_completo_url && (
-                            <div className="text-slate space-y-2 mb-3">
-                              <p className="inline-flex items-center gap-1.5 text-danger">
-                                <AlertCircle size={14} strokeWidth={1.75} />
-                                No se pudo localizar la sentencia completa en el sitio oficial la
-                                última vez. El botón de arriba lo vuelve a intentar.
-                              </p>
-                              <button onClick={() => handleLocalizarTexto(s.id)} className="link">
-                                Reintentar solo la localización
-                              </button>
-                            </div>
-                          )}
-
-                          {errorGeneracion[s.id] && (
-                            <p className="inline-flex items-center gap-1.5 text-danger mb-3">
-                              <AlertCircle size={14} strokeWidth={1.75} />
-                              {errorGeneracion[s.id]}
-                            </p>
-                          )}
-
-                          {s.resumen_ia && (analisisVisiblePorId[s.id] ?? true) && (
-                            <div className="space-y-3">
-                              {(s.demandante_ia || s.demandado_ia) && (
-                                <p className="text-slate">
-                                  {s.demandante_ia && <>Demandante: {s.demandante_ia}</>}
-                                  {s.demandante_ia && s.demandado_ia && ' · '}
-                                  {s.demandado_ia && <>Demandado: {s.demandado_ia}</>}
-                                </p>
-                              )}
-                              {s.motivo_ia && <p className="text-ink">{s.motivo_ia}</p>}
-                              <Seccion titulo="Resumen" texto={s.resumen_ia} />
-                              <Seccion titulo="Hechos" texto={s.hechos_ia} />
-                              <Seccion titulo="Problema jurídico" texto={s.problema_juridico_ia} />
-                              <Seccion titulo="Consideraciones relevantes" texto={s.consideraciones_ia} />
-                              <Seccion titulo="Decisión" texto={s.decision_ia} />
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setTextoVisiblePorId((prev) => ({ ...prev, [s.id]: !prev[s.id] }))}
-                            disabled={!htmlPorId[s.id]}
-                            className="flex items-center gap-1.5 hover:text-ink transition-colors mb-2 disabled:cursor-default disabled:hover:text-ink"
-                          >
-                            <h3 className="font-display text-base">Sentencia completa</h3>
-                            {htmlPorId[s.id] && (
-                              <ChevronDown
-                                size={16}
-                                strokeWidth={1.75}
-                                className={'text-slate transition-transform ' + (textoVisiblePorId[s.id] ? 'rotate-180' : '')}
-                              />
-                            )}
-                          </button>
-                          {s.texto_completo_url ? (
-                            <>
-                              {cargandoTextoId === s.id && <p className="text-slate">Cargando…</p>}
-                              {errorTextoPorId[s.id] && <p className="text-danger mb-2">{errorTextoPorId[s.id]}</p>}
-                              {htmlPorId[s.id] && textoVisiblePorId[s.id] && (
-                                <div
-                                  className="texto-oficial max-h-72 overflow-y-auto pr-2"
-                                  dangerouslySetInnerHTML={{ __html: htmlPorId[s.id] }}
-                                />
-                              )}
-                              <a href={s.texto_completo_url} target="_blank" rel="noreferrer" className="link mt-3 inline-block">
-                                Ver en el sitio oficial
-                              </a>
-                            </>
-                          ) : (
-                            <p className="text-slate">
-                              {s.texto_completo_no_disponible ? 'No disponible.' : 'Aún no se ha localizado la sentencia completa.'}
-                            </p>
-                          )}
-                        </div>
+                      <div className="border-t border-line">
+                        <DetalleSentencia
+                          sentencia={s}
+                          onActualizar={(nueva) => setResultados((prev) => prev.map((x) => (x.id === nueva.id ? nueva : x)))}
+                        />
                       </div>
                     )}
                   </div>
@@ -510,16 +266,6 @@ export function BuscadorSentenciasFlotante({
           </ul>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Seccion({ titulo, texto }: { titulo: string; texto: string | null }) {
-  if (!texto) return null
-  return (
-    <div>
-      <p className="text-slate mb-1">{titulo}</p>
-      <p>{texto}</p>
     </div>
   )
 }

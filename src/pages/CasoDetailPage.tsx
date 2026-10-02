@@ -4,6 +4,7 @@ import { ArrowLeft, Bot, Download, ExternalLink, Eye, History, Loader2, Scale, T
 import { AppHeader } from '../components/AppHeader'
 import { AsistenteDocumentosIA } from '../components/AsistenteDocumentosIA'
 import { BuscadorSentenciasFlotante } from '../components/BuscadorSentenciasFlotante'
+import { SentenciaDetalleModal } from '../components/DetalleSentencia'
 import { CardActions, CardEmpty, CardHeader, CardList, CardRow, DataCard } from '../components/DataCard'
 import { DocumentoPreviewModal } from '../components/DocumentoPreviewModal'
 import { Skeleton } from '../components/Skeleton'
@@ -116,6 +117,7 @@ export function CasoDetailPage() {
   const [mostrarSaludoIA, setMostrarSaludoIA] = useState(false)
   const [mostrarBuscadorSentencias, setMostrarBuscadorSentencias] = useState(false)
   const [mostrarSaludoSentencias, setMostrarSaludoSentencias] = useState(false)
+  const [sentenciaDetalleId, setSentenciaDetalleId] = useState<string | null>(null)
 
   useEffect(() => {
     // Pequeña demora para que el globo aparezca después de que cargue la
@@ -563,9 +565,14 @@ export function CasoDetailPage() {
                     )}
                     {s.nota && <span className="text-slate"> — nota: {s.nota}</span>}
                   </span>
-                  <button onClick={() => handleDesvincularSentencia(s.id)} className="link shrink-0">
-                    Quitar
-                  </button>
+                  <span className="flex items-center gap-4 shrink-0">
+                    <button onClick={() => setSentenciaDetalleId(s.sentencia_id)} className="link">
+                      Ver detalle
+                    </button>
+                    <button onClick={() => handleDesvincularSentencia(s.id)} className="link">
+                      Quitar
+                    </button>
+                  </span>
                 </li>
               ))}
               {sentencias.length === 0 && (
@@ -576,6 +583,10 @@ export function CasoDetailPage() {
               )}
             </ul>
           </section>
+
+          {sentenciaDetalleId && (
+            <SentenciaDetalleModal sentenciaId={sentenciaDetalleId} onClose={() => setSentenciaDetalleId(null)} />
+          )}
 
           <section id="plazos" className="card p-6">
             <h2 className="font-display text-base font-semibold mb-2">Recordatorios</h2>

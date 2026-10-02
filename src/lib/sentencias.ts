@@ -66,6 +66,12 @@ export async function buscarSentencias(criterios: CriteriosBusqueda) {
   return data as { resultados: Sentencia[]; fuente: 'cache' | 'api_en_vivo' }
 }
 
+export async function obtenerSentenciaPorId(id: string) {
+  const { data, error } = await supabase.from('sentencias_cache').select('*').eq('id', id).single()
+  if (error) throw error
+  return data as Sentencia
+}
+
 // Busca por el número/citación de la sentencia (ej. "T-760/98"), no por
 // el id interno — reutiliza buscar-sentencias, que ya resuelve contra el
 // cache y, si no está ahí, contra la API en vivo, guardando el
